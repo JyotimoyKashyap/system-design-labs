@@ -1,0 +1,27 @@
+services:
+  mysql-shard-1:
+    image: mysql:8.4
+    container_name: mysql-shard-1
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: shard_1
+    ports:
+      - "3306:3306"
+
+  mysql-shard-2:
+    image: mysql:8.4
+    container_name: mysql-shard-2
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: shard_2
+    ports:
+      - "3307:3306"
+
+  web-server:
+    build: ./app
+    container_name: node-api
+    depends_on:
+      - mysql-shard-1
+      - mysql-shard-2
+    ports:
+      - "3000:3000"

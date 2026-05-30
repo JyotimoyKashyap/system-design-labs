@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.rabbitmq_producer.RabbitmqProducerApplicationTests" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-05-30T07:24:54.958Z" hostname="Jyotimoys-MacBook-Pro-2.local" time="0.979">
+  <properties/>
+  <testcase name="contextLoads()" classname="com.example.rabbitmq_producer.RabbitmqProducerApplicationTests" time="0.334"/>
+  <system-out><![CDATA[12:54:55.032 [Test worker] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.example.rabbitmq_producer.RabbitmqProducerApplicationTests]: RabbitmqProducerApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+12:54:55.085 [Test worker] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.example.rabbitmq_producer.RabbitmqProducerApplication for test class com.example.rabbitmq_producer.RabbitmqProducerApplicationTests
+12:54:55.123 [Test worker] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.example.rabbitmq_producer.RabbitmqProducerApplicationTests]: RabbitmqProducerApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+12:54:55.124 [Test worker] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.example.rabbitmq_producer.RabbitmqProducerApplication for test class com.example.rabbitmq_producer.RabbitmqProducerApplicationTests
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.0.6)
+
+2026-05-30T12:54:55.267+05:30  INFO 57847 --- [rabbitmq-producer] [    Test worker] c.e.r.RabbitmqProducerApplicationTests   : Starting RabbitmqProducerApplicationTests using Java 26 with PID 57847 (started by jyotimoykashyap in /Users/jyotimoykashyap/Developer/personal-lab/rabbitmq-lab/producer)
+2026-05-30T12:54:55.268+05:30  INFO 57847 --- [rabbitmq-producer] [    Test worker] c.e.r.RabbitmqProducerApplicationTests   : No active profile set, falling back to 1 default profile: "default"
+2026-05-30T12:54:55.601+05:30  INFO 57847 --- [rabbitmq-producer] [    Test worker] c.e.r.RabbitmqProducerApplicationTests   : Started RabbitmqProducerApplicationTests in 0.442 seconds (process running for 1.036)
+]]></system-out>
+  <system-err><![CDATA[Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+WARNING: A Java agent has been loaded dynamically (/Users/jyotimoykashyap/.gradle/caches/modules-2/files-2.1/net.bytebuddy/byte-buddy-agent/1.17.8/f09415827a71be7ed621c7bd02550678f28bc81c/byte-buddy-agent-1.17.8.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+]]></system-err>
+</testsuite>
