@@ -1,0 +1,12 @@
+{
+  "name": "consumer-node",
+  "version": "1.0.0",
+  "description": "Kafka Consumer Service Template (Node.js)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "kafkajs": "^2.2.4"
+  }
+}
