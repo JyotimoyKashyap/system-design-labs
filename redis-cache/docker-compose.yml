@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis-cache
+    ports:
+      - "6379:6379"
+    restart: always
+    command: ["redis-server", "--maxmemory", "2mb", "--maxmemory-policy", "allkeys-lru"]
+
+  posts-service:
+    build: 
+      context: ./posts-service
+      dockerfile: Dockerfile
+    container_name: posts-service
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+    environment:
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
