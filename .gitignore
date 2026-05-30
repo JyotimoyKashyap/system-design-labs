@@ -1,0 +1,21 @@
+# Build directories
+build/
+bin/
+out/
+target/
+
+# Gradle
+.gradle/
+gradlew
+gradlew.bat
+
+# Node
+node_modules/
+dist/
+npm-debug.log
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
