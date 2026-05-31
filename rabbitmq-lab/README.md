@@ -2,7 +2,12 @@
 
 This lab demonstrates the **Competing Consumers Pattern** using RabbitMQ, Spring Boot (Java), and Docker Compose.
 
+![Competing Consumers Animation](./animations/media/videos/rabbitmq_animation/480p15/CompetingConsumers_ManimCE_v0.20.1.gif)
+
 ## 🏗 Architecture
+
+![Message Broker Architecture](./assets/message_broker_dark.gif)
+
 - **RabbitMQ**: The central message broker managing the `demo_queue`.
 - **Producer**: A Spring Boot service using `@Scheduled` to continuously publish events to the broker.
 - **Consumer Replicas**: Two identical Spring Boot consumer instances that listen to `demo_queue`. RabbitMQ routes messages to them in a round-robin fashion, ensuring tasks are processed efficiently without duplication.
