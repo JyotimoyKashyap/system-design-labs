@@ -47,7 +47,16 @@ jobs:
           mkdir -p public-pages/leader-election-web
           cp -R leader-election-web/dist/* public-pages/leader-election-web/
 
-          # 4. Convert Backend Labs READMEs to GitHub-styled HTML
+          # 4. Build & Copy Bloom Filter Visualizer
+          echo "Building Bloom Filter Visualizer..."
+          cd bloom-filter-web
+          npm install
+          npx vite build --base=/system-design-labs/bloom-filter-web/
+          cd ..
+          mkdir -p public-pages/bloom-filter-web
+          cp -R bloom-filter-web/dist/* public-pages/bloom-filter-web/
+
+          # 5. Convert Backend Labs READMEs to GitHub-styled HTML
           echo "Converting Backend Labs..."
           npm install -g marked
           
@@ -78,7 +87,8 @@ jobs:
           <body class="markdown-body">
           EOF
 
-          for lab in bloom-filter-design rabbitmq-lab db-scaling apache-kafka redis-cache; do
+          # Removed bloom-filter-design from the backend loop since it is now a web visualizer
+          for lab in rabbitmq-lab db-scaling apache-kafka redis-cache; do
             if [ -f "$lab/README.md" ]; then
               mkdir -p public-pages/$lab
               cat template.html > public-pages/$lab/index.html
@@ -89,12 +99,18 @@ jobs:
             fi
           done
 
-          # 5. Convert Leader Election Web README to docs.html
-          echo "Converting Leader Election Web Docs..."
+          # 6. Convert Web Visualizer READMEs to docs.html
+          echo "Converting Visualizer Docs..."
           if [ -f "leader-election-web/README.md" ]; then
             cat template.html > public-pages/leader-election-web/docs.html
             marked leader-election-web/README.md >> public-pages/leader-election-web/docs.html
             echo "</body></html>" >> public-pages/leader-election-web/docs.html
+          fi
+          
+          if [ -f "bloom-filter-web/README.md" ]; then
+            cat template.html > public-pages/bloom-filter-web/docs.html
+            marked bloom-filter-web/README.md >> public-pages/bloom-filter-web/docs.html
+            echo "</body></html>" >> public-pages/bloom-filter-web/docs.html
           fi
           # npm install
           # npx vite build --base=/system-design-labs/paxos-visualizer/
