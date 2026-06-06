@@ -1,4 +1,4 @@
-import { Broker, Message } from './Broker';
+import { Broker, type Message } from './Broker';
 
 export class Consumer {
   public id: string;

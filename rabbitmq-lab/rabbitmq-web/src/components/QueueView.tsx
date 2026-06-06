@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Message } from '../simulation/Broker';
+import { type Message } from '../simulation/Broker';
 
 interface QueueViewProps {
   queue: Message[];

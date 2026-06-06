@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Broker, Message } from './simulation/Broker';
+import { Broker, type Message } from './simulation/Broker';
 import { Producer } from './simulation/Producer';
 import { Consumer } from './simulation/Consumer';
 import { QueueView } from './components/QueueView';
