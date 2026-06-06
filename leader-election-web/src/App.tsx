@@ -40,7 +40,7 @@ function App() {
     <div className="h-screen bg-white text-stone-900 flex flex-col lg:flex-row font-sans selection:bg-orange-200 selection:text-orange-900 overflow-hidden">
       
       {/* Left Column: Text & Controls (40%) */}
-      <div className="w-full lg:w-[40%] bg-[#fdfcfb] border-b-2 lg:border-b-0 lg:border-r-2 border-stone-900 p-8 lg:p-16 flex flex-col justify-center relative z-20">
+      <div className="w-full lg:w-[40%] bg-[#fdfcfb] border-b lg:border-b-0 lg:border-r border-stone-300 p-8 lg:p-16 flex flex-col justify-center relative z-20">
         <h1 className="text-5xl lg:text-6xl font-serif italic text-stone-900 mb-8 tracking-tight leading-tight">
           Raft Consensus Visualizer
         </h1>
@@ -60,7 +60,7 @@ function App() {
         </div>
 
         {/* Legends moved to the left panel to keep simulation clean */}
-        <div className="flex flex-col xl:flex-row gap-12 mt-auto border-t-2 border-stone-900 pt-8">
+        <div className="flex flex-col xl:flex-row gap-12 mt-auto border-t border-stone-300 pt-8">
             <div className="flex flex-col gap-3">
               <h3 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Node State</h3>
               <div className="flex items-center gap-3 text-sm font-bold"><div className="w-4 h-4 bg-emerald-400 border-2 border-stone-900"></div> Leader</div>
