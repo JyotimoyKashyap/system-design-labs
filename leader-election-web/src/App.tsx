@@ -75,20 +75,21 @@ function App() {
             />
             
             {/* Legend inside simulation */}
-            <div className="absolute bottom-6 left-6 flex flex-col gap-3 bg-white/90 p-4 rounded-none border border-stone-100 backdrop-blur-md">
+            <div className="absolute bottom-6 left-6 flex flex-col gap-3 bg-white border-2 border-stone-900 shadow-[4px_4px_0px_0px_rgba(28,25,23,1)] p-4 rounded-none z-20">
               <h3 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-0.5">Node State</h3>
-              <div className="flex items-center gap-2 text-sm font-medium text-stone-600"><div className="w-2.5 h-2.5 rounded-none bg-emerald-100 border border-emerald-200"></div> Leader</div>
-              <div className="flex items-center gap-2 text-sm font-medium text-stone-600"><div className="w-2.5 h-2.5 rounded-none bg-orange-100 border border-orange-200"></div> Candidate</div>
-              <div className="flex items-center gap-2 text-sm font-medium text-stone-600"><div className="w-2.5 h-2.5 rounded-none bg-slate-100 border border-slate-200"></div> Follower</div>
-              <div className="flex items-center gap-2 text-sm font-medium text-stone-600"><div className="w-2.5 h-2.5 rounded-none bg-rose-50 border border-rose-200"></div> Dead</div>
+              <div className="flex items-center gap-2 text-sm font-medium text-stone-900"><div className="w-3 h-3 rounded-none bg-emerald-400 border-2 border-stone-900"></div> Leader</div>
+              <div className="flex items-center gap-2 text-sm font-medium text-stone-900"><div className="w-3 h-3 rounded-none bg-orange-500 border-2 border-stone-900"></div> Candidate</div>
+              <div className="flex items-center gap-2 text-sm font-medium text-stone-900"><div className="w-3 h-3 rounded-none bg-white border-2 border-stone-900"></div> Follower</div>
+              <div className="flex items-center gap-2 text-sm font-medium text-stone-900"><div className="w-3 h-3 rounded-none bg-stone-800 border-2 border-stone-900"></div> Dead</div>
             </div>
 
             {/* Message Legend inside simulation */}
-            <div className="absolute top-6 right-6 flex flex-col gap-3 bg-white/90 p-4 rounded-none border border-stone-100 backdrop-blur-md">
+            <div className="absolute top-6 right-6 flex flex-col gap-3 bg-white border-2 border-stone-900 shadow-[4px_4px_0px_0px_rgba(28,25,23,1)] p-4 rounded-none z-20">
               <h3 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-0.5">Network Packets</h3>
-              <div className="flex items-center gap-2 text-sm font-medium text-stone-600"><div className="w-2 h-2 rounded-none bg-orange-400"></div> Request Vote</div>
-              <div className="flex items-center gap-2 text-sm font-medium text-stone-600"><div className="w-2 h-2 rounded-none bg-emerald-400"></div> Vote Granted</div>
-              <div className="flex items-center gap-2 text-sm font-medium text-stone-600"><div className="w-2 h-2 rounded-none bg-slate-300"></div> Heartbeat</div>
+              <div className="flex items-center gap-2 text-sm font-medium text-stone-900"><div className="w-3 h-3 rounded-none bg-orange-500 border-2 border-stone-900"></div> Request Vote</div>
+              <div className="flex items-center gap-2 text-sm font-medium text-stone-900"><div className="w-3 h-3 rounded-none bg-emerald-400 border-2 border-stone-900"></div> Vote Granted</div>
+              <div className="flex items-center gap-2 text-sm font-medium text-stone-900"><div className="w-3 h-3 rounded-none bg-rose-500 border-2 border-stone-900"></div> Vote Denied</div>
+              <div className="flex items-center gap-2 text-sm font-medium text-stone-900"><div className="w-3 h-3 rounded-none bg-stone-100 border-2 border-stone-900"></div> Heartbeat</div>
             </div>
           </div>
         </div>
