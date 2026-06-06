@@ -1,5 +1,8 @@
 # Bloom Filter Terminal Visualizer
 
+![Bloom Filter Preview](./assets/bloom_filter_preview.png)
+
+
 A fully functional, terminal-based Bloom Filter implementation in Java. This project serves as a Low-Level Design (LLD) exercise showcasing advanced Object-Oriented principles, core data structure manipulation, and mathematical hashing strategies.
 
 ## Features
