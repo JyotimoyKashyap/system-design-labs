@@ -42,16 +42,18 @@ jobs:
           echo "Building Leader Election Visualizer..."
           cd leader-election-web
           npm install
-          # Build with specific base path matching the repository name and subfolder
           npx vite build --base=/system-design-labs/leader-election-web/
           cd ..
-          # Copy the dist output into the central pages folder under its specific route
           mkdir -p public-pages/leader-election-web
           cp -R leader-election-web/dist/* public-pages/leader-election-web/
 
-          # [FUTURE VISUALIZERS] Add new builds here!
-          # Example:
-          # cd paxos-visualizer
+          # 4. Copy Backend Labs (for hosted READMEs)
+          echo "Copying Backend Labs..."
+          cp -R bloom-filter-design public-pages/ || true
+          cp -R rabbitmq-lab public-pages/ || true
+          cp -R db-scaling public-pages/ || true
+          cp -R apache-kafka public-pages/ || true
+          cp -R redis-cache public-pages/ || true
           # npm install
           # npx vite build --base=/system-design-labs/paxos-visualizer/
           # cd ..
