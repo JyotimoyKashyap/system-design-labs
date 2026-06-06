@@ -1,0 +1,75 @@
+name: Deploy Mono-Repo to GitHub Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build Mono-Repo Payload
+        run: |
+          echo "Starting Mono-Repo Build Process..."
+          
+          # 1. Create the central build directory
+          mkdir -p public-pages
+          
+          # 2. Copy the central Hub (Landing Page)
+          cp -R deploy-hub/* public-pages/
+          
+          # 3. Build & Copy Leader Election Visualizer
+          echo "Building Leader Election Visualizer..."
+          cd leader-election-web
+          npm ci
+          # Build with specific base path matching the repository name and subfolder
+          npx vite build --base=/system-design-labs/leader-election-web/
+          cd ..
+          # Copy the dist output into the central pages folder under its specific route
+          mkdir -p public-pages/leader-election-web
+          cp -R leader-election-web/dist/* public-pages/leader-election-web/
+
+          # [FUTURE VISUALIZERS] Add new builds here!
+          # Example:
+          # cd paxos-visualizer
+          # npm ci
+          # npx vite build --base=/system-design-labs/paxos-visualizer/
+          # cd ..
+          # mkdir -p public-pages/paxos-visualizer
+          # cp -R paxos-visualizer/dist/* public-pages/paxos-visualizer/
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public-pages
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

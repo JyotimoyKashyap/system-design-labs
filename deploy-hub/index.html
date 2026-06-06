@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Design Labs</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;1,600&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #fdfcfb;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 90%;
+            padding: 40px;
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 3rem;
+            font-style: italic;
+            color: #1c1917;
+            margin-bottom: 10px;
+        }
+
+        p.subtitle {
+            font-size: 1.1rem;
+            color: #78716c;
+            margin-bottom: 40px;
+            font-weight: 300;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #e7e5e4;
+            padding: 24px;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            transition: all 0.2s ease;
+        }
+
+        .card:hover {
+            border-color: #d6d3d1;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+            transform: translateY(-2px);
+        }
+
+        .card h2 {
+            margin: 0 0 10px 0;
+            font-size: 1.25rem;
+            color: #292524;
+        }
+
+        .card p {
+            margin: 0;
+            color: #57534e;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        
+        .tag {
+            display: inline-block;
+            padding: 4px 10px;
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>System Design Labs</h1>
+        <p class="subtitle">A collection of interactive distributed systems and algorithm visualizers.</p>
+
+        <div class="grid">
+            <!-- Raft Visualizer -->
+            <a href="./leader-election-web/" class="card">
+                <span class="tag">React / TypeScript</span>
+                <h2>Raft Consensus Visualizer</h2>
+                <p>Interactive simulation of the Raft leader election algorithm featuring asynchronous network delays and event-loop multithreading.</p>
+            </a>
+
+            <!-- Future projects go here -->
+            <!-- 
+            <a href="./bloom-filter/" class="card">
+                <span class="tag">Visualization</span>
+                <h2>Bloom Filter</h2>
+                <p>Interactive visualization of probabilistic data structures.</p>
+            </a>
+            -->
+        </div>
+    </div>
+
+</body>
+</html>
