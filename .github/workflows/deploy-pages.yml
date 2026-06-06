@@ -88,6 +88,14 @@ jobs:
               cp -R $lab/assets public-pages/$lab/assets 2>/dev/null || true
             fi
           done
+
+          # 5. Convert Leader Election Web README to docs.html
+          echo "Converting Leader Election Web Docs..."
+          if [ -f "leader-election-web/README.md" ]; then
+            cat template.html > public-pages/leader-election-web/docs.html
+            marked leader-election-web/README.md >> public-pages/leader-election-web/docs.html
+            echo "</body></html>" >> public-pages/leader-election-web/docs.html
+          fi
           # npm install
           # npx vite build --base=/system-design-labs/paxos-visualizer/
           # cd ..
