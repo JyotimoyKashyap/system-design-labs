@@ -12,6 +12,9 @@ export function PartitionGrid({ partitions, consumerOffsets }: PartitionGridProp
       {partitions.map((p) => {
         const currentOffset = consumerOffsets.get(p.id) ?? -1;
 
+        // User requirement: Only show 3 oldest consumed messages (offset >= currentOffset - 2)
+        const visibleMessages = p.messages.filter(m => m.offset >= currentOffset - 2);
+
         return (
           <div key={p.id} className="relative flex flex-col gap-2">
             <h3 className="font-mono text-sm font-bold text-stone-500 uppercase tracking-widest">
@@ -22,9 +25,9 @@ export function PartitionGrid({ partitions, consumerOffsets }: PartitionGridProp
               {/* Immutable log track */}
               <div className="absolute top-1/2 left-0 right-0 h-px bg-stone-300 -translate-y-1/2"></div>
               
-              <div className="flex gap-1 w-full relative h-full items-center">
+              <div className="flex gap-1 w-full relative h-full items-center overflow-hidden">
                 <AnimatePresence mode="popLayout">
-                  {p.messages.map((msg) => {
+                  {visibleMessages.map((msg) => {
                     // Is this message currently being pointed to by the consumer offset?
                     const isRead = msg.offset <= currentOffset;
                     
@@ -36,7 +39,7 @@ export function PartitionGrid({ partitions, consumerOffsets }: PartitionGridProp
                         animate={{ opacity: 1, scale: 1, x: 0 }}
                         exit={{ opacity: 0, scale: 0, x: -50 }}
                         transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                        className={`h-12 w-10 border-2 flex flex-col justify-center items-center shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] relative transition-colors duration-500 ${
+                        className={`h-12 w-10 shrink-0 border-2 flex flex-col justify-center items-center shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] relative transition-colors duration-500 ${
                           isRead ? 'bg-stone-800 border-stone-900 text-white' : 'bg-white border-stone-900 text-stone-800'
                         }`}
                       >
@@ -47,7 +50,7 @@ export function PartitionGrid({ partitions, consumerOffsets }: PartitionGridProp
                   })}
                 </AnimatePresence>
 
-                {p.messages.length === 0 && (
+                {visibleMessages.length === 0 && (
                   <span className="text-stone-400 font-mono text-xs w-full text-center tracking-widest uppercase">
                     Log is Empty
                   </span>
@@ -56,8 +59,8 @@ export function PartitionGrid({ partitions, consumerOffsets }: PartitionGridProp
             </div>
             
             {/* The Pointer Track Below the Partition */}
-            <div className="h-4 relative w-full px-4 flex gap-1">
-              {p.messages.map((msg) => {
+            <div className="h-4 relative w-full px-4 flex gap-1 overflow-hidden">
+              {visibleMessages.map((msg) => {
                 const isPointerHere = msg.offset === currentOffset;
                 return (
                   <div key={`ptr-${msg.id}`} className="w-10 flex justify-center">

@@ -75,12 +75,12 @@ export default function App() {
       <main className="flex-1 flex flex-col xl:flex-row p-8 gap-8 overflow-hidden">
         
         {/* Left: Controls & Logs */}
-        <div className="w-full xl:w-1/3 flex flex-col gap-6">
+        <div className="w-full xl:w-1/3 xl:min-w-[400px] shrink-0 flex flex-col gap-6">
           
           {/* Producer Panel */}
-          <div className="border border-stone-200 bg-white p-6">
+          <div className="border border-stone-200 bg-white p-6 shrink-0">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold flex items-center gap-2"><Server size={20}/> Producer</h2>
+              <h2 className="text-xl font-bold flex items-center gap-2 whitespace-nowrap"><Server size={20}/> Producer</h2>
             </div>
             <p className="text-sm text-stone-500 mb-4">Continuously publish data to the Kafka topic. The broker will round-robin assign them to partitions.</p>
             <button 
@@ -92,10 +92,10 @@ export default function App() {
           </div>
 
           {/* Consumer Group Panel */}
-          <div className="flex-1 border border-stone-200 bg-white p-6 flex flex-col">
-            <div className="flex justify-between items-center border-b border-stone-200 pb-4 mb-4">
-              <h2 className="text-xl font-bold flex items-center gap-2"><Users size={20}/> Consumer Group: CG-1</h2>
-              <div className="flex gap-2">
+          <div className="flex-1 border border-stone-200 bg-white p-6 flex flex-col min-h-0">
+            <div className="flex justify-between items-center border-b border-stone-200 pb-4 mb-4 gap-4">
+              <h2 className="text-xl font-bold flex items-center gap-2 whitespace-nowrap truncate"><Users size={20} className="shrink-0"/> Consumer Group: CG-1</h2>
+              <div className="flex gap-2 shrink-0">
                 <button onClick={handleRemoveConsumer} className="p-2 border border-stone-200 hover:bg-stone-50 transition-colors disabled:opacity-50" disabled={consumerCount === 0}><Minus size={14}/></button>
                 <button onClick={handleAddConsumer} className="p-2 border border-stone-200 bg-orange-500 text-white hover:bg-orange-600 transition-colors"><Plus size={14}/></button>
               </div>
