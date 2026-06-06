@@ -133,12 +133,16 @@
                 <p>A database replication setup demonstrating Master-Slave Architecture with read/write splitting to horizontally scale throughput.</p>
             </a>
 
-            <!-- Apache Kafka -->
-            <a href="./apache-kafka/" class="card">
-                <span class="tag">Event Streaming / KRaft</span>
-                <h2>Apache Kafka Playground</h2>
-                <p>Explore message streams with Apache Kafka. Demonstrates a true Pub-Sub broadcast model across distinct Consumer Groups.</p>
-            </a>
+            <!-- Apache Kafka Visualizer -->
+            <div class="card">
+                <span class="tag">Event Streaming / Architecture</span>
+                <h2>Apache Kafka Visualizer</h2>
+                <p>Simulating an Append-Only Log with Consumer Groups. Watch messages append immutably to partitions while Consumer Groups rebalance partition ownership to scale throughput!</p>
+                <div style="margin-top: 20px; display: flex; gap: 10px;">
+                    <a href="./kafka-web/" style="display: inline-block; padding: 8px 16px; background: #1c1917; color: white; text-decoration: none; font-size: 0.85rem; font-weight: 500;">Launch App</a>
+                    <a href="./kafka-web/docs.html" style="display: inline-block; padding: 8px 16px; background: white; color: #1c1917; border: 1px solid #d6d3d1; text-decoration: none; font-size: 0.85rem; font-weight: 500;">Read Docs</a>
+                </div>
+            </div>
 
             <!-- Redis Cache -->
             <a href="./redis-cache/" class="card">
