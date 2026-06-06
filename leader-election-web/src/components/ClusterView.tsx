@@ -69,7 +69,7 @@ export function ClusterView({ cluster, nodeStates, nodeTerms, nodeTimers, onKill
           return (
             <motion.div
               key={id}
-              className={`absolute w-4 h-4 rounded-full border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] z-10 ${color}`}
+              className={`absolute w-4 h-4 rounded-none border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] z-10 ${color}`}
               initial={{ x: start.x, y: start.y, opacity: 1, scale: 0.5 }}
               animate={{ x: end.x, y: end.y, opacity: 0, scale: 1.5 }}
               transition={{ duration: latency / 1000, ease: "linear" }}
