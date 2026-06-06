@@ -41,7 +41,7 @@ jobs:
           # 3. Build & Copy Leader Election Visualizer
           echo "Building Leader Election Visualizer..."
           cd leader-election-web
-          npm ci
+          npm install
           # Build with specific base path matching the repository name and subfolder
           npx vite build --base=/system-design-labs/leader-election-web/
           cd ..
@@ -52,7 +52,7 @@ jobs:
           # [FUTURE VISUALIZERS] Add new builds here!
           # Example:
           # cd paxos-visualizer
-          # npm ci
+          # npm install
           # npx vite build --base=/system-design-labs/paxos-visualizer/
           # cd ..
           # mkdir -p public-pages/paxos-visualizer
