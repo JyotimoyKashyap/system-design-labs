@@ -47,6 +47,3 @@ The core algorithm is cleanly decoupled from the React UI and lives entirely ins
    ```
 5. **Open your browser:** Visit `http://localhost:5173`.
 6. Click **Start Simulation** and enjoy!
-
-## 🔮 Next Steps
-* Deploy this static application to GitHub Pages for the world to see!
