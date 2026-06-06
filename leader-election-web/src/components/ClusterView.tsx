@@ -14,7 +14,7 @@ export function ClusterView({ cluster, nodeStates, nodeTerms, nodeTimers, onKill
 
   // Positions for 5 nodes in a circle
   const radius = 230;
-  const positions = cluster.nodes.map((_, i: number) => {
+  const positions = cluster.nodes.map((_: any, i: number) => {
     const angle = (i * 2 * Math.PI) / cluster.nodes.length - Math.PI / 2;
     return {
       x: 450 + radius * Math.cos(angle),
@@ -62,14 +62,14 @@ export function ClusterView({ cluster, nodeStates, nodeTerms, nodeTimers, onKill
           const start = getPosition(msg.fromId);
           const end = getPosition(msg.toId);
           
-          let color = 'bg-slate-300'; // AppendEntries (Heartbeat)
-          if (msg.type === 'RequestVote') color = 'bg-orange-400';
-          if (msg.type === 'RequestVoteReply') color = (msg as any).voteGranted ? 'bg-emerald-400' : 'bg-rose-400';
+          let color = 'bg-stone-100'; // AppendEntries (Heartbeat)
+          if (msg.type === 'RequestVote') color = 'bg-orange-500';
+          if (msg.type === 'RequestVoteReply') color = (msg as any).voteGranted ? 'bg-emerald-400' : 'bg-rose-500';
 
           return (
             <motion.div
               key={id}
-              className={`absolute w-3.5 h-3.5 rounded-none shadow-sm z-10 ${color}`}
+              className={`absolute w-4 h-4 rounded-full border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] z-10 ${color}`}
               initial={{ x: start.x, y: start.y, opacity: 1, scale: 0.5 }}
               animate={{ x: end.x, y: end.y, opacity: 0, scale: 1.5 }}
               transition={{ duration: latency / 1000, ease: "linear" }}
