@@ -1,0 +1,38 @@
+sequenceDiagram
+    actor User
+    participant ConsoleUI
+    participant DefaultBloomFilter
+    participant StringFunnelStrategy
+    participant MurmurHashingStrategy
+    participant BitSet
+
+    User->>ConsoleUI: Inputs "1" (Add Key)
+    ConsoleUI->>DefaultBloomFilter: addKey("key_123")
+    
+    activate DefaultBloomFilter
+    DefaultBloomFilter->>DefaultBloomFilter: keysAdded++
+    
+    Note over DefaultBloomFilter,StringFunnelStrategy: Step 1: Serialize Object to Bytes
+    DefaultBloomFilter->>StringFunnelStrategy: funnel("key_123")
+    activate StringFunnelStrategy
+    StringFunnelStrategy-->>DefaultBloomFilter: byte[] [0x6B, 0x65, ...]
+    deactivate StringFunnelStrategy
+    
+    Note over DefaultBloomFilter,MurmurHashingStrategy: Step 2: Generate k Hash Indices
+    DefaultBloomFilter->>MurmurHashingStrategy: hash(byte[], kHashFunctions, bitArraySize)
+    activate MurmurHashingStrategy
+    MurmurHashingStrategy->>MurmurHashingStrategy: Hashing.murmur3_128()
+    MurmurHashingStrategy->>MurmurHashingStrategy: Double Hashing Math
+    MurmurHashingStrategy-->>DefaultBloomFilter: int[] [1405, 892, 45]
+    deactivate MurmurHashingStrategy
+    
+    Note over DefaultBloomFilter,BitSet: Step 3: Flip the Bits
+    loop For each index in int[]
+        DefaultBloomFilter->>BitSet: set(index)
+    end
+    
+    DefaultBloomFilter-->>ConsoleUI: return
+    deactivate DefaultBloomFilter
+    
+    ConsoleUI->>ConsoleUI: calculate FPR & renderFrame()
+    ConsoleUI-->>User: Visualizes updated Bit Array & FPR

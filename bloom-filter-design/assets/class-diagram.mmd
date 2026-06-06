@@ -1,0 +1,65 @@
+classDiagram
+    class BloomFilter~T~ {
+        <<interface>>
+        +addKey(T key)
+        +mightContain(T key) boolean
+        +reset()
+    }
+
+    class DefaultBloomFilter~T~ {
+        -BitSet bitSet
+        -int bitArraySize
+        -int kHashFunctions
+        -int keysAdded
+        -HashingStrategy hashingStrategy
+        -FunnelStrategy~T~ funnelStrategy
+        +addKey(T key)
+        +mightContain(T key) boolean
+        +getBitSet() BitSet
+    }
+
+    class BloomFilterBuilder~T~ {
+        -double targetFpr
+        -int expectedElements
+        -HashingStrategy hashingStrategy
+        -FunnelStrategy~T~ funnelStrategy
+        +create(FunnelStrategy~T~ funnel) BloomFilterBuilder~T~$
+        +build() BloomFilter~T~
+    }
+
+    class HashingStrategy {
+        <<interface>>
+        +hash(byte[] data, int k, int m) int[]
+    }
+
+    class MurmurHashingStrategy {
+        +hash(byte[] data, int k, int m) int[]
+    }
+
+    class FunnelStrategy~T~ {
+        <<interface>>
+        +funnel(T from) byte[]
+    }
+
+    class StringFunnelStrategy {
+        +funnel(String from) byte[]
+    }
+    
+    class BloomFilterConfig {
+        -int expectedElements
+        -double targetFpr
+        -int bitArraySize
+        -int kHashFunctions
+        +calculateBitArraySize() int
+        +calculateKHashFunctions() int
+    }
+
+    BloomFilter <|.. DefaultBloomFilter : implements
+    HashingStrategy <|.. MurmurHashingStrategy : implements
+    FunnelStrategy <|.. StringFunnelStrategy : implements
+    
+    BloomFilterBuilder --> DefaultBloomFilter : builds
+    BloomFilterBuilder --> BloomFilterConfig : uses to calculate m & k
+    
+    DefaultBloomFilter --> HashingStrategy : delegates hashing
+    DefaultBloomFilter --> FunnelStrategy : delegates serialization
