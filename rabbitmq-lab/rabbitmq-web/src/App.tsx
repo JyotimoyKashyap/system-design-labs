@@ -88,16 +88,16 @@ export default function App() {
       <main className="flex-1 flex flex-col lg:flex-row p-8 gap-8 overflow-hidden">
         
         {/* Left: Producers */}
-        <div className="w-full lg:w-1/4 flex flex-col gap-4 border border-stone-200 bg-white p-6">
-          <div className="flex justify-between items-center border-b border-stone-200 pb-4 mb-4">
-            <h2 className="text-xl font-bold flex items-center gap-2"><Server size={20}/> Producers</h2>
-            <div className="flex gap-2">
+        <div className="w-full lg:w-1/4 lg:min-w-[320px] shrink-0 flex flex-col gap-4 border border-stone-200 bg-white p-6">
+          <div className="flex justify-between items-center border-b border-stone-200 pb-4 mb-4 gap-4">
+            <h2 className="text-xl font-bold flex items-center gap-2 whitespace-nowrap"><Server size={20}/> Producers</h2>
+            <div className="flex gap-2 shrink-0">
               <button onClick={handleRemoveProducer} className="p-2 border border-stone-200 hover:bg-stone-50 transition-colors disabled:opacity-50" disabled={producerCount === 0}><Minus size={14}/></button>
               <button onClick={handleAddProducer} className="p-2 border border-stone-200 bg-stone-900 text-white hover:bg-stone-800 transition-colors"><Plus size={14}/></button>
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto flex flex-col gap-3">
+          <div className="flex-1 overflow-y-auto flex flex-col gap-3 min-h-[300px]">
             {producersRef.current.map(p => (
               <div key={p.id} className="p-4 border border-stone-200 bg-stone-50 flex justify-between items-center">
                 <span className="font-mono font-bold text-stone-700">{p.id}</span>
@@ -109,16 +109,16 @@ export default function App() {
         </div>
 
         {/* Center: The Queue */}
-        <div className="flex-1 flex flex-col justify-center relative min-h-[400px]">
+        <div className="flex-1 flex flex-col justify-center relative min-h-[400px] min-w-0 overflow-hidden">
           <h3 className="absolute top-0 left-1/2 -translate-x-1/2 font-mono text-sm font-bold text-stone-400 tracking-widest uppercase">Message Broker Queue</h3>
           <QueueView queue={queue} />
         </div>
 
         {/* Right: Consumers */}
-        <div className="w-full lg:w-1/4 flex flex-col gap-4 border border-stone-200 bg-white p-6">
-          <div className="flex justify-between items-center border-b border-stone-200 pb-4 mb-4">
-            <h2 className="text-xl font-bold flex items-center gap-2"><Settings size={20}/> Consumers</h2>
-            <div className="flex gap-2">
+        <div className="w-full lg:w-1/4 lg:min-w-[320px] shrink-0 flex flex-col gap-4 border border-stone-200 bg-white p-6">
+          <div className="flex justify-between items-center border-b border-stone-200 pb-4 mb-4 gap-4">
+            <h2 className="text-xl font-bold flex items-center gap-2 whitespace-nowrap"><Settings size={20}/> Consumers</h2>
+            <div className="flex gap-2 shrink-0">
               <button onClick={handleRemoveConsumer} className="p-2 border border-stone-200 hover:bg-stone-50 transition-colors disabled:opacity-50" disabled={consumerCount === 0}><Minus size={14}/></button>
               <button onClick={handleAddConsumer} className="p-2 border border-stone-200 bg-orange-500 text-white hover:bg-orange-600 transition-colors"><Plus size={14}/></button>
             </div>

@@ -14,7 +14,7 @@ export function QueueView({ queue }: QueueViewProps) {
 
       <div className="flex gap-2 w-full justify-end overflow-hidden">
         <AnimatePresence mode="popLayout">
-          {queue.map((msg) => (
+          {queue.slice().reverse().map((msg) => (
             <motion.div
               layout
               key={msg.id}
@@ -22,7 +22,7 @@ export function QueueView({ queue }: QueueViewProps) {
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, scale: 0.5, y: -50 }}
               transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              className="w-16 h-24 bg-white border-2 border-stone-900 shadow-[4px_4px_0px_0px_rgba(28,25,23,1)] flex flex-col justify-center items-center flex-shrink-0 relative"
+              className="w-16 h-24 shrink-0 bg-white border-2 border-stone-900 shadow-[4px_4px_0px_0px_rgba(28,25,23,1)] flex flex-col justify-center items-center relative"
             >
               <div className="absolute top-2 w-8 h-1 bg-stone-200"></div>
               <span className="font-mono font-bold text-xs rotate-[-90deg] whitespace-nowrap text-stone-800 tracking-wider">
