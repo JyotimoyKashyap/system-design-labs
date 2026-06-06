@@ -62,7 +62,13 @@ public class ConsoleUI {
             double exponent = -1.0 * bloomFilter.getKHashFunctions() * bloomFilter.getKeysAdded() / bloomFilter.getBitArraySize();
             currentFpr = Math.pow(1 - Math.exp(exponent), bloomFilter.getKHashFunctions());
         }
-        sb.append(String.format("Current FPR        : %.4f%%\n", currentFpr * 100));
+        double targetFprLimit = 0.05; // 5% limit as configured in Main
+        if (currentFpr > targetFprLimit) {
+            // ANSI Red color for crossing limit
+            sb.append(String.format("\033[31mCurrent FPR        : %.4f%%\033[0m\n", currentFpr * 100));
+        } else {
+            sb.append(String.format("Current FPR        : %.4f%%\n", currentFpr * 100));
+        }
         sb.append("==============================================================\n\n");
         
         // Bit Array Visualizer
@@ -72,11 +78,13 @@ public class ConsoleUI {
         
         for (int i = 0; i < m; i++) {
             if (bits.get(i)) {
-                sb.append("█");
+                // ANSI Green without brackets
+                sb.append("\033[32m█\033[0m");
             } else {
+                // Unset bit
                 sb.append("░");
             }
-            // Wrap text every 80 characters so it fits nicely in the terminal
+            // Wrap text every 80 elements so it fits nicely
             if ((i + 1) % 80 == 0) {
                 sb.append("\n");
             }

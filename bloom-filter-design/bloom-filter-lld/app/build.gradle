@@ -34,10 +34,15 @@ java {
 
 application {
     // Define the main class for the application.
-    mainClass = 'bloom.filter.lld.App'
+    mainClass = 'bloom.filter.lld.ui.Main'
 }
 
 tasks.named('test') {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
+}
+
+run {
+    // This allows the Gradle run task to accept terminal input (System.in)
+    standardInput = System.in
 }
