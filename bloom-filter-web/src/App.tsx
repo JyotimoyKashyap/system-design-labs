@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { BloomFilter } from './core/BloomFilter';
 import { BitGrid } from './components/BitGrid';
 import { Plus, Search, RotateCcw } from 'lucide-react';
+import { Button, Input } from '@repo/ui';
 
 export default function App() {
   const filter = useMemo(() => new BloomFilter(128), []);
@@ -57,27 +58,27 @@ export default function App() {
           </p>
 
           <form onSubmit={handleAdd} className="w-full flex flex-col gap-4 mb-8">
-            <input 
+            <Input 
               type="text" 
               value={inputValue}
               onChange={e => setInputValue(e.target.value)}
               placeholder="Enter a word (e.g. apple)"
-              className="w-full px-6 py-4 bg-white border border-stone-200 text-stone-800 placeholder-stone-400 focus:outline-none focus:border-stone-400 focus:ring-0 rounded-none text-lg"
+              className="text-lg"
             />
             
             <div className="flex gap-4">
-              <button type="button" onClick={handleAdd} className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-stone-900 text-white hover:bg-stone-800 rounded-none font-medium transition-colors">
+              <Button type="button" onClick={handleAdd} className="flex-1">
                 <Plus size={18} /> Add
-              </button>
-              <button type="button" onClick={handleCheck} className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-orange-500 text-white hover:bg-orange-600 rounded-none font-medium transition-colors">
+              </Button>
+              <Button type="button" onClick={handleCheck} variant="primary" className="flex-1">
                 <Search size={18} /> Check
-              </button>
+              </Button>
             </div>
           </form>
 
-          <button onClick={handleReset} className="flex items-center gap-2 px-6 py-3 bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 rounded-none font-medium transition-colors text-sm">
+          <Button onClick={handleReset} variant="secondary" className="px-6 py-3 text-sm">
             <RotateCcw size={16} /> Reset Filter
-          </button>
+          </Button>
 
           {/* Status Log */}
           {log && (

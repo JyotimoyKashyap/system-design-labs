@@ -4,6 +4,7 @@ import { Producer } from './simulation/Producer';
 import { ConsumerGroup } from './simulation/ConsumerGroup';
 import { PartitionGrid } from './components/PartitionGrid';
 import { Plus, Minus, Server, Users, Settings } from 'lucide-react';
+import { Button } from '@repo/ui';
 
 export default function App() {
   const brokerRef = useRef<Broker>(new Broker(3)); // 3 Partitions
@@ -83,12 +84,13 @@ export default function App() {
               <h2 className="text-xl font-bold flex items-center gap-2 whitespace-nowrap"><Server size={20}/> Producer</h2>
             </div>
             <p className="text-sm text-stone-500 mb-4">Continuously publish data to the Kafka topic. The broker will round-robin assign them to partitions.</p>
-            <button 
+            <Button 
               onClick={toggleProducer} 
-              className={`w-full p-4 flex items-center justify-center gap-2 border-2 transition-colors font-bold ${isProducing ? 'bg-rose-100 border-rose-500 text-rose-900' : 'bg-stone-900 border-stone-900 text-white hover:bg-stone-800'}`}
+              variant={isProducing ? "secondary" : "default"}
+              className={`w-full ${isProducing ? 'bg-rose-100 border-rose-500 text-rose-900 hover:bg-rose-200' : ''}`}
             >
               {isProducing ? 'Stop Publishing' : 'Start Publishing Stream'}
-            </button>
+            </Button>
           </div>
 
           {/* Consumer Group Panel */}
@@ -96,8 +98,8 @@ export default function App() {
             <div className="flex justify-between items-center border-b border-stone-200 pb-4 mb-4 gap-4">
               <h2 className="text-xl font-bold flex items-center gap-2 whitespace-nowrap truncate"><Users size={20} className="shrink-0"/> Consumer Group: CG-1</h2>
               <div className="flex gap-2 shrink-0">
-                <button onClick={handleRemoveConsumer} className="p-2 border border-stone-200 hover:bg-stone-50 transition-colors disabled:opacity-50" disabled={consumerCount === 0}><Minus size={14}/></button>
-                <button onClick={handleAddConsumer} className="p-2 border border-stone-200 bg-orange-500 text-white hover:bg-orange-600 transition-colors"><Plus size={14}/></button>
+                <Button onClick={handleRemoveConsumer} variant="secondary" className="px-3 py-3" disabled={consumerCount === 0}><Minus size={16}/></Button>
+                <Button onClick={handleAddConsumer} variant="primary" className="px-3 py-3"><Plus size={16}/></Button>
               </div>
             </div>
             

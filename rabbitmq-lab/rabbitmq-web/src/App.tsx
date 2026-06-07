@@ -3,7 +3,8 @@ import { Broker, type Message } from './simulation/Broker';
 import { Producer } from './simulation/Producer';
 import { Consumer } from './simulation/Consumer';
 import { QueueView } from './components/QueueView';
-import { Plus, Minus, Server, Settings, Activity } from 'lucide-react';
+import { Plus, Minus, Server, Settings, Activity, Play, RotateCcw, Loader2 } from 'lucide-react';
+import { Button } from '@repo/ui';
 
 export default function App() {
   const brokerRef = useRef<Broker>(new Broker());
@@ -13,6 +14,7 @@ export default function App() {
   const [processedCount, setProcessedCount] = useState(0);
   const [producerCount, setProducerCount] = useState(0);
   const [consumerCount, setConsumerCount] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
   
   const producersRef = useRef<Producer[]>([]);
   const consumersRef = useRef<Consumer[]>([]);
@@ -27,21 +29,45 @@ export default function App() {
       setTick(t => t + 1);
     };
 
-    // Initial setup: 1 Producer, 2 Consumers
-    handleAddProducer();
-    handleAddConsumer();
-    handleAddConsumer();
-
     return () => {
       producersRef.current.forEach(p => p.stop());
       consumersRef.current.forEach(c => c.stop());
     };
   }, []);
 
+  const handleStart = () => {
+    if (producersRef.current.length === 0 && consumersRef.current.length === 0) {
+      const p = new Producer(`P-1`, broker);
+      producersRef.current.push(p);
+      setProducerCount(1);
+      p.start();
+
+      const c1 = new Consumer(`C-1`, broker);
+      c1.onStateChange = () => setTick(t => t + 1);
+      consumersRef.current.push(c1);
+      c1.start();
+
+      const c2 = new Consumer(`C-2`, broker);
+      c2.onStateChange = () => setTick(t => t + 1);
+      consumersRef.current.push(c2);
+      c2.start();
+      
+      setConsumerCount(2);
+    } else {
+      producersRef.current.forEach(p => p.start());
+      consumersRef.current.forEach(c => c.start());
+    }
+    setIsRunning(true);
+  };
+
+  const handleReset = () => {
+    window.location.reload();
+  };
+
   const handleAddProducer = () => {
     const p = new Producer(`P-${producersRef.current.length + 1}`, broker);
     producersRef.current.push(p);
-    p.start();
+    if (isRunning) p.start();
     setProducerCount(producersRef.current.length);
   };
 
@@ -57,7 +83,7 @@ export default function App() {
     // Bind consumer state changes to react re-renders
     c.onStateChange = () => setTick(t => t + 1);
     consumersRef.current.push(c);
-    c.start();
+    if (isRunning) c.start();
     setConsumerCount(consumersRef.current.length);
   };
 
@@ -74,9 +100,18 @@ export default function App() {
       <header className="p-6 lg:p-8 border-b border-stone-300 bg-[#fdfcfb] flex flex-col lg:flex-row justify-between lg:items-end gap-6 z-10">
         <div>
           <h1 className="text-4xl font-serif italic text-stone-900 mb-2 tracking-tight">RabbitMQ Visualizer</h1>
-          <p className="text-stone-600 font-medium max-w-2xl">
+          <p className="text-stone-600 font-medium max-w-2xl mb-4">
             Simulating the <strong>Competing Consumers</strong> pattern. Producers generate messages asynchronously, pushing them onto a central message broker queue. Consumers pull messages off the queue for processing. 
           </p>
+          <div className="flex gap-4">
+            <Button onClick={handleStart} variant="primary" disabled={isRunning}>
+              {isRunning ? <Loader2 size={18} className="animate-spin" /> : <Play size={18} />}
+              {isRunning ? 'Simulation Running' : 'Start Simulation'}
+            </Button>
+            <Button onClick={handleReset} variant="secondary">
+              <RotateCcw size={18} /> Reset
+            </Button>
+          </div>
         </div>
         <div className="text-left lg:text-right text-sm font-mono text-stone-500">
           <p>Total Processed: <span className="text-stone-900 font-bold text-lg">{processedCount}</span></p>
@@ -92,8 +127,8 @@ export default function App() {
           <div className="flex justify-between items-center border-b border-stone-300 pb-4 mb-6 gap-4">
             <h2 className="text-xl font-bold flex items-center gap-2 whitespace-nowrap"><Server size={20}/> Producers</h2>
             <div className="flex gap-2 shrink-0">
-              <button onClick={handleRemoveProducer} className="p-2 border-2 border-stone-900 hover:bg-stone-100 transition-all disabled:opacity-50 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(28,25,23,1)] active:translate-y-[2px] active:shadow-none" disabled={producerCount === 0}><Minus size={14}/></button>
-              <button onClick={handleAddProducer} className="p-2 border-2 border-stone-900 bg-stone-900 text-white hover:bg-stone-800 transition-all shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(28,25,23,1)] active:translate-y-[2px] active:shadow-none"><Plus size={14}/></button>
+              <Button onClick={handleRemoveProducer} variant="secondary" className="px-3 py-3" disabled={producerCount === 0}><Minus size={16}/></Button>
+              <Button onClick={handleAddProducer} className="px-3 py-3"><Plus size={16}/></Button>
             </div>
           </div>
           
@@ -119,8 +154,8 @@ export default function App() {
           <div className="flex justify-between items-center border-b border-stone-300 pb-4 mb-6 gap-4">
             <h2 className="text-xl font-bold flex items-center gap-2 whitespace-nowrap"><Settings size={20}/> Consumers</h2>
             <div className="flex gap-2 shrink-0">
-              <button onClick={handleRemoveConsumer} className="p-2 border-2 border-stone-900 hover:bg-stone-100 transition-all disabled:opacity-50 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(28,25,23,1)] active:translate-y-[2px] active:shadow-none" disabled={consumerCount === 0}><Minus size={14}/></button>
-              <button onClick={handleAddConsumer} className="p-2 border-2 border-stone-900 bg-orange-500 text-white hover:bg-orange-600 transition-all shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(28,25,23,1)] active:translate-y-[2px] active:shadow-none"><Plus size={14}/></button>
+              <Button onClick={handleRemoveConsumer} variant="secondary" className="px-3 py-3" disabled={consumerCount === 0}><Minus size={16}/></Button>
+              <Button onClick={handleAddConsumer} variant="primary" className="px-3 py-3"><Plus size={16}/></Button>
             </div>
           </div>
           

@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { ClusterManager } from './simulation/ClusterManager';
 import type { NodeState } from './simulation/types';
 import { ClusterView } from './components/ClusterView';
-import { Play, RotateCcw } from 'lucide-react';
+import { Play, RotateCcw, Loader2 } from 'lucide-react';
+import { Button } from '@repo/ui';
 
 function App() {
   const clusterSize = 5;
@@ -49,14 +50,13 @@ function App() {
         </p>
 
         <div className="flex gap-4 mb-12">
-          {!isRunning && (
-            <button onClick={handleStart} className="flex items-center gap-2 px-8 py-4 bg-stone-900 text-white hover:bg-stone-800 border-2 border-stone-900 shadow-[4px_4px_0px_0px_rgba(28,25,23,1)] rounded-none font-bold transition-all hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] active:translate-y-[4px] active:shadow-none">
-              <Play size={18} /> Start Simulation
-            </button>
-          )}
-          <button onClick={handleReset} className="flex items-center gap-2 px-8 py-4 bg-white text-stone-900 border-2 border-stone-900 shadow-[4px_4px_0px_0px_rgba(28,25,23,1)] hover:bg-stone-50 rounded-none font-bold transition-all hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] active:translate-y-[4px] active:shadow-none">
+          <Button onClick={handleStart} variant="primary" disabled={isRunning}>
+            {isRunning ? <Loader2 size={18} className="animate-spin" /> : <Play size={18} />}
+            {isRunning ? 'Simulation Running' : 'Start Simulation'}
+          </Button>
+          <Button onClick={handleReset} variant="secondary">
             <RotateCcw size={18} /> Reset
-          </button>
+          </Button>
         </div>
 
         {/* Legends moved to the left panel to keep simulation clean */}

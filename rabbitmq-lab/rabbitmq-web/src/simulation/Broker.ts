@@ -18,9 +18,14 @@ export class Broker {
 
   public consume(): Message | null {
     if (this.queue.length > 0) {
-      const msg = this.queue.shift();
-      this.notify();
-      return msg || null;
+      // Artificially delay consumption for educational purposes 
+      // so users can actually see the message flow through the queue UI!
+      const oldestMessage = this.queue[0];
+      if (Date.now() - oldestMessage.createdAt >= 600) {
+        const msg = this.queue.shift();
+        this.notify();
+        return msg || null;
+      }
     }
     return null;
   }

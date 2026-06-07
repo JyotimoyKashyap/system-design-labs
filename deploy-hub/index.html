@@ -5,151 +5,219 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>System Design Labs</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;1,600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Playfair+Display:ital,wght@0,600;1,600&display=swap');
 
         body {
             margin: 0;
             padding: 0;
             font-family: 'Inter', sans-serif;
             background-color: #fdfcfb;
-            color: #333;
+            background-image: 
+              linear-gradient(to right, rgba(28, 25, 23, 0.05) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(28, 25, 23, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            color: #1c1917;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             min-height: 100vh;
         }
 
         .container {
-            max-width: 800px;
+            max-width: 900px;
             width: 90%;
-            padding: 40px;
+            padding: 80px 0;
         }
 
         h1 {
             font-family: 'Playfair Display', serif;
-            font-size: 3rem;
+            font-size: 4rem;
             font-style: italic;
             color: #1c1917;
-            margin-bottom: 10px;
+            margin: 0 0 16px 0;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
         }
 
         p.subtitle {
-            font-size: 1.1rem;
-            color: #78716c;
-            margin-bottom: 40px;
-            font-weight: 300;
+            font-size: 1.25rem;
+            color: #57534e;
+            margin-bottom: 60px;
+            font-weight: 500;
+            max-width: 600px;
+            line-height: 1.6;
         }
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 32px;
         }
 
         .card {
             background: white;
-            border: 1px solid #e7e5e4;
-            padding: 24px;
+            border: 3px solid #1c1917;
+            padding: 32px;
             text-decoration: none;
             color: inherit;
-            display: block;
-            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.15s ease;
+            box-shadow: 8px 8px 0px 0px rgba(28,25,23,1);
+            position: relative;
         }
 
         .card:hover {
-            border-color: #d6d3d1;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
-            transform: translateY(-2px);
+            transform: translate(-4px, -4px);
+            box-shadow: 12px 12px 0px 0px rgba(28,25,23,1);
         }
 
         .card h2 {
-            margin: 0 0 10px 0;
-            font-size: 1.25rem;
-            color: #292524;
+            margin: 0 0 12px 0;
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: #1c1917;
+            letter-spacing: -0.01em;
         }
 
         .card p {
-            margin: 0;
-            color: #57534e;
-            font-size: 0.95rem;
-            line-height: 1.5;
+            margin: 0 0 24px 0;
+            color: #44403c;
+            font-size: 1rem;
+            line-height: 1.6;
+            flex-grow: 1;
         }
         
         .tag {
             display: inline-block;
-            padding: 4px 10px;
-            background: #f1f5f9;
-            color: #475569;
+            padding: 6px 12px;
+            background: #f97316;
+            color: white;
+            border: 2px solid #1c1917;
             font-size: 0.75rem;
-            font-weight: 600;
-            margin-bottom: 15px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 24px;
+            box-shadow: 2px 2px 0px 0px rgba(28,25,23,1);
+            align-self: flex-start;
         }
+
+        .card-actions {
+            display: flex;
+            gap: 16px;
+            margin-top: auto;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 24px;
+            border: 3px solid #000;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: all 0.15s ease;
+            box-shadow: 4px 4px 0px 0px #000;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px 0px #000;
+        }
+
+        .btn:active {
+            transform: translate(4px, 4px);
+            box-shadow: none;
+        }
+
+        .btn-primary {
+            background: #FF6B6B;
+            color: #000;
+        }
+
+        .btn-secondary {
+            background: #4ECDC4;
+            color: #000;
+        }
+
+
     </style>
 </head>
 <body>
 
     <div class="container">
         <h1>System Design Labs</h1>
-        <p class="subtitle">A collection of interactive distributed systems and algorithm visualizers.</p>
+        <p class="subtitle">A collection of interactive distributed systems and algorithm visualizers. Choose a lab below to launch its interactive simulation environment.</p>
 
         <div class="grid">
             <!-- Raft Visualizer -->
             <div class="card">
-                <span class="tag">React / TypeScript</span>
+                <span class="tag">Consensus / State</span>
                 <h2>Raft Consensus Visualizer</h2>
                 <p>Interactive simulation of the Raft leader election algorithm featuring asynchronous network delays and event-loop multithreading.</p>
-                <div style="margin-top: 20px; display: flex; gap: 10px;">
-                    <a href="./leader-election-web/" style="display: inline-block; padding: 8px 16px; background: #1c1917; color: white; text-decoration: none; font-size: 0.85rem; font-weight: 500;">Launch App</a>
-                    <a href="./leader-election-web/docs.html" style="display: inline-block; padding: 8px 16px; background: white; color: #1c1917; border: 1px solid #d6d3d1; text-decoration: none; font-size: 0.85rem; font-weight: 500;">Read Docs</a>
+                <div class="card-actions">
+                    <a href="./leader-election-web/" class="btn btn-primary">Launch App</a>
+                    <a href="./leader-election-web/docs.html" class="btn btn-secondary">Read Docs</a>
                 </div>
             </div>
 
             <!-- Bloom Filter Visualizer -->
             <div class="card">
-                <span class="tag">React / TypeScript</span>
+                <span class="tag" style="background: #10b981;">Data Structures</span>
                 <h2>Bloom Filter Visualizer</h2>
                 <p>Interactive implementation and visualization of probabilistic data structures used for high-performance set membership testing.</p>
-                <div style="margin-top: 20px; display: flex; gap: 10px;">
-                    <a href="./bloom-filter-web/" style="display: inline-block; padding: 8px 16px; background: #1c1917; color: white; text-decoration: none; font-size: 0.85rem; font-weight: 500;">Launch App</a>
-                    <a href="./bloom-filter-web/docs.html" style="display: inline-block; padding: 8px 16px; background: white; color: #1c1917; border: 1px solid #d6d3d1; text-decoration: none; font-size: 0.85rem; font-weight: 500;">Read Docs</a>
+                <div class="card-actions">
+                    <a href="./bloom-filter-web/" class="btn btn-primary">Launch App</a>
+                    <a href="./bloom-filter-web/docs.html" class="btn btn-secondary">Read Docs</a>
                 </div>
             </div>
 
             <!-- RabbitMQ Visualizer -->
             <div class="card">
-                <span class="tag">Message Broker / Spring Boot</span>
+                <span class="tag" style="background: #8b5cf6;">Message Broker</span>
                 <h2>RabbitMQ Visualizer</h2>
                 <p>A beautifully animated demonstration of the Competing Consumers Pattern. Spawn producers and workers dynamically to watch horizontal scaling in action!</p>
-                <div style="margin-top: 20px; display: flex; gap: 10px;">
-                    <a href="./rabbitmq-web/" style="display: inline-block; padding: 8px 16px; background: #1c1917; color: white; text-decoration: none; font-size: 0.85rem; font-weight: 500;">Launch App</a>
-                    <a href="./rabbitmq-web/docs.html" style="display: inline-block; padding: 8px 16px; background: white; color: #1c1917; border: 1px solid #d6d3d1; text-decoration: none; font-size: 0.85rem; font-weight: 500;">Read Docs</a>
+                <div class="card-actions">
+                    <a href="./rabbitmq-web/" class="btn btn-primary">Launch App</a>
+                    <a href="./rabbitmq-web/docs.html" class="btn btn-secondary">Read Docs</a>
                 </div>
             </div>
 
-            <!-- DB Scaling -->
-            <a href="./db-scaling/" class="card">
-                <span class="tag">Database / Infrastructure</span>
-                <h2>DB Scaling Lab</h2>
-                <p>A database replication setup demonstrating Master-Slave Architecture with read/write splitting to horizontally scale throughput.</p>
-            </a>
-
             <!-- Apache Kafka Visualizer -->
             <div class="card">
-                <span class="tag">Event Streaming / Architecture</span>
+                <span class="tag" style="background: #ef4444;">Event Streaming</span>
                 <h2>Apache Kafka Visualizer</h2>
-                <p>Simulating an Append-Only Log with Consumer Groups. Watch messages append immutably to partitions while Consumer Groups rebalance partition ownership to scale throughput!</p>
-                <div style="margin-top: 20px; display: flex; gap: 10px;">
-                    <a href="./kafka-web/" style="display: inline-block; padding: 8px 16px; background: #1c1917; color: white; text-decoration: none; font-size: 0.85rem; font-weight: 500;">Launch App</a>
-                    <a href="./kafka-web/docs.html" style="display: inline-block; padding: 8px 16px; background: white; color: #1c1917; border: 1px solid #d6d3d1; text-decoration: none; font-size: 0.85rem; font-weight: 500;">Read Docs</a>
+                <p>Simulating an Append-Only Log with Consumer Groups. Watch messages append immutably to partitions while Consumer Groups rebalance partition ownership dynamically!</p>
+                <div class="card-actions">
+                    <a href="./kafka-web/" class="btn btn-primary">Launch App</a>
+                    <a href="./kafka-web/docs.html" class="btn btn-secondary">Read Docs</a>
+                </div>
+            </div>
+            
+            <!-- DB Scaling -->
+            <div class="card">
+                <span class="tag" style="background: #0ea5e9;">Infrastructure</span>
+                <h2>DB Scaling Lab</h2>
+                <p>A database replication setup demonstrating Master-Slave Architecture with read/write splitting to horizontally scale throughput.</p>
+                <div class="card-actions">
+                    <a href="./db-scaling/docs.html" class="btn btn-secondary">Read Docs</a>
                 </div>
             </div>
 
             <!-- Redis Cache -->
-            <a href="./redis-cache/" class="card">
-                <span class="tag">In-Memory Cache / Redis</span>
+            <div class="card">
+                <span class="tag" style="background: #f43f5e;">Caching</span>
                 <h2>Redis Cache Lab</h2>
                 <p>Demonstrates the Cache-Aside Pattern using Redis and Spring Boot to dramatically reduce database load using LRU eviction.</p>
-            </a>
+                <div class="card-actions">
+                    <a href="./redis-cache/docs.html" class="btn btn-secondary">Read Docs</a>
+                </div>
+            </div>
         </div>
     </div>
 
