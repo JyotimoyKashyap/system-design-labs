@@ -1,0 +1,19 @@
+version: 2
+updates:
+  # Check for npm dependency updates (covers the entire monorepo due to root package.json workspaces)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+
+  # Check for Docker base image updates in the Dockerfile
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
