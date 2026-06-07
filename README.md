@@ -1,8 +1,9 @@
 # System Design Labs 🚀
 
 ![Deploy Status](https://github.com/JyotimoyKashyap/system-design-labs/actions/workflows/deploy-pages.yml/badge.svg)
-![GitHub License](https://img.shields.io/github/license/JyotimoyKashyap/system-design-labs)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Docker Containerized](https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker&logoColor=white)
+
 Welcome to my System Design Mono-repo! This repository is a collection of various experimental projects, proof-of-concepts, and lab environments where I explore and implement core system design concepts.
 
 🌟 **Interactive Web Visualizers:** Check out the live deployments of these algorithms here: **[https://jyotimoykashyap.github.io/system-design-labs/](https://jyotimoykashyap.github.io/system-design-labs/)**
