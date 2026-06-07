@@ -1,15 +1,16 @@
-name: Deploy Mono-Repo to GitHub Pages
+name: Deploy Mono-Repo to GitHub Pages & GHCR
 
 on:
   push:
     branches: ["main"]
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages and GHCR
 permissions:
   contents: read
   pages: write
   id-token: write
+  packages: write  # Required to push to GitHub Container Registry
 
 # Allow only one concurrent deployment
 concurrency:
@@ -17,136 +18,32 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
+  build-and-publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Build Mono-Repo Payload
+      - name: Build, Push, and Extract Static Hub
         run: |
-          echo "Starting Mono-Repo Build Process..."
+          # Convert repository name to lowercase for Docker tag compatibility
+          REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_NAME="ghcr.io/$REPO_NAME:latest"
           
-          # 1. Create the central build directory
+          echo "Building Docker Image: $IMAGE_NAME..."
+          docker build -t $IMAGE_NAME .
+          
+          echo "Pushing Docker Image to GHCR..."
+          docker push $IMAGE_NAME
+          
+          echo "Extracting compiled static assets for GitHub Pages deployment..."
           mkdir -p public-pages
-          
-          # 2. Copy the central Hub (Landing Page)
-          cp -R deploy-hub/* public-pages/
-          
-          # 3. Build & Copy Leader Election Visualizer
-          echo "Building Leader Election Visualizer..."
-          cd leader-election-web
-          npm install
-          npx vite build --base=/system-design-labs/leader-election-web/
-          cd ..
-          mkdir -p public-pages/leader-election-web
-          cp -R leader-election-web/dist/* public-pages/leader-election-web/
-
-          # 4. Build & Copy Bloom Filter Visualizer
-          echo "Building Bloom Filter Visualizer..."
-          cd bloom-filter-web
-          npm install
-          npx vite build --base=/system-design-labs/bloom-filter-web/
-          cd ..
-          mkdir -p public-pages/bloom-filter-web
-          cp -R bloom-filter-web/dist/* public-pages/bloom-filter-web/
-
-          # 5. Build & Copy RabbitMQ Visualizer
-          echo "Building RabbitMQ Visualizer..."
-          cd rabbitmq-lab/rabbitmq-web
-          npm install
-          npx vite build --base=/system-design-labs/rabbitmq-web/
-          cd ../..
-          mkdir -p public-pages/rabbitmq-web
-          cp -R rabbitmq-lab/rabbitmq-web/dist/* public-pages/rabbitmq-web/
-
-          # 6. Build & Copy Apache Kafka Visualizer
-          echo "Building Apache Kafka Visualizer..."
-          cd apache-kafka/kafka-web
-          npm install
-          npx vite build --base=/system-design-labs/kafka-web/
-          cd ../..
-          mkdir -p public-pages/kafka-web
-          cp -R apache-kafka/kafka-web/dist/* public-pages/kafka-web/
-
-          # 7. Convert Backend Labs READMEs to GitHub-styled HTML
-          echo "Converting Backend Labs..."
-          npm install -g marked
-          
-          # Create HTML Wrapper
-          cat << 'EOF' > template.html
-          <!DOCTYPE html>
-          <html>
-          <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.0/github-markdown-light.min.css">
-          <style>
-            body { background-color: #fdfcfb; }
-            .markdown-body {
-              box-sizing: border-box;
-              min-width: 200px;
-              max-width: 980px;
-              margin: 0 auto;
-              padding: 45px;
-              background-color: white;
-              border: 1px solid #e7e5e4;
-              margin-top: 40px;
-              margin-bottom: 40px;
-              border-radius: 6px;
-            }
-          </style>
-          </head>
-          <body class="markdown-body">
-          EOF
-
-          # Removed apache-kafka from the backend loop since it is now a web visualizer
-          for lab in db-scaling redis-cache; do
-            if [ -f "$lab/README.md" ]; then
-              mkdir -p public-pages/$lab
-              cat template.html > public-pages/$lab/index.html
-              marked $lab/README.md >> public-pages/$lab/index.html
-              echo "</body></html>" >> public-pages/$lab/index.html
-              # Copy image assets if they exist
-              cp -R $lab/assets public-pages/$lab/assets 2>/dev/null || true
-            fi
-          done
-
-          # 8. Convert Web Visualizer READMEs to docs.html
-          echo "Converting Visualizer Docs..."
-          if [ -f "leader-election-web/README.md" ]; then
-            cat template.html > public-pages/leader-election-web/docs.html
-            marked leader-election-web/README.md >> public-pages/leader-election-web/docs.html
-            echo "</body></html>" >> public-pages/leader-election-web/docs.html
-          fi
-          
-          if [ -f "bloom-filter-web/README.md" ]; then
-            cat template.html > public-pages/bloom-filter-web/docs.html
-            marked bloom-filter-web/README.md >> public-pages/bloom-filter-web/docs.html
-            echo "</body></html>" >> public-pages/bloom-filter-web/docs.html
-          fi
-
-          if [ -f "rabbitmq-lab/rabbitmq-web/README.md" ]; then
-            cat template.html > public-pages/rabbitmq-web/docs.html
-            marked rabbitmq-lab/rabbitmq-web/README.md >> public-pages/rabbitmq-web/docs.html
-            echo "</body></html>" >> public-pages/rabbitmq-web/docs.html
-          fi
-
-          if [ -f "apache-kafka/kafka-web/README.md" ]; then
-            cat template.html > public-pages/kafka-web/docs.html
-            marked apache-kafka/kafka-web/README.md >> public-pages/kafka-web/docs.html
-            echo "</body></html>" >> public-pages/kafka-web/docs.html
-          fi
-          # npm install
-          # npx vite build --base=/system-design-labs/paxos-visualizer/
-          # cd ..
-          # mkdir -p public-pages/paxos-visualizer
-          # cp -R paxos-visualizer/dist/* public-pages/paxos-visualizer/
+          docker create --name extract-container $IMAGE_NAME
+          docker cp extract-container:/usr/share/nginx/html/. ./public-pages/
+          docker rm extract-container
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -158,7 +55,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: build
+    needs: build-and-publish
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
