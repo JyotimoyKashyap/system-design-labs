@@ -1,0 +1,13 @@
+{
+  "name": "system-design-labs",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "*-web",
+    "rabbitmq-lab/*-web",
+    "apache-kafka/*-web",
+    "apache-kafka/consumer-node",
+    "db-scaling/app",
+    "deploy-hub"
+  ]
+}
