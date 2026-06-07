@@ -40,4 +40,4 @@ All backend labs and frontend visualizers in this repository rely on containeriz
 - [Docker Compose](https://docs.docker.com/compose/)
 
 ## 📜 License
-This repository is for personal learning and exploration. Feel free to explore the code!
+This repository is open-sourced software licensed under the [MIT license](LICENSE). Feel free to use, explore, and modify the code!
