@@ -4,6 +4,16 @@ Welcome to my System Design Mono-repo! This repository is a collection of variou
 
 🌟 **Interactive Web Visualizers:** Check out the live deployments of these algorithms here: **[https://jyotimoykashyap.github.io/system-design-labs/](https://jyotimoykashyap.github.io/system-design-labs/)**
 
+## 🚀 Running the Hub Locally
+
+The entire Deployment Hub and all React frontend visualizers are fully containerized! You can run the entire frontend ecosystem and generated documentation locally with a single command without worrying about `npm` dependencies:
+
+```bash
+docker compose up --build -d
+```
+
+Once the container is built and running, navigate to **[http://localhost:3000](http://localhost:3000)** to access the interactive labs!
+
 ## 📂 Projects Overview
 
 ### 1. [Raft Consensus Visualizer](./leader-election-web)
@@ -25,7 +35,7 @@ A complete local environment to explore message streams with Apache Kafka (KRaft
 A demonstration of the **Cache-Aside Pattern** using Redis and Spring Boot. This lab shows how to dramatically reduce database load and response times by caching frequently accessed records (posts) in an in-memory Redis store with an LRU eviction policy.
 
 ## 🛠 Prerequisites
-Most backend labs in this repository rely on containerization to simulate distributed systems locally. Make sure you have the following installed:
+All backend labs and frontend visualizers in this repository rely on containerization to simulate distributed systems locally without the hassle of local dependencies. Make sure you have the following installed:
 - [Docker](https://www.docker.com/)
 - [Docker Compose](https://docs.docker.com/compose/)
 

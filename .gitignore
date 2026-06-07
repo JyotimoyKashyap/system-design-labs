@@ -19,3 +19,12 @@ npm-debug.log
 .vscode/
 *.iml
 .DS_Store
+
+# Auto-generated docs and assets
+deploy-hub/leader-election-web/
+deploy-hub/bloom-filter-web/
+deploy-hub/rabbitmq-web/
+deploy-hub/kafka-web/
+deploy-hub/db-scaling/
+deploy-hub/redis-cache/
+local-hub/
