@@ -8,6 +8,7 @@
     "apache-kafka/*-web",
     "apache-kafka/consumer-node",
     "db-scaling/app",
+    "consistent-hashing/*-web",
     "deploy-hub"
   ]
 }
