@@ -23,6 +23,7 @@ RUN cd leader-election-web && npx vite build --base=./
 RUN cd bloom-filter-web && npx vite build --base=./
 RUN cd rabbitmq-lab/rabbitmq-web && npx vite build --base=./
 RUN cd apache-kafka/kafka-web && npx vite build --base=./
+RUN cd consistent-hashing/consistent-hashing-web && npx vite build --base=./
 
 # Generate Documentation HTML
 RUN ./scripts/build-docs.sh
@@ -38,6 +39,7 @@ COPY --from=builder /app/leader-election-web/dist /usr/share/nginx/html/leader-e
 COPY --from=builder /app/bloom-filter-web/dist /usr/share/nginx/html/bloom-filter-web
 COPY --from=builder /app/rabbitmq-lab/rabbitmq-web/dist /usr/share/nginx/html/rabbitmq-web
 COPY --from=builder /app/apache-kafka/kafka-web/dist /usr/share/nginx/html/kafka-web
+COPY --from=builder /app/consistent-hashing/consistent-hashing-web/dist /usr/share/nginx/html/consistent-hashing-web
 
 # Expose port 80 (Nginx default)
 EXPOSE 80

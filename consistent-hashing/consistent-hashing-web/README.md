@@ -1,73 +1,31 @@
-# React + TypeScript + Vite
+# Consistent Hashing Visualizer ⭕️
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A beautiful, interactive visualizer demonstrating the **Consistent Hashing** algorithm, designed to distribute data seamlessly across nodes in a cluster!
 
-Currently, two official plugins are available:
+![Aesthetic](https://img.shields.io/badge/Aesthetic-Brutalist-fdfcfb)
+![Tech Stack](https://img.shields.io/badge/Stack-React%20%7C%20TypeScript%20%7C%20Vite-blue)
+![Styling](https://img.shields.io/badge/Styling-Tailwind%20v4%20%7C%20Framer%20Motion-emerald)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🎯 What is Consistent Hashing?
 
-## React Compiler
+In traditional hashing, if you have `N` servers, you might assign data to servers using `hash(key) % N`. However, if you add or remove a server, `N` changes, causing almost all data to be re-routed!
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**Consistent Hashing** solves this by mapping both the **data** and the **servers (nodes)** onto a conceptual "ring" (a hash space). Data is assigned to the first node it encounters by moving clockwise around the ring. This guarantees that when a node is added or removed, only a small fraction of keys (`1/N`) needs to be remapped, enabling massive horizontal scalability for databases and caches (like Redis or Cassandra).
 
-## Expanding the ESLint configuration
+## ✨ Features
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Interactive Ring Layout**: A clean, 16-slot circular topology visualizing the hash space.
+- **Dynamic Node Management**: Add and remove storage nodes dynamically. Watch them snap onto the ring based on their hash value!
+- **Simulation Loop**: Spawn simulated data traffic. Packets appear at their hashed coordinate on the ring and visually traverse the perimeter clockwise until they land at their assigned node.
+- **Paper Brutalist UI**: A raw, unboxed, sharp aesthetic using Tailwind v4. 
+- **Flawless Trigonometric Animation**: Data packets traverse the ring using native $x, y$ trigonometric calculations (`Math.cos` / `Math.sin`) in `framer-motion`, completely bypassing browser SVG rotation bugs.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🧠 Low-Level Design (TypeScript)
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+This web visualizer flawlessly replicates the backend Java logic entirely in the browser:
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. **`HashUtils.ts`:** Implements the fast `FNV-1a` string hashing logic to distribute keys evenly across the ring.
+2. **`ConsistentHashing.ts`:** A decoupled class that manages the virtual ring, sorts nodes by hash, and implements binary search to quickly resolve `getTargetNode(hash)`.
+3. **`HashRing.tsx`:** Uses `framer-motion` to orchestrate the topological layout and data packet physics.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
