@@ -56,6 +56,11 @@ The `deploy-hub/index.html` file serves as the unified landing page. It is fully
   ```
 - You do **not** need to touch `deploy-hub/index.html`. It will automatically fetch and render the new card based on the JSON.
 
-## 5. Verify and Commit
+## 5. Update the Root README
+The main repository `README.md` tracks all available labs.
+- Add a new numbered entry under the `## 📂 Projects Overview` section.
+- Provide a clear, one-sentence description and link to the correct subdirectory.
+
+## 6. Verify and Commit
 1. Verify the pipeline locally by running `docker build -t test-deploy .` at the root of the repository. Ensure all steps complete successfully.
 2. Commit the changes. Once pushed to the `main` branch, the GitHub Action will automatically run the build, extract the generated `deploy-hub` assets, and publish them to GitHub Pages.

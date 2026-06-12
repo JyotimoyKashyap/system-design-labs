@@ -38,6 +38,9 @@ A complete local environment to explore message streams with Apache Kafka (KRaft
 ### 6. [Redis Cache Lab](./redis-cache)
 A demonstration of the **Cache-Aside Pattern** using Redis and Spring Boot. This lab shows how to dramatically reduce database load and response times by caching frequently accessed records (posts) in an in-memory Redis store with an LRU eviction policy.
 
+### 7. [Consistent Hashing Visualizer](./consistent-hashing)
+Interactive demonstration of hash space partitioning. Watch how adding or removing nodes elegantly minimizes data redistribution across the ring topology, enabling massive horizontal scalability!
+
 ## 🛠 Prerequisites
 All backend labs and frontend visualizers in this repository rely on containerization to simulate distributed systems locally without the hassle of local dependencies. Make sure you have the following installed:
 - [Docker](https://www.docker.com/)
