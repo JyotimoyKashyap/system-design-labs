@@ -154,72 +154,40 @@
         <h1>System Design Labs</h1>
         <p class="subtitle">A collection of interactive distributed systems and algorithm visualizers. Choose a lab below to launch its interactive simulation environment.</p>
 
-        <div class="grid">
-            <!-- Raft Visualizer -->
-            <div class="card">
-                <span class="tag">Consensus / State</span>
-                <h2>Raft Consensus Visualizer</h2>
-                <p>Interactive simulation of the Raft leader election algorithm featuring asynchronous network delays and event-loop multithreading.</p>
-                <div class="card-actions">
-                    <a href="./leader-election-web/" class="btn btn-primary">Launch App</a>
-                    <a href="./leader-election-web/docs.html" class="btn btn-secondary">Read Docs</a>
-                </div>
-            </div>
-
-            <!-- Bloom Filter Visualizer -->
-            <div class="card">
-                <span class="tag" style="background: #10b981;">Data Structures</span>
-                <h2>Bloom Filter Visualizer</h2>
-                <p>Interactive implementation and visualization of probabilistic data structures used for high-performance set membership testing.</p>
-                <div class="card-actions">
-                    <a href="./bloom-filter-web/" class="btn btn-primary">Launch App</a>
-                    <a href="./bloom-filter-web/docs.html" class="btn btn-secondary">Read Docs</a>
-                </div>
-            </div>
-
-            <!-- RabbitMQ Visualizer -->
-            <div class="card">
-                <span class="tag" style="background: #8b5cf6;">Message Broker</span>
-                <h2>RabbitMQ Visualizer</h2>
-                <p>A beautifully animated demonstration of the Competing Consumers Pattern. Spawn producers and workers dynamically to watch horizontal scaling in action!</p>
-                <div class="card-actions">
-                    <a href="./rabbitmq-web/" class="btn btn-primary">Launch App</a>
-                    <a href="./rabbitmq-web/docs.html" class="btn btn-secondary">Read Docs</a>
-                </div>
-            </div>
-
-            <!-- Apache Kafka Visualizer -->
-            <div class="card">
-                <span class="tag" style="background: #ef4444;">Event Streaming</span>
-                <h2>Apache Kafka Visualizer</h2>
-                <p>Simulating an Append-Only Log with Consumer Groups. Watch messages append immutably to partitions while Consumer Groups rebalance partition ownership dynamically!</p>
-                <div class="card-actions">
-                    <a href="./kafka-web/" class="btn btn-primary">Launch App</a>
-                    <a href="./kafka-web/docs.html" class="btn btn-secondary">Read Docs</a>
-                </div>
-            </div>
-            
-            <!-- DB Scaling -->
-            <div class="card">
-                <span class="tag" style="background: #0ea5e9;">Infrastructure</span>
-                <h2>DB Scaling Lab</h2>
-                <p>A database replication setup demonstrating Master-Slave Architecture with read/write splitting to horizontally scale throughput.</p>
-                <div class="card-actions">
-                    <a href="./db-scaling/docs.html" class="btn btn-secondary">Read Docs</a>
-                </div>
-            </div>
-
-            <!-- Redis Cache -->
-            <div class="card">
-                <span class="tag" style="background: #f43f5e;">Caching</span>
-                <h2>Redis Cache Lab</h2>
-                <p>Demonstrates the Cache-Aside Pattern using Redis and Spring Boot to dramatically reduce database load using LRU eviction.</p>
-                <div class="card-actions">
-                    <a href="./redis-cache/docs.html" class="btn btn-secondary">Read Docs</a>
-                </div>
-            </div>
+        <div class="grid" id="project-grid">
+            <!-- Cards will be injected dynamically via data.json -->
         </div>
     </div>
 
+    <script>
+        fetch('data.json')
+            .then(response => response.json())
+            .then(data => {
+                const grid = document.getElementById('project-grid');
+                data.forEach(project => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    
+                    let actionsHtml = '';
+                    if (project.appLink) {
+                        actionsHtml += `<a href="${project.appLink}" class="btn btn-primary">Launch App</a>\n                    `;
+                    }
+                    if (project.docsLink) {
+                        actionsHtml += `<a href="${project.docsLink}" class="btn btn-secondary">Read Docs</a>`;
+                    }
+
+                    card.innerHTML = `
+                        <span class="tag" style="background: ${project.tagColor}; color: ${project.tagTextColor || '#fff'};">${project.tag}</span>
+                        <h2>${project.title}</h2>
+                        <p>${project.description}</p>
+                        <div class="card-actions">
+                            ${actionsHtml}
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            })
+            .catch(error => console.error('Error loading projects:', error));
+    </script>
 </body>
 </html>

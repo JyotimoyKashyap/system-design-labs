@@ -1,0 +1,72 @@
+[
+  {
+    "id": "consistent-hashing",
+    "tag": "Distributed Systems",
+    "tagColor": "#eab308",
+    "tagTextColor": "#000",
+    "title": "Consistent Hashing Visualizer",
+    "description": "Interactive demonstration of hash space partitioning. Watch how adding or removing nodes elegantly minimizes data redistribution across the ring topology!",
+    "appLink": "./consistent-hashing-web/",
+    "docsLink": "./consistent-hashing-web/docs.html"
+  },
+  {
+    "id": "raft-consensus",
+    "tag": "Consensus / State",
+    "tagColor": "#f97316",
+    "tagTextColor": "#fff",
+    "title": "Raft Consensus Visualizer",
+    "description": "Interactive simulation of the Raft leader election algorithm featuring asynchronous network delays and event-loop multithreading.",
+    "appLink": "./leader-election-web/",
+    "docsLink": "./leader-election-web/docs.html"
+  },
+  {
+    "id": "bloom-filter",
+    "tag": "Data Structures",
+    "tagColor": "#10b981",
+    "tagTextColor": "#fff",
+    "title": "Bloom Filter Visualizer",
+    "description": "Interactive implementation and visualization of probabilistic data structures used for high-performance set membership testing.",
+    "appLink": "./bloom-filter-web/",
+    "docsLink": "./bloom-filter-web/docs.html"
+  },
+  {
+    "id": "rabbitmq",
+    "tag": "Message Broker",
+    "tagColor": "#8b5cf6",
+    "tagTextColor": "#fff",
+    "title": "RabbitMQ Visualizer",
+    "description": "A beautifully animated demonstration of the Competing Consumers Pattern. Spawn producers and workers dynamically to watch horizontal scaling in action!",
+    "appLink": "./rabbitmq-web/",
+    "docsLink": "./rabbitmq-web/docs.html"
+  },
+  {
+    "id": "apache-kafka",
+    "tag": "Event Streaming",
+    "tagColor": "#ef4444",
+    "tagTextColor": "#fff",
+    "title": "Apache Kafka Visualizer",
+    "description": "Simulating an Append-Only Log with Consumer Groups. Watch messages append immutably to partitions while Consumer Groups rebalance partition ownership dynamically!",
+    "appLink": "./kafka-web/",
+    "docsLink": "./kafka-web/docs.html"
+  },
+  {
+    "id": "db-scaling",
+    "tag": "Infrastructure",
+    "tagColor": "#0ea5e9",
+    "tagTextColor": "#fff",
+    "title": "DB Scaling Lab",
+    "description": "A database replication setup demonstrating Master-Slave Architecture with read/write splitting to horizontally scale throughput.",
+    "appLink": "",
+    "docsLink": "./db-scaling/docs.html"
+  },
+  {
+    "id": "redis-cache",
+    "tag": "Caching",
+    "tagColor": "#f43f5e",
+    "tagTextColor": "#fff",
+    "title": "Redis Cache Lab",
+    "description": "Demonstrates the Cache-Aside Pattern using Redis and Spring Boot to dramatically reduce database load using LRU eviction.",
+    "appLink": "",
+    "docsLink": "./redis-cache/docs.html"
+  }
+]
