@@ -10,6 +10,7 @@ This directory will contain two things :
     4. API server that has some API that the client actually needs to call
     5. Consistent Hashing algorithm for assigning an IP address to a particular shard such that for that IP address we can then rate limit
     6. The entire rate limit algorithm as well as the reading the single configuration file hosted in some osrt of single centralized place like S3 can be a part of a library 
+    7. Admin panel for the checking how rate limiting is working and manipulate the shards of Redis
 
 ## Messy Thoughts
 1. Now I would want to have the single configuration file, such that whenever we spin up a new redis shard that configuration should update automatically. 
