@@ -3,7 +3,7 @@ This directory will contain two things :
 
 1. api-rate-limiter visualizer - which will be made via frontend tech
 2. A Java SpringBoot project for designing rate limiter. 
-3. There are 5 parts to it : 
+3. There are 7 parts to it : 
     1. The Proxy server that connects to the clients 
     2. Redis Cache divided into shards
     3. Single Configuration file hosted in some sort of single centralized place like S3
