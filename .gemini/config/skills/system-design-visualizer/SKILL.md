@@ -20,12 +20,12 @@ Use this skill whenever the user asks you to build or modify a web visualizer (`
 - Run `npm install` at the **root** of the monorepo to link workspaces.
 
 ## 2. Tailwind Configuration & UI Components
-- In `src/index.css`, you MUST include:
+- In `src/index.css`, you MUST include the Tailwind `@source` directive to scan the shared UI package:
   ```css
   @import "tailwindcss";
-  @source "../../packages/ui/src";
+  @source "../../../packages/ui/src";
   ```
-- Failure to include the `@source` directive will result in unstyled components.
+- **CRITICAL PATH WARNING**: Since visualizers are nested 2 levels deep (e.g., `consistent-hashing/consistent-hashing-web`), `src/index.css` is 3 levels deep relative to the monorepo root. Therefore, the relative path MUST go up three directories (`../../../packages/ui/src`). If you only use `../../`, Tailwind will fail silently and the `@repo/ui` `<Button>` components will lose all `inline-flex` definitions, breaking icon and text layouts.
 - Always use the `<Button>` and `<Input>` components from `@repo/ui`. Do not recreate standard HTML buttons or inputs with custom Tailwind classes. 
 
 ## 3. The "Paper Brutalist" Aesthetic
