@@ -68,5 +68,15 @@
     "description": "Demonstrates the Cache-Aside Pattern using Redis and Spring Boot to dramatically reduce database load using LRU eviction.",
     "appLink": "",
     "docsLink": "./redis-cache/docs.html"
+  },
+  {
+    "id": "api-rate-limiter",
+    "tag": "API Gateway",
+    "tagColor": "#d97706",
+    "tagTextColor": "#fff",
+    "title": "API Rate Limiter",
+    "description": "An interactive simulation of a Distributed Token Bucket algorithm. Watch how an API Gateway throttles requests across a Redis cluster using sliding windows!",
+    "appLink": "./api-rate-limiter-web/",
+    "docsLink": "./api-rate-limiter-web/docs.html"
   }
 ]

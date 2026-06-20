@@ -24,6 +24,7 @@ RUN cd bloom-filter-web && npx vite build --base=./
 RUN cd rabbitmq-lab/rabbitmq-web && npx vite build --base=./
 RUN cd apache-kafka/kafka-web && npx vite build --base=./
 RUN cd consistent-hashing/consistent-hashing-web && npx vite build --base=./
+RUN cd api-rate-limiter/api-rate-limiter-web && npx vite build --base=./
 
 # Generate Documentation HTML
 RUN ./scripts/build-docs.sh
@@ -40,6 +41,7 @@ COPY --from=builder /app/bloom-filter-web/dist /usr/share/nginx/html/bloom-filte
 COPY --from=builder /app/rabbitmq-lab/rabbitmq-web/dist /usr/share/nginx/html/rabbitmq-web
 COPY --from=builder /app/apache-kafka/kafka-web/dist /usr/share/nginx/html/kafka-web
 COPY --from=builder /app/consistent-hashing/consistent-hashing-web/dist /usr/share/nginx/html/consistent-hashing-web
+COPY --from=builder /app/api-rate-limiter/api-rate-limiter-web/dist /usr/share/nginx/html/api-rate-limiter-web
 
 # Expose port 80 (Nginx default)
 EXPOSE 80
