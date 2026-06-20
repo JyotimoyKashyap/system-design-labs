@@ -8,3 +8,11 @@ spring:
 # We will define our target backend here
 api-server:
   url: http://localhost:8081
+
+rate-limiter:
+  max-requests: 10
+  window-size-seconds: 60
+  redis-shards:
+    - localhost:6379
+    - localhost:6380
+    - localhost:6381

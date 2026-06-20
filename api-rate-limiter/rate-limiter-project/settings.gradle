@@ -13,3 +13,4 @@ plugins {
 rootProject.name = 'rate-limiter-project'
 include('api-server')
 include('proxy-server')
+include('rate-limiter-core')

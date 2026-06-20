@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rate Limiter Admin Dashboard</title>
+    <!-- We use Tailwind via CDN purely for a clean structure (no Paper Brutalist enforcement here) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <meta http-equiv="refresh" content="5"> <!-- Auto-refresh every 5 seconds for live monitoring -->
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-10 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold">API Rate Limiter Cluster</h1>
+                <p class="text-gray-500 mt-2">Live monitoring of Redis Shards & API Traffic (Auto-refreshes every 5s)</p>
+            </div>
+            <div class="bg-blue-100 text-blue-800 px-4 py-2 rounded font-semibold border border-blue-200">
+                Total Shards: {{ shards|length }}
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {% for shard in shards %}
+            <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+                
+                <div class="flex justify-between items-start mb-4">
+                    <h2 class="text-xl font-bold font-mono">{{ shard.name }}</h2>
+                    {% if shard.status == 'Healthy' %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Healthy
+                        </span>
+                    {% else %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            Down
+                        </span>
+                    {% endif %}
+                </div>
+
+                {% if shard.status == 'Down' %}
+                    <p class="text-sm text-red-600 font-mono">{{ shard.error }}</p>
+                {% else %}
+                    <div class="mb-6 grid grid-cols-2 gap-4">
+                        <div class="bg-gray-50 p-3 rounded border border-gray-100">
+                            <p class="text-xs text-gray-500 uppercase tracking-wide">Active IPs</p>
+                            <p class="text-2xl font-semibold">{{ shard.active_users|length }}</p>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded border border-gray-100">
+                            <p class="text-xs text-gray-500 uppercase tracking-wide">Total Tokens</p>
+                            <p class="text-2xl font-semibold">{{ shard.total_requests }}</p>
+                        </div>
+                    </div>
+
+                    <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 border-b pb-2">Tracked IP Addresses</h3>
+                    
+                    {% if shard.active_users %}
+                        <ul class="divide-y divide-gray-100">
+                            {% for user in shard.active_users %}
+                            <li class="py-3 flex justify-between items-center">
+                                <span class="font-mono text-sm">{{ user.ip }}</span>
+                                <div class="flex items-center space-x-2">
+                                    <!-- Visual progress bar representing the 10 request limit -->
+                                    <div class="w-24 bg-gray-200 rounded-full h-2">
+                                        <div class="bg-blue-600 h-2 rounded-full" style="width: {% widthratio user.requests 10 100 %}%"></div>
+                                    </div>
+                                    <span class="text-sm font-medium {% if user.requests >= 10 %}text-red-600{% else %}text-gray-600{% endif %}">
+                                        {{ user.requests }} / 10
+                                    </span>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-sm text-gray-400 italic text-center py-4">No active traffic on this shard.</p>
+                    {% endif %}
+
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</body>
+</html>

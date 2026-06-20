@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  redis-shard-1:
+    image: redis:7-alpine
+    container_name: redis-shard-1
+    command: redis-server --appendonly yes
+
+  redis-shard-2:
+    image: redis:7-alpine
+    container_name: redis-shard-2
+    command: redis-server --appendonly yes
+
+  redis-shard-3:
+    image: redis:7-alpine
+    container_name: redis-shard-3
+    command: redis-server --appendonly yes
+
+  api-server:
+    build:
+      context: .
+      dockerfile: api-server/Dockerfile
+    container_name: api-server
+    ports:
+      - "8081:8081"
+
+  proxy-server:
+    build:
+      context: .
+      dockerfile: proxy-server/Dockerfile
+    container_name: proxy-server
+    ports:
+      - "8080:8080"
+    environment:
+      # Spring Boot automatically maps these environment variables to application.yml!
+      - API_SERVER_URL=http://api-server:8081
+      # Note: Inside the docker network, the internal redis port is always 6379
+      - RATE_LIMITER_REDIS_SHARDS=redis-shard-1:6379,redis-shard-2:6379,redis-shard-3:6379
+    depends_on:
+      - redis-shard-1
+      - redis-shard-2
+      - redis-shard-3
+      - api-server
+
+  admin-panel:
+    build:
+      context: ./admin-panel
+    container_name: admin-panel
+    ports:
+      - "8000:8000"
+    environment:
+      - RATE_LIMITER_REDIS_SHARDS=redis-shard-1:6379,redis-shard-2:6379,redis-shard-3:6379
+    depends_on:
+      - redis-shard-1
+      - redis-shard-2
+      - redis-shard-3

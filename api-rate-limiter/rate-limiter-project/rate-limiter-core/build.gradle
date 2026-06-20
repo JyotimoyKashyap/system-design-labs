@@ -1,0 +1,31 @@
+plugins {
+    id 'java-library'
+}
+
+group = 'com.systemdesign'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Jedis for communicating with Redis
+    implementation 'redis.clients:jedis:5.1.0'
+    
+    // SLF4J for logging
+    implementation 'org.slf4j:slf4j-api:2.0.12'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
