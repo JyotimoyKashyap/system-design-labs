@@ -1,0 +1,10 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: proxy-server
+
+# We will define our target backend here
+api-server:
+  url: http://localhost:8081
