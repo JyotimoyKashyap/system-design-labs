@@ -9,6 +9,7 @@
     "apache-kafka/consumer-node",
     "db-scaling/app",
     "consistent-hashing/*-web",
+    "api-rate-limiter/*-web",
     "deploy-hub"
   ]
 }
