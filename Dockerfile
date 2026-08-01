@@ -1,5 +1,5 @@
 # Stage 1: Build Frontend Assets and Docs
-FROM node:20-slim AS builder
+FROM node:25-slim AS builder
 
 WORKDIR /app
 
