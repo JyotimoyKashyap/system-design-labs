@@ -52,17 +52,48 @@ cat << 'EOF' > template.html
     <a href="../" class="back-btn">← Back to Hub</a>
 EOF
 
-npx marked leader-election-web/README.md | cat template.html - <(echo "  </div></body></html>") > deploy-hub/leader-election-web/docs.html
-npx marked bloom-filter-web/README.md | cat template.html - <(echo "  </div></body></html>") > deploy-hub/bloom-filter-web/docs.html
-npx marked rabbitmq-lab/rabbitmq-web/README.md | cat template.html - <(echo "  </div></body></html>") > deploy-hub/rabbitmq-web/docs.html
-npx marked apache-kafka/kafka-web/README.md | cat template.html - <(echo "  </div></body></html>") > deploy-hub/kafka-web/docs.html
-npx marked db-scaling/README.md | cat template.html - <(echo "  </div></body></html>") > deploy-hub/db-scaling/docs.html
-npx marked redis-cache/README.md | cat template.html - <(echo "  </div></body></html>") > deploy-hub/redis-cache/docs.html
-npx marked consistent-hashing/consistent-hashing-web/README.md | cat template.html - <(echo "  </div></body></html>") > deploy-hub/consistent-hashing-web/docs.html
-npx marked api-rate-limiter/api-rate-limiter-web/README.md | cat template.html - <(echo "  </div></body></html>") > deploy-hub/api-rate-limiter-web/docs.html
+cat << 'EOF_FOOTER' > footer.html
+  </div>
+  <!-- Syntax Highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  
+  <!-- Mermaid -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: false, theme: 'default' });
+    
+    document.querySelectorAll('code.language-mermaid').forEach(async (block, index) => {
+      const pre = block.parentElement;
+      const graphDef = block.textContent;
+      try {
+        const { svg } = await mermaid.render(`mermaid-graph-${index}`, graphDef);
+        const div = document.createElement('div');
+        div.style.textAlign = 'center';
+        div.style.margin = '20px 0';
+        div.innerHTML = svg;
+        pre.replaceWith(div);
+      } catch (e) {
+        console.error('Mermaid parsing error', e);
+      }
+    });
+  </script>
+</body>
+</html>
+EOF_FOOTER
 
-npx marked cache-lld/README.md | cat template.html - <(echo "  </div></body></html>") > deploy-hub/cache-lld/docs.html
+npx marked leader-election-web/README.md | cat template.html - footer.html > deploy-hub/leader-election-web/docs.html
+npx marked bloom-filter-web/README.md | cat template.html - footer.html > deploy-hub/bloom-filter-web/docs.html
+npx marked rabbitmq-lab/rabbitmq-web/README.md | cat template.html - footer.html > deploy-hub/rabbitmq-web/docs.html
+npx marked apache-kafka/kafka-web/README.md | cat template.html - footer.html > deploy-hub/kafka-web/docs.html
+npx marked db-scaling/README.md | cat template.html - footer.html > deploy-hub/db-scaling/docs.html
+npx marked redis-cache/README.md | cat template.html - footer.html > deploy-hub/redis-cache/docs.html
+npx marked consistent-hashing/consistent-hashing-web/README.md | cat template.html - footer.html > deploy-hub/consistent-hashing-web/docs.html
+npx marked api-rate-limiter/api-rate-limiter-web/README.md | cat template.html - footer.html > deploy-hub/api-rate-limiter-web/docs.html
 
-rm template.html
+npx marked cache-lld/README.md | cat template.html - footer.html > deploy-hub/cache-lld/docs.html
+
+rm template.html footer.html
 
 echo "Documentation generation complete!"
