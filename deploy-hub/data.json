@@ -87,6 +87,7 @@
     "title": "Extensible In-Memory Cache",
     "description": "An architectural deep-dive into building high-performance, concurrent LRU/LFU caches using Event Sourcing and Lock Striping.",
     "appLink": "",
-    "docsLink": "./cache-lld/docs.html"
+    "docsLink": "./cache-lld/docs.html",
+    "type": "blog"
   }
 ]
