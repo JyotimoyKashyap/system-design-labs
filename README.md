@@ -44,6 +44,9 @@ Interactive demonstration of hash space partitioning. Watch how adding or removi
 ### 8. [API Rate Limiter Visualizer](./api-rate-limiter)
 An interactive simulation of a Distributed Token Bucket algorithm. Watch how an API Gateway throttles requests across a Redis cluster using sliding windows!
 
+### 9. [Extensible In-Memory Cache](./cache-lld)
+An architectural deep-dive and framework for building high-performance, concurrent LRU/LFU caches using Event Sourcing and Lock Striping.
+
 ## 🛠 Prerequisites
 All backend labs and frontend visualizers in this repository rely on containerization to simulate distributed systems locally without the hassle of local dependencies. Make sure you have the following installed:
 - [Docker](https://www.docker.com/)

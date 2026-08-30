@@ -3,7 +3,7 @@ set -e
 
 echo "Generating static documentation..."
 
-mkdir -p deploy-hub/leader-election-web deploy-hub/bloom-filter-web deploy-hub/rabbitmq-web deploy-hub/kafka-web deploy-hub/db-scaling deploy-hub/redis-cache deploy-hub/consistent-hashing-web deploy-hub/api-rate-limiter-web
+mkdir -p deploy-hub/leader-election-web deploy-hub/bloom-filter-web deploy-hub/rabbitmq-web deploy-hub/kafka-web deploy-hub/db-scaling deploy-hub/redis-cache deploy-hub/consistent-hashing-web deploy-hub/api-rate-limiter-web deploy-hub/cache-lld
 
 cat << 'EOF' > template.html
 <!DOCTYPE html>
@@ -60,6 +60,8 @@ npx marked db-scaling/README.md | cat template.html - <(echo "  </div></body></h
 npx marked redis-cache/README.md | cat template.html - <(echo "  </div></body></html>") > deploy-hub/redis-cache/docs.html
 npx marked consistent-hashing/consistent-hashing-web/README.md | cat template.html - <(echo "  </div></body></html>") > deploy-hub/consistent-hashing-web/docs.html
 npx marked api-rate-limiter/api-rate-limiter-web/README.md | cat template.html - <(echo "  </div></body></html>") > deploy-hub/api-rate-limiter-web/docs.html
+
+npx marked cache-lld/README.md | cat template.html - <(echo "  </div></body></html>") > deploy-hub/cache-lld/docs.html
 
 rm template.html
 

@@ -78,5 +78,15 @@
     "description": "An interactive simulation of a Distributed Token Bucket algorithm. Watch how an API Gateway throttles requests across a Redis cluster using sliding windows!",
     "appLink": "./api-rate-limiter-web/",
     "docsLink": "./api-rate-limiter-web/docs.html"
+  },
+  {
+    "id": "cache-lld",
+    "tag": "Caching Architecture",
+    "tagColor": "#ec4899",
+    "tagTextColor": "#fff",
+    "title": "Extensible In-Memory Cache",
+    "description": "An architectural deep-dive into building high-performance, concurrent LRU/LFU caches using Event Sourcing and Lock Striping.",
+    "appLink": "",
+    "docsLink": "./cache-lld/docs.html"
   }
 ]
