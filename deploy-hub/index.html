@@ -28,6 +28,10 @@
             width: 90%;
             padding: 80px 0;
         }
+
+        .page-header {
+            margin-bottom: 64px;
+        }
         
         .layout-wrapper {
             display: grid;
@@ -49,7 +53,7 @@
         p.subtitle {
             font-size: 1.25rem;
             color: #57534e;
-            margin-bottom: 60px;
+            margin-bottom: 0;
             font-weight: 500;
             max-width: 600px;
             line-height: 1.6;
@@ -153,7 +157,7 @@
         }
 
         /* Sidebar styling */
-        .sidebar-title {
+        .section-title {
             font-family: 'Playfair Display', serif;
             font-size: 2.2rem;
             font-style: italic;
@@ -225,21 +229,27 @@
         GitHub
     </a>
 
-    <div class="container layout-wrapper">
-        <div class="main-content">
+    <div class="container">
+        <header class="page-header">
             <h1>System Design Labs</h1>
             <p class="subtitle">A collection of interactive distributed systems and algorithm visualizers. Choose a lab below to launch its interactive simulation environment.</p>
-            <div class="grid" id="lab-grid">
-                <!-- Cards will be injected dynamically via data.json -->
-            </div>
-        </div>
+        </header>
 
-        <aside class="sidebar">
-            <h2 class="sidebar-title">Architecture Blogs</h2>
-            <div class="blog-list" id="blog-list">
-                <!-- Blog Cards will be injected dynamically via data.json -->
+        <div class="layout-wrapper">
+            <div class="main-content">
+                <h2 class="section-title">Interactive Labs</h2>
+                <div class="grid" id="lab-grid">
+                    <!-- Cards will be injected dynamically via data.json -->
+                </div>
             </div>
-        </aside>
+
+            <aside class="sidebar">
+                <h2 class="section-title">Blogs</h2>
+                <div class="blog-list" id="blog-list">
+                    <!-- Blog Cards will be injected dynamically via data.json -->
+                </div>
+            </aside>
+        </div>
     </div>
 
     <script>
