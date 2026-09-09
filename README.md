@@ -47,6 +47,9 @@ An interactive simulation of a Distributed Token Bucket algorithm. Watch how an 
 ### 9. [Extensible In-Memory Cache](./cache-lld)
 An architectural deep-dive and framework for building high-performance, concurrent LRU/LFU caches using Event Sourcing and Lock Striping.
 
+### 10. [Task Management System](./task-management-system)
+A Low-Level Design (LLD) implementation of an in-memory Task Management System featuring a custom LRU cache eviction layer, repository pattern, and decoupled data access objects.
+
 ## 🛠 Prerequisites
 All backend labs and frontend visualizers in this repository rely on containerization to simulate distributed systems locally without the hassle of local dependencies. Make sure you have the following installed:
 - [Docker](https://www.docker.com/)
