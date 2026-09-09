@@ -89,5 +89,16 @@
     "appLink": "",
     "docsLink": "./cache-lld/docs.html",
     "type": "blog"
+  },
+  {
+    "id": "task-management-system",
+    "tag": "System Design LLD",
+    "tagColor": "#2563eb",
+    "tagTextColor": "#fff",
+    "title": "Task Management System LLD",
+    "description": "An in-depth Low-Level Design (LLD) of an enterprise Task Management System featuring custom LRU caching, the Repository pattern, and thread-safe DAO patterns.",
+    "appLink": "",
+    "docsLink": "./task-management-system/docs.html",
+    "type": "blog"
   }
 ]

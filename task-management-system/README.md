@@ -52,14 +52,14 @@ flowchart TD
     Client["Client / Entry Point (Main)"] --> Service["TaskService\n(Business Logic Layer)"]
     Service --> Repository["TaskRepository\n(Data Orchestration & Caching Policy)"]
 
-    subgraph Data Layer
+    subgraph Data_Layer ["Data Layer"]
         Repository -->|Read Hit / Put / Evict| Cache["CacheDao\n(InMemoryCache - LRU)"]
         Repository -->|Read Miss / Write / Delete| DB["TaskDao\n(InMemoryTaskDao - Storage)"]
     end
 
-    subgraph Custom Data Structures
+    subgraph Custom_DS ["Custom Data Structures"]
         Cache --> DLL["DoublyLinkedList\n(Tracks Recency Order)"]
-        Cache --> Map["HashMap<UUID, Node<Task>>\n(O(1) Addressability)"]
+        Cache --> Map["HashMap(UUID, Node(Task))\n(O(1) Addressability)"]
     end
 ```
 

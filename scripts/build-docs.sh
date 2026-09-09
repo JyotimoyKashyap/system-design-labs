@@ -3,7 +3,7 @@ set -e
 
 echo "Generating static documentation..."
 
-mkdir -p deploy-hub/leader-election-web deploy-hub/bloom-filter-web deploy-hub/rabbitmq-web deploy-hub/kafka-web deploy-hub/db-scaling deploy-hub/redis-cache deploy-hub/consistent-hashing-web deploy-hub/api-rate-limiter-web deploy-hub/cache-lld
+mkdir -p deploy-hub/leader-election-web deploy-hub/bloom-filter-web deploy-hub/rabbitmq-web deploy-hub/kafka-web deploy-hub/db-scaling deploy-hub/redis-cache deploy-hub/consistent-hashing-web deploy-hub/api-rate-limiter-web deploy-hub/cache-lld deploy-hub/task-management-system
 
 cat << 'EOF' > template.html
 <!DOCTYPE html>
@@ -93,6 +93,7 @@ npx marked consistent-hashing/consistent-hashing-web/README.md | cat template.ht
 npx marked api-rate-limiter/api-rate-limiter-web/README.md | cat template.html - footer.html > deploy-hub/api-rate-limiter-web/docs.html
 
 npx marked cache-lld/README.md | cat template.html - footer.html > deploy-hub/cache-lld/docs.html
+npx marked task-management-system/README.md | cat template.html - footer.html > deploy-hub/task-management-system/docs.html
 
 rm template.html footer.html
 
