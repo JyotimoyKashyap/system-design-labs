@@ -16,6 +16,19 @@ public class User {
         this.username = username;
     }
 
+    public String getUsername() {
+        return username;
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    @Override
+    public String toString() {
+        return username;
+    }
+
     private void validateUserName(String username) throws Exception {
         if (username.isBlank())
             throw new IllegalArgumentException("Blank username is not allowed");

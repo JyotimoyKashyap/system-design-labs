@@ -22,7 +22,13 @@ public class Main {
                 .build();
         TaskDao taskDao = InMemoryTaskDao.getInstance();
         TaskRepository repository = new TaskRepository(cacheDao, taskDao);
-        TaskService taskService = new TaskService(repository);
+
+        // Initialize Notification System (Observer Pattern)
+        com.jyotimoykashyap.notification.publisher.EventPublisher publisher =
+                new com.jyotimoykashyap.notification.publisher.SimpleEventPublisher();
+        publisher.addSubscriber(new com.jyotimoykashyap.notification.subscriber.EmailNotifier());
+
+        TaskService taskService = new TaskService(repository, publisher);
 
         try {
             // 2. Create and Save Tasks
@@ -56,11 +62,19 @@ public class Main {
             Task fetchedTask2 = taskService.getTask(id2);
             System.out.println("Successfully fetched Task 2 from DB: " + fetchedTask2.getId());
 
-            // 6. Update Task
-            System.out.println("\n--- 5. Updating Task 1 ---");
-            task1.updateDescription("Updated description for PostgreSQL");
-            taskService.updateTask(task1);
-            System.out.println("Updated Task 1 description successfully.");
+            // 6. Update Task (Direct update & DTO update with Assignee Notification)
+            System.out.println("\n--- 5. Updating Task 1 (Assignee Change & Email Notification) ---");
+            com.jyotimoykashyap.models.User alice = new com.jyotimoykashyap.models.User("alice");
+            com.jyotimoykashyap.dto.UpdateTaskRequest updateRequest = new com.jyotimoykashyap.dto.UpdateTaskRequest(
+                    id1,
+                    null,
+                    "Updated description for PostgreSQL",
+                    alice,
+                    null,
+                    null
+            );
+            taskService.updateTask(updateRequest);
+            System.out.println("Updated Task 1 via UpdateTaskRequest successfully.");
 
             // 7. Get All Tasks
             System.out.println("\n--- 6. Listing All Tasks ---");

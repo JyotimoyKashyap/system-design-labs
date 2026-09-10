@@ -1,6 +1,11 @@
 package com.jyotimoykashyap.models;
 
+import com.jyotimoykashyap.notification.event.Event;
+import com.jyotimoykashyap.notification.event.TaskAssigneeChangeEvent;
+
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -13,6 +18,8 @@ public class Task {
     private LocalDate modifiedAt;
     private LocalDate dueDate;
     private Status status;
+
+    private final List<Event<?>> domainEvents = new ArrayList<>();
 
     public Task(String name, String description, LocalDate dueDate) throws Exception{
         validateDueDate(dueDate);
@@ -42,12 +49,17 @@ public class Task {
     }
 
     public void updateAssignee(User user) {
+        if (Objects.equals(this.assignedTo, user)) return;
+
         // assignee can be null at any point of time
+        User oldAssignee = this.assignedTo;
         this.assignedTo = user;
+        this.domainEvents.add(
+                new TaskAssigneeChangeEvent(this.id, oldAssignee, user));
         updateLastModifiedDate(); // last modified date needs to be updated on every update
     }
 
-    public void updateDueDate(LocalDate date) throws Exception {
+    public void updateDueDate(LocalDate date)  {
         validateDueDate(date);
         this.dueDate = date;
 
@@ -77,7 +89,13 @@ public class Task {
         this.modifiedAt = LocalDate.now();
     }
 
-    private void validateDueDate(LocalDate dueDate) throws Exception {
+    public List<Event<?>> pullDomainEvents() {
+        List<Event<?>> events = new ArrayList<>(this.domainEvents);
+        this.domainEvents.clear();
+        return events;
+    }
+
+    private void validateDueDate(LocalDate dueDate) {
         Objects.requireNonNull(dueDate);
         // due date cannot be less than today's date
         if (dueDate.isBefore(LocalDate.now())) {
