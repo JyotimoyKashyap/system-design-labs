@@ -12,7 +12,7 @@ If you are an AI Agent reading this in the future:
 1. All sub-projects are fully containerized using Docker Compose.
 2. Read the `README.md` in each sub-directory for context before making modifications.
 3. Keep the documentation up to date when adding new system design concepts!
-4. **Deploy Hub Modifications:** To add a new visualizer to the central GitHub Pages hub, do **not** manually edit `deploy-hub/index.html`. Instead, append your project's metadata to the `deploy-hub/data.json` file.
+4. **Deploy Hub & Blog Publishing:** To publish a visualizer or blog to the central Hub, add the invisible `<!-- hub-metadata -->` tag to your project's `README.md` and run `npm run build:docs`. This automatically compiles the HTML documentation and synchronizes `deploy-hub/data.json`.
 
 ### 🎨 Web Visualizer UI/UX Rules
 The strict "Paper Brutalist" design guidelines and UI/UX rules for all web visualizers in this monorepo have been moved. 

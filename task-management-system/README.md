@@ -1,9 +1,17 @@
+<!-- hub-metadata
+type: blog
+tag: System Design LLD
+tagColor: #2563eb
+title: Task Management System LLD
+description: An in-depth Low-Level Design (LLD) of an enterprise Task Management System featuring custom LRU caching, the Repository pattern, and thread-safe DAO patterns.
+-->
+
 # Task Management System: Low-Level Design (LLD)
 
 ![Java](https://img.shields.io/badge/Java-21%2B-ED8B00?logo=openjdk&logoColor=white)
 ![Gradle](https://img.shields.io/badge/Gradle-8%2B-02303A?logo=gradle&logoColor=white)
 ![Architecture](https://img.shields.io/badge/Architecture-Layered%20%2F%20Hexagonal-blue)
-![Design Patterns](https://img.shields.io/badge/Patterns-Repository%20|%20DAO%20|%20Builder%20|%20Singleton-green)
+![Design Patterns](https://img.shields.io/badge/Patterns-Repository%20|%20DAO%20|%20Builder%20|%20Singleton%20|%20Observer-green)
 
 A modular, production-grade Low-Level Design (LLD) of an in-memory **Task Management System** built in pure Java. This project models core enterprise patterns for managing task lifecycles, state transitions, and assignments, reinforced with an integrated, custom **Least Recently Used (LRU) Cache** backed by a **Doubly Linked List** and **HashMap**.
 
@@ -20,6 +28,8 @@ A modular, production-grade Low-Level Design (LLD) of an in-memory **Task Manage
   - [4. Builder Pattern](#4-builder-pattern)
   - [5. Cache-Aside & Write-Through Caching](#5-cache-aside--write-through-caching)
   - [6. O(1) LRU Eviction via Doubly Linked List](#6-o1-lru-eviction-via-doubly-linked-list)
+  - [7. Observer Pattern (Typed Domain Events)](#7-observer-pattern-typed-domain-events)
+- [Notification Service & Event Architecture](#-notification-service--event-architecture)
 - [Core Workflows & Sequence Diagrams](#-core-workflows--sequence-diagrams)
 - [Complexity Analysis](#-complexity-analysis)
 - [Project Structure](#-project-structure)
@@ -291,6 +301,175 @@ The `InMemoryCache` achieves constant time **$O(1)$** lookup, insertion, update,
                                                                  ^
                                                        (Evicted on Overflow)
 ```
+
+---
+
+### 7. Observer Pattern (Typed Domain Events)
+- **Problem:** When a task's state changes (assignee, due date, status), secondary subsystems (email/Slack notifications, audit logging, analytics) must react. Hardcoding direct calls to these services inside `TaskService` tightly couples the domain logic and violates the Open-Closed Principle.
+- **Solution:** `TaskService` acts as the event trigger, publishing strongly-typed domain events (`TaskStatusChangedEvent`, `TaskAssigneeChangedEvent`, `TaskDueDateChangedEvent`) to an `EventPublisher`. Observers (`NotificationService`, `LogService`) subscribe specifically to the event classes they care about with 100% compile-time type safety—eliminating runtime `instanceof` inspection.
+
+---
+
+## 🔔 Notification Service & Event Architecture
+
+The notification system models an enterprise **Event-Driven Observer Pattern** designed around domain lifecycle state transitions:
+
+```mermaid
+classDiagram
+    %% ------------------- EVENT HIERARCHY -------------------
+    class TaskEvent {
+        <<interface>>
+        +getTask() Task
+        +getOccurredAt() Instant
+    }
+
+    class TaskStatusChangedEvent {
+        -Task task
+        -Status oldStatus
+        -Status newStatus
+        -Instant occurredAt
+        +getTask() Task
+        +getOldStatus() Status
+        +getNewStatus() Status
+    }
+
+    class TaskAssigneeChangedEvent {
+        -Task task
+        -User oldAssignee
+        -User newAssignee
+        -Instant occurredAt
+        +getTask() Task
+        +getOldAssignee() User
+        +getNewAssignee() User
+    }
+
+    class TaskDueDateChangedEvent {
+        -Task task
+        -LocalDate oldDueDate
+        -LocalDate newDueDate
+        -Instant occurredAt
+        +getTask() Task
+        +getOldDueDate() LocalDate
+        +getNewDueDate() LocalDate
+    }
+
+    TaskEvent <|.. TaskStatusChangedEvent : implements
+    TaskEvent <|.. TaskAssigneeChangedEvent : implements
+    TaskEvent <|.. TaskDueDateChangedEvent : implements
+
+    %% ------------------- LISTENER CONTRACT -------------------
+    class EventListener~T~ {
+        <<interface>>
+        +onEvent(T event) void
+    }
+
+    %% ------------------- EVENT PUBLISHER -------------------
+    class EventPublisher {
+        <<interface>>
+        +subscribe(Class~T~ eventType, EventListener~T~ listener) void
+        +unsubscribe(Class~T~ eventType, EventListener~T~ listener) void
+        +publish(TaskEvent event) void
+    }
+
+    class InMemoryEventPublisher {
+        -Map~Class, List~EventListener~~ listeners
+        +subscribe(Class~T~, EventListener~T~) void
+        +unsubscribe(Class~T~, EventListener~T~) void
+        +publish(TaskEvent) void
+    }
+
+    EventPublisher <|.. InMemoryEventPublisher : implements
+    InMemoryEventPublisher o-- EventListener : maintains registry
+
+    %% ------------------- APPLICATION SERVICES -------------------
+    class TaskService {
+        -TaskRepository repository
+        -EventPublisher publisher
+        +updateStatus(UUID, Status)
+        +updateAssignee(UUID, User)
+        +updateDueDate(UUID, LocalDate)
+    }
+
+    class NotificationService {
+        -List~NotificationChannel~ channels
+        +onStatusChanged(TaskStatusChangedEvent event) void
+        +onAssigneeChanged(TaskAssigneeChangedEvent event) void
+        +onDueDateChanged(TaskDueDateChangedEvent event) void
+        +sendNotification(String message, Task task) void
+    }
+
+    class LogService {
+        +logEvent(TaskEvent event) void
+    }
+
+    %% ------------------- NOTIFICATION CHANNELS -------------------
+    class NotificationChannel {
+        <<interface>>
+        +send(String recipient, String message) void
+    }
+
+    class EmailNotificationChannel {
+        +send(String recipient, String message) void
+    }
+
+    class SlackNotificationChannel {
+        +send(String recipient, String message) void
+    }
+
+    NotificationChannel <|.. EmailNotificationChannel : implements
+    NotificationChannel <|.. SlackNotificationChannel : implements
+
+    %% ------------------- RELATIONSHIPS -------------------
+    TaskService --> EventPublisher : publishes events to
+    TaskService --> TaskRepository : persists state
+    NotificationService o-- NotificationChannel : dispatches through
+    NotificationService ..> EventListener : method handles match
+    LogService ..> EventListener : method handles match
+```
+
+### State Changes Triggering Notifications
+1. **Assignee Change (`TaskAssigneeChangedEvent`):** Triggers alerts when a task is assigned, reassigned, or unassigned.
+2. **Due Date Change (`TaskDueDateChangedEvent`):** Notifies stakeholders of deadline postponements or escalations.
+3. **Status Change (`TaskStatusChangedEvent`):** Signals state movement across `TODO -> IN_PROGRESS -> DONE`.
+
+### Multi-Channel Notification Dispatching
+`NotificationService` operates as an observer that fans out to pluggable channels (Strategy Pattern):
+- **Email Channel:** Dispatches transactional email updates to assigned users.
+- **Slack Channel:** Posts updates directly to team channels or project webhooks.
+- **In-App / SMS Channel:** Additional pluggable channels conforming to `NotificationChannel`.
+
+### Event Dispatch & Notification Workflow
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client
+    participant Service as TaskService
+    participant Publisher as InMemoryEventPublisher
+    participant Notify as NotificationService
+    participant Channel as EmailNotificationChannel
+    participant Log as LogService
+
+    Note over Publisher,Notify: System Startup / Registration Phase
+    Publisher->>Publisher: subscribe(TaskStatusChangedEvent.class, Notify::onStatusChanged)
+    Publisher->>Publisher: subscribe(TaskEvent.class, Log::logEvent)
+
+    Note over Client,Channel: Runtime Flow
+    Client->>Service: updateStatus(taskId, IN_PROGRESS)
+    Service->>Service: Mutate Task state in DB/Cache
+    Service->>Publisher: publish(new TaskStatusChangedEvent(task, TODO, IN_PROGRESS))
+
+    par Notify Registered Listeners
+        Publisher->>Notify: onStatusChanged(event)
+        Notify->>Channel: send("Assignee", "Status changed to IN_PROGRESS")
+    and Log Event
+        Publisher->>Log: logEvent(event)
+    end
+```
+
+### Architectural Guarantees:
+- **Compile-Time Type Safety:** Listeners subscribe to explicit generic types (`EventListener<T extends TaskEvent>`). No runtime `instanceof` downcasting or type checking required in observer handlers.
+- **Open-Closed Extensibility:** Adding a new event type (e.g., `TaskPriorityChangedEvent`) or new observers (`AuditService`, `MetricsService`) requires zero code changes to existing classes.
+- **Decoupled Delivery:** Business operations in `TaskService` do not know whether notifications are sent via Email, Slack, or logged.
 
 ---
 

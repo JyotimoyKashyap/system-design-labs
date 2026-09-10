@@ -1,3 +1,12 @@
+<!-- hub-metadata
+type: blog
+tag: Architecture
+tagColor: #f97316
+title: API Servers at Scale — The Full Picture
+description: From naive unpooled servers to thread pools, connection pools, and distributed server fleets.
+targetDir: scale-architecture
+-->
+
 # API Servers at Scale — The Full Picture
 
 ## Level 0: The Naive Setup — No Pools At All

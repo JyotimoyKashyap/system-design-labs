@@ -21,14 +21,5 @@ npm-debug.log
 .DS_Store
 
 # Auto-generated docs and assets
-deploy-hub/leader-election-web/
-deploy-hub/bloom-filter-web/
-deploy-hub/rabbitmq-web/
-deploy-hub/kafka-web/
-deploy-hub/db-scaling/
-deploy-hub/redis-cache/
-deploy-hub/consistent-hashing-web/
-deploy-hub/api-rate-limiter-web/
-deploy-hub/cache-lld/
-deploy-hub/task-management-system/
+deploy-hub/*/
 local-hub/

@@ -1,3 +1,11 @@
+<!-- hub-metadata
+type: blog
+tag: Caching Architecture
+tagColor: #ec4899
+title: Extensible In-Memory Cache
+description: An architectural deep-dive into building high-performance, concurrent LRU/LFU caches using Event Sourcing and Lock Striping.
+-->
+
 # Engineering an Extensible In-Memory Cache in Java: From Interview Problem to Pluggable Framework
 
 Have you ever faced the classic LFU or LRU Cache problem in a system design or coding interview? What often starts as a quick hack using a HashMap and a Doubly Linked List can evolve into something much more powerful when proper software engineering principles are applied. 

@@ -1,6 +1,9 @@
 {
   "name": "system-design-labs",
   "private": true,
+  "scripts": {
+    "build:docs": "node scripts/build-docs.mjs"
+  },
   "workspaces": [
     "packages/*",
     "*-web",

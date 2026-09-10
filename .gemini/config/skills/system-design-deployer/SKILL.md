@@ -28,33 +28,42 @@ The `Dockerfile` is the single source of truth for the CI build.
    COPY --from=builder /app/concept-name/concept-name-web/dist /usr/share/nginx/html/concept-name-web
    ```
 
-## 3. Update the Documentation Generator
-The `scripts/build-docs.sh` script converts markdown into styled HTML pages.
-1. Add the new visualizer's directory to the `mkdir -p` command at the top of the script so the output directory is created.
-   ```bash
-   mkdir -p ... deploy-hub/concept-name-web
-   ```
-2. Add the `npx marked` command to compile the `README.md` you verified in step 1 into the `deploy-hub`.
-   ```bash
-   npx marked concept-name/concept-name-web/README.md | cat template.html - <(echo "  </div></body></html>") > deploy-hub/concept-name-web/docs.html
-   ```
+## 3. Configure Hub Documentation (Automated Metadata Tag)
+The documentation build process is fully automated. You do **not** need to manually write `npx marked` commands in shell scripts.
+Add an invisible `<!-- hub-metadata -->` HTML comment block at the top of your visualizer's or blog's `README.md`. It is completely invisible in Markdown previews on GitHub:
 
-## 4. Update the Landing Page (Hub)
-The `deploy-hub/index.html` file serves as the unified landing page. It is fully data-driven using Vanilla JS.
-- Open `deploy-hub/data.json` and append a new JSON object for the visualizer.
-  ```json
-  {
-    "id": "concept-name",
-    "tag": "Distributed Systems",
-    "tagColor": "#10b981",
-    "tagTextColor": "#fff",
-    "title": "Concept Name Visualizer",
-    "description": "Short description of what the lab visualizes.",
-    "appLink": "./concept-name-web/",
-    "docsLink": "./concept-name-web/docs.html"
-  }
-  ```
-- You do **not** need to touch `deploy-hub/index.html`. It will automatically fetch and render the new card based on the JSON.
+```markdown
+<!-- hub-metadata
+type: visualizer
+tag: Distributed Systems
+tagColor: #10b981
+title: Concept Name Visualizer
+description: Short description of what the lab visualizes.
+appLink: ./concept-name-web/
+-->
+```
+
+For standalone **blogs** or LLD projects:
+```markdown
+<!-- hub-metadata
+type: blog
+tag: System Design LLD
+tagColor: #2563eb
+title: Project Title LLD
+description: Short description of the architecture.
+-->
+```
+
+## 4. Generate Documentation & Sync Hub
+Run the automated docs generator:
+```bash
+npm run build:docs
+```
+This script will:
+- Auto-discover all tagged `README.md` and Markdown files.
+- Automatically compile styled HTML documentation with GitHub markdown CSS, highlight.js, and interactive Mermaid.js.
+- Automatically synchronize and register the card inside `deploy-hub/data.json`.
+- Automatically manage `.gitignore` for generated static assets.
 
 ## 5. Update the Root README
 The main repository `README.md` tracks all available labs.

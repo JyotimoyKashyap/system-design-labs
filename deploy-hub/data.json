@@ -100,5 +100,16 @@
     "appLink": "",
     "docsLink": "./task-management-system/docs.html",
     "type": "blog"
+  },
+  {
+    "id": "scale-architecture-0-1",
+    "tag": "Architecture",
+    "tagColor": "#f97316",
+    "tagTextColor": "#fff",
+    "title": "API Servers at Scale — The Full Picture",
+    "description": "From naive unpooled servers to thread pools, connection pools, and distributed server fleets.",
+    "appLink": "",
+    "docsLink": "./scale-architecture/docs.html",
+    "type": "blog"
   }
 ]
