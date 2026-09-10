@@ -1,3 +1,14 @@
+<!-- hub-metadata
+type: lab
+id: redis-cache
+tag: Caching
+tagColor: #f43f5e
+tagTextColor: #fff
+title: Redis Cache Lab
+description: Demonstrates the Cache-Aside Pattern using Redis and Spring Boot to dramatically reduce database load using LRU eviction.
+targetDir: redis-cache
+-->
+
 # Redis Cache Lab
 
 This project demonstrates how to use Redis as a caching layer in a Spring Boot application using the `@Cacheable` annotation. It utilizes the Cache-Aside pattern.

@@ -1,3 +1,15 @@
+<!-- hub-metadata
+type: visualizer
+id: raft-consensus
+tag: Consensus / State
+tagColor: #f97316
+tagTextColor: #fff
+title: Raft Consensus Visualizer
+description: Interactive simulation of the Raft leader election algorithm featuring asynchronous network delays and event-loop multithreading.
+appLink: ./leader-election-web/
+targetDir: leader-election-web
+-->
+
 # Raft Consensus Visualizer 🌐
 
 A fully client-side, animated visualizer for the **Raft Leader Election Algorithm**. This project was built to demystify how distributed systems achieve consensus by showing network packets, randomized timeouts, and state transitions in real-time.

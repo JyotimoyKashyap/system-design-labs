@@ -1,3 +1,15 @@
+<!-- hub-metadata
+type: visualizer
+id: apache-kafka
+tag: Event Streaming
+tagColor: #ef4444
+tagTextColor: #fff
+title: Apache Kafka Visualizer
+description: Simulating an Append-Only Log with Consumer Groups. Watch messages append immutably to partitions while Consumer Groups rebalance partition ownership dynamically!
+appLink: ./kafka-web/
+targetDir: kafka-web
+-->
+
 # Apache Kafka Web Visualizer 🚀
 
 A highly interactive, client-side browser simulation of **Apache Kafka's Partitioned Log & Consumer Group Architecture**.

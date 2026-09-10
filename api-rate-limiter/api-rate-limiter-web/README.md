@@ -1,3 +1,15 @@
+<!-- hub-metadata
+type: visualizer
+id: api-rate-limiter
+tag: API Gateway
+tagColor: #d97706
+tagTextColor: #fff
+title: API Rate Limiter
+description: An interactive simulation of a Distributed Token Bucket algorithm. Watch how an API Gateway throttles requests across a Redis cluster using sliding windows!
+appLink: ./api-rate-limiter-web/
+targetDir: api-rate-limiter-web
+-->
+
 # API Rate Limiter Visualizer 🚀
 
 An interactive, Paper Brutalist web visualizer demonstrating the **Distributed Token Bucket** algorithm in a microservice architecture.

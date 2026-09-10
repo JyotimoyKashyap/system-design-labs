@@ -1,3 +1,15 @@
+<!-- hub-metadata
+type: visualizer
+id: rabbitmq
+tag: Message Broker
+tagColor: #8b5cf6
+tagTextColor: #fff
+title: RabbitMQ Visualizer
+description: A beautifully animated demonstration of the Competing Consumers Pattern. Spawn producers and workers dynamically to watch horizontal scaling in action!
+appLink: ./rabbitmq-web/
+targetDir: rabbitmq-web
+-->
+
 # RabbitMQ Visualizer 🐇
 
 A beautiful, interactive, and purely client-side simulation of the **Competing Consumers Pattern**.

@@ -1,3 +1,15 @@
+<!-- hub-metadata
+type: visualizer
+id: consistent-hashing
+tag: Distributed Systems
+tagColor: #eab308
+tagTextColor: #000
+title: Consistent Hashing Visualizer
+description: Interactive demonstration of hash space partitioning. Watch how adding or removing nodes elegantly minimizes data redistribution across the ring topology!
+appLink: ./consistent-hashing-web/
+targetDir: consistent-hashing-web
+-->
+
 # Consistent Hashing Visualizer ⭕️
 
 A beautiful, interactive visualizer demonstrating the **Consistent Hashing** algorithm, designed to distribute data seamlessly across nodes in a cluster!

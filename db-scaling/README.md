@@ -1,3 +1,14 @@
+<!-- hub-metadata
+type: lab
+id: db-scaling
+tag: Infrastructure
+tagColor: #0ea5e9
+tagTextColor: #fff
+title: DB Scaling Lab
+description: A database replication setup demonstrating Master-Slave Architecture with read/write splitting to horizontally scale throughput.
+targetDir: db-scaling
+-->
+
 # Database Scaling Lab 🗄️📈
 
 This lab explores horizontal scaling techniques for relational databases using a **Master-Slave Replication** architecture.

@@ -1,3 +1,15 @@
+<!-- hub-metadata
+type: visualizer
+id: bloom-filter
+tag: Data Structures
+tagColor: #10b981
+tagTextColor: #fff
+title: Bloom Filter Visualizer
+description: Interactive implementation and visualization of probabilistic data structures used for high-performance set membership testing.
+appLink: ./bloom-filter-web/
+targetDir: bloom-filter-web
+-->
+
 # Bloom Filter Visualizer 🌸
 
 A fully client-side, interactive visualizer for the **Bloom Filter** probabilistic data structure!
