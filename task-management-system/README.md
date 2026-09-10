@@ -10,10 +10,10 @@ description: An in-depth Low-Level Design (LLD) of an enterprise Task Management
 
 ![Java](https://img.shields.io/badge/Java-21%2B-ED8B00?logo=openjdk&logoColor=white)
 ![Gradle](https://img.shields.io/badge/Gradle-8%2B-02303A?logo=gradle&logoColor=white)
-![Architecture](https://img.shields.io/badge/Architecture-Layered%20%2F%20Hexagonal-blue)
-![Design Patterns](https://img.shields.io/badge/Patterns-Repository%20|%20DAO%20|%20Builder%20|%20Singleton%20|%20Observer-green)
+![Architecture](https://img.shields.io/badge/Architecture-Layered%20%2F%20DDD-blue)
+![Design Patterns](https://img.shields.io/badge/Patterns-Repository%20|%20DAO%20|%20Builder%20|%20Singleton%20|%20Observer%20|%20DDD%20Domain%20Events-green)
 
-A modular, production-grade Low-Level Design (LLD) of an in-memory **Task Management System** built in pure Java. This project models core enterprise patterns for managing task lifecycles, state transitions, and assignments, reinforced with an integrated, custom **Least Recently Used (LRU) Cache** backed by a **Doubly Linked List** and **HashMap**.
+A modular, production-grade Low-Level Design (LLD) of an in-memory **Task Management System** built in pure Java. This project models core enterprise patterns for managing task lifecycles, state transitions, and assignments, reinforced with an integrated, custom **Least Recently Used (LRU) Cache** backed by a **Doubly Linked List** and **HashMap**, and a **Domain-Driven Design (DDD) Event-Driven Notification Subsystem** based on the **Observer Pattern**.
 
 ---
 
@@ -22,14 +22,16 @@ A modular, production-grade Low-Level Design (LLD) of an in-memory **Task Manage
 - [System Architecture](#-system-architecture)
 - [Class Blueprint & Domain Models](#-class-blueprint--domain-models)
 - [Design Patterns Applied](#-design-patterns-applied)
-  - [1. Repository Pattern](#1-repository-pattern)
-  - [2. Data Access Object (DAO) Pattern](#2-data-access-object-dao-pattern)
-  - [3. Singleton Pattern (Double-Checked Locking)](#3-singleton-pattern-double-checked-locking)
-  - [4. Builder Pattern](#4-builder-pattern)
-  - [5. Cache-Aside & Write-Through Caching](#5-cache-aside--write-through-caching)
-  - [6. O(1) LRU Eviction via Doubly Linked List](#6-o1-lru-eviction-via-doubly-linked-list)
-  - [7. Observer Pattern (Typed Domain Events)](#7-observer-pattern-typed-domain-events)
-- [Notification Service & Event Architecture](#-notification-service--event-architecture)
+  - [1. Domain-Driven Design: Aggregate Root & Domain Events](#1-domain-driven-design-aggregate-root--domain-events)
+  - [2. Observer Pattern: Generic Event Publisher & Subscribers](#2-observer-pattern-generic-event-publisher--subscribers)
+  - [3. Data Transfer Object (DTO) Pattern: The Web Client Gate](#3-data-transfer-object-dto-pattern-the-web-client-gate)
+  - [4. Repository Pattern](#4-repository-pattern)
+  - [5. Data Access Object (DAO) Pattern](#5-data-access-object-dao-pattern)
+  - [6. Singleton Pattern (Double-Checked Locking)](#6-singleton-pattern-double-checked-locking)
+  - [7. Builder Pattern](#7-builder-pattern)
+  - [8. Cache-Aside & Write-Through Caching](#8-cache-aside--write-through-caching)
+  - [9. O(1) LRU Eviction via Doubly Linked List](#9-o1-lru-eviction-via-doubly-linked-list)
+- [Notification Subsystem & Event Architecture](#-notification-subsystem--event-architecture)
 - [Core Workflows & Sequence Diagrams](#-core-workflows--sequence-diagrams)
 - [Complexity Analysis](#-complexity-analysis)
 - [Project Structure](#-project-structure)
@@ -45,43 +47,54 @@ In enterprise software engineering, task and project tracking backends (such as 
 3. **Data Access Decoupling:** Business logic must not be tightly coupled to underlying storage engines (in-memory maps, SQL databases, or distributed caches like Redis).
 
 This project demonstrates how to solve these challenges using a **multi-tiered, clean architecture**:
-- **Rich Domain Entities** (`Task`, `User`, `Status`) that encapsulate business rules and date validations.
-- **Service Layer** (`TaskService`) serving as the entry boundary for business operations.
-- **Unified Repository Layer** (`TaskRepository`) that orchestrates reads and writes across both persistent storage and cache layers.
-- **Custom In-Memory LRU Cache** (`InMemoryCache`) built from fundamental data structures (`DoublyLinkedList` and `HashMap`) supporting constant-time $O(1)$ access and eviction.
-- **Persistent In-Memory DAO** (`InMemoryTaskDao`) implementing thread-safe singleton storage.
+- **Rich Aggregate Root (`Task`):** Encapsulates business invariants and records domain events internally upon state transitions.
+- **Service Layer Gate (`TaskService`):** Orchestrates persistence via `TaskRepository`, accepts single-request DTOs, and flushes domain events.
+- **Data Transfer Objects (`UpdateTaskRequest`):** Prevents endpoint explosion by accepting composite updates from web clients atomically.
+- **Generic Notification Engine (`Event<T>`, `EventPublisher`, `Subscriber`):** Fully decoupled Observer pattern framework ready for any entity (Tasks, Stories, Spikes).
+- **Unified Repository Layer (`TaskRepository`):** Orchestrates reads and writes across both persistent storage and cache layers.
+- **Custom In-Memory LRU Cache (`InMemoryCache`):** Built from fundamental data structures (`DoublyLinkedList` and `HashMap`) supporting constant-time $O(1)$ access and eviction.
+- **Persistent In-Memory DAO (`InMemoryTaskDao`):** Implements thread-safe singleton storage with double-checked locking.
 
 ---
 
 ## 🏗 System Architecture
 
-The project follows the **Layered Architecture** principles, enforcing a strict unidirectional dependency flow from caller to persistence:
+The project enforces clean unidirectional flow between DTO presentation, service orchestration, persistence, and event notification:
 
 ```mermaid
 flowchart TD
-    Client["Client / Entry Point (Main)"] --> Service["TaskService\n(Business Logic Layer)"]
-    Service --> Repository["TaskRepository\n(Data Orchestration & Caching Policy)"]
+    Client["Web Client / Main Entrypoint"] -->|"UpdateTaskRequest (DTO)"| Service["TaskService<br/>Service Boundary & Gate"]
 
-    subgraph Data_Layer ["Data Layer"]
-        Repository -->|Read Hit / Put / Evict| Cache["CacheDao\n(InMemoryCache - LRU)"]
-        Repository -->|Read Miss / Write / Delete| DB["TaskDao\n(InMemoryTaskDao - Storage)"]
+    subgraph Domain_Model ["Domain Model (DDD)"]
+        Service -->|"1. Mutate State"| Task["Task (Aggregate Root)<br/>Records DomainEvents on change"]
     end
 
-    subgraph Custom_DS ["Custom Data Structures"]
-        Cache --> DLL["DoublyLinkedList\n(Tracks Recency Order)"]
-        Cache --> Map["HashMap(UUID, Node(Task))\n(O(1) Addressability)"]
+    subgraph Persistence_Layer ["Persistence Layer"]
+        Service -->|"2. Persist Task"| Repository["TaskRepository<br/>Cache & Storage Orchestration"]
+        Repository -->|"Read Hit / Put / Evict"| Cache["CacheDao<br/>InMemoryCache - LRU"]
+        Repository -->|"Read Miss / Write / Delete"| DB["TaskDao<br/>InMemoryTaskDao - Storage"]
+        Cache --> DLL["DoublyLinkedList<br/>O(1) Sentinel Recency"]
+        Cache --> Map["HashMap of UUID, Node<br/>O(1) Direct Lookup"]
+    end
+
+    subgraph Notification_Subsystem ["Notification Subsystem (Observer Pattern)"]
+        Service -->|"3. Pull & Publish Events"| Publisher["EventPublisher<br/>SimpleEventPublisher"]
+        Publisher -->|"4. Broadcast Event"| Sub1["Subscriber<br/>EmailNotifier"]
+        Publisher -->|"4. Broadcast Event"| Sub2["Subscriber<br/>SlackNotifier / Logger"]
     end
 ```
 
 ### Layer Responsibilities
 | Layer | Component | Responsibility |
 |---|---|---|
-| **Service Layer** | `TaskService` | Exposes task management use cases (create, update, delete, retrieve). Validates caller inputs. |
-| **Repository Layer** | `TaskRepository` | Mediates between cache and database. Coordinates cache hits, cache misses, backfills, and cache invalidation. |
-| **Cache Layer** | `CacheDao` / `InMemoryCache` | Fast access layer maintaining active hot records. Evicts least recently used items on capacity overflow. |
-| **Persistence Layer** | `TaskDao` / `InMemoryTaskDao` | Authoritative source of truth for all tasks in the system. |
-| **Data Structures** | `DoublyLinkedList`, `Node` | Custom generic doubly linked list utilizing sentinel head/tail nodes for constant-time node operations. |
-| **Domain Layer** | `Task`, `User`, `Status` | Models domain entities, state lifecycle (`TODO`, `IN_PROGRESS`, `DONE`), and invariant validations. |
+| **DTO Layer** | `UpdateTaskRequest` | Encapsulates optional fields submitted by client in a single atomic payload. |
+| **Service Layer** | `TaskService` | Acts as the gate. Fetches aggregates, delegates domain operations, persists, and flushes events. |
+| **Domain Layer** | `Task`, `User`, `Status` | Aggregate Root enforcing invariants and generating domain events on state change. |
+| **Notification Layer** | `Event<T>`, `EventPublisher`, `Subscriber` | Generic, domain-agnostic pub-sub notification engine. |
+| **Repository Layer** | `TaskRepository` | Mediates between cache and database (Cache-Aside, Write-Through). |
+| **Cache Layer** | `CacheDao` / `InMemoryCache` | $O(1)$ LRU cache maintaining active hot records. |
+| **Persistence Layer** | `TaskDao` / `InMemoryTaskDao` | Thread-safe in-memory authoritative storage. |
+| **Data Structures** | `DoublyLinkedList`, `Node` | Custom generic doubly linked list utilizing sentinel head/tail nodes. |
 
 ---
 
@@ -89,6 +102,7 @@ flowchart TD
 
 ```mermaid
 classDiagram
+    %% ----------------- DOMAIN & DTO -----------------
     class Status {
         <<enumeration>>
         TODO
@@ -99,6 +113,8 @@ classDiagram
     class User {
         -String username
         -UUID id
+        +getUsername() String
+        +getId() UUID
         +updateUserName(String)
         -validateUserName(String)
     }
@@ -112,30 +128,112 @@ classDiagram
         -LocalDate modifiedAt
         -LocalDate dueDate
         -Status status
+        -List~Event~ domainEvents
         +getId() UUID
-        +updateDescription(String)
-        +updateName(String)
+        +getName() String
+        +getDescription() String
+        +getAssignedTo() User
+        +getDueDate() LocalDate
+        +getStatus() Status
         +updateAssignee(User)
         +updateDueDate(LocalDate)
         +updateStatus(Status)
-        -validateDueDate(LocalDate)
-        -updateLastModifiedDate()
+        +updateName(String)
+        +updateDescription(String)
+        +pullDomainEvents() List~Event~
     }
 
-    class Node~V~ {
-        +Node~V~ next
-        +Node~V~ prev
-        +V value
-        +UUID key
+    class UpdateTaskRequest {
+        <<record>>
+        +UUID uuid
+        +String name
+        +String description
+        +User assignedTo
+        +LocalDate dueDate
+        +Status status
     }
 
-    class DoublyLinkedList~V, N~ {
-        ~N head
-        ~N tail
-        ~int size
-        +addToHead(Node~V~)
-        +remove(Node~V~)
-        +removeTail() Optional~UUID~
+    %% ----------------- NOTIFICATION & OBSERVER -----------------
+    class Event~T~ {
+        <<interface>>
+        +getEntityId() UUID
+        +getEventName() String
+        +getOldValue() T
+        +getNewValue() T
+        +getEventTime() Instant
+    }
+
+    class TaskAssigneeChangeEvent {
+        -UUID entityId
+        -User oldValue
+        -User newValue
+        -Instant time
+        +getEntityId() UUID
+        +getEventName() String
+        +getOldValue() User
+        +getNewValue() User
+        +getEventTime() Instant
+    }
+
+    class EventPublisher {
+        <<interface>>
+        +addSubscriber(Subscriber)
+        +removeSubscriber(Subscriber)
+        +notify(Event~T~)
+    }
+
+    class SimpleEventPublisher {
+        -List~Subscriber~ subscribers
+        +addSubscriber(Subscriber)
+        +removeSubscriber(Subscriber)
+        +notify(Event~T~)
+    }
+
+    class Subscriber {
+        <<interface>>
+        +consume(Event~T~)
+    }
+
+    class EmailNotifier {
+        +consume(Event~T~)
+    }
+
+    %% ----------------- SERVICE & REPOSITORY -----------------
+    class TaskService {
+        -TaskRepository repository
+        -EventPublisher publisher
+        +getTask(UUID) Task
+        +getAllTasks() List~Task~
+        +saveTask(Task) UUID
+        +updateTask(UpdateTaskRequest)
+        +updateTask(Task)
+        +deleteTask(UUID)
+    }
+
+    class TaskRepository {
+        -CacheDao cacheDao
+        -TaskDao taskDao
+        +getTask(UUID) Task
+        +getAllTask() List~Task~
+        +saveTask(Task)
+        +updateTask(Task)
+        +deleteTask(UUID)
+    }
+
+    %% ----------------- STORAGE & CACHE -----------------
+    class TaskDao {
+        <<interface>>
+        +getTask(UUID) Optional~Task~
+        +getAllTask() List~Task~
+        +saveTask(Task) Optional~UUID~
+        +updateTask(Task)
+        +deleteTask(UUID)
+    }
+
+    class InMemoryTaskDao {
+        -volatile InMemoryTaskDao INSTANCE$
+        -Map~UUID, Task~ taskMap
+        +getInstance()$ InMemoryTaskDao
     }
 
     class CacheDao {
@@ -154,80 +252,114 @@ classDiagram
         +remove(UUID)
     }
 
-    class TaskDao {
-        <<interface>>
-        +getTask(UUID) Optional~Task~
-        +getAllTask() List~Task~
-        +saveTask(Task) Optional~UUID~
-        +updateTask(Task)
-        +deleteTask(UUID)
+    class DoublyLinkedList~V, N~ {
+        ~N head
+        ~N tail
+        ~int size
+        +addToHead(Node~V~)
+        +remove(Node~V~)
+        +removeTail() Optional~UUID~
     }
 
-    class InMemoryTaskDao {
-        -volatile InMemoryTaskDao INSTANCE$
-        -Map~UUID, Task~ taskMap
-        +getInstance()$ InMemoryTaskDao
-        +getTask(UUID) Optional~Task~
-        +getAllTask() List~Task~
-        +saveTask(Task) Optional~UUID~
-        +updateTask(Task)
-        +deleteTask(UUID)
-    }
-
-    class TaskRepository {
-        -CacheDao cacheDao
-        -TaskDao taskDao
-        +getTask(UUID) Task
-        +getAllTask() List~Task~
-        +saveTask(Task)
-        +updateTask(Task)
-        +deleteTask(UUID)
-    }
-
-    class TaskService {
-        -TaskRepository repository
-        +getTask(UUID) Task
-        +getAllTasks() List~Task~
-        +saveTask(Task) UUID
-        +updateTask(Task)
-        +deleteTask(UUID)
-    }
-
+    %% Relationships
     Task --> Status : has
     Task --> User : assignedTo
-    CacheDao <|.. InMemoryCache : implements
-    TaskDao <|.. InMemoryTaskDao : implements
-    InMemoryCache --> DoublyLinkedList : maintains recency
-    DoublyLinkedList o-- Node : links
-    TaskRepository --> CacheDao : queries
+    Task o-- Event : records
+    Event <|.. TaskAssigneeChangeEvent : implements
+    EventPublisher <|.. SimpleEventPublisher : implements
+    Subscriber <|.. EmailNotifier : implements
+    SimpleEventPublisher o-- Subscriber : notifies
+    TaskService --> TaskRepository : persists via
+    TaskService --> EventPublisher : flushes events to
+    TaskService ..> UpdateTaskRequest : accepts
+    TaskRepository --> CacheDao : caches in
     TaskRepository --> TaskDao : queries
-    TaskService --> TaskRepository : delegates to
+    TaskDao <|.. InMemoryTaskDao : implements
+    CacheDao <|.. InMemoryCache : implements
+    InMemoryCache --> DoublyLinkedList : tracks recency
 ```
 
 ---
 
 ## 💡 Design Patterns Applied
 
-### 1. Repository Pattern
-- **Problem:** When business services directly interact with both databases and caches, caching logic leaks throughout the service tier, producing code duplication and subtle bugs.
-- **Solution:** `TaskRepository` acts as an in-memory collection-like interface. `TaskService` does not know whether a task came from a fast memory cache or an underlying database; the repository seamlessly orchestrates lookups, saves, and updates.
+### 1. Domain-Driven Design: Aggregate Root & Domain Events
+- **Problem:** Service-layer diffing (`if (!existing.getAssignee().equals(incoming.getAssignee()))`) is error-prone, violates DRY, and clutters orchestration code with manual property comparisons.
+- **Solution:** `Task` acts as an **Aggregate Root** (similar to Spring Data's `AbstractAggregateRoot`). When state-changing methods (`updateAssignee`, `updateStatus`, `updateDueDate`) are invoked, `Task` encapsulates its own business invariants and appends an immutable domain event to an internal buffer. `TaskService` simply pulls uncommitted events (`task.pullDomainEvents()`) and dispatches them after persisting.
 
 ```java
-// TaskService remains decoupled from cache mechanics:
-public Task getTask(UUID uuid) {
-    return repository.getTask(uuid);
+// Inside Task (Aggregate Root):
+public void updateAssignee(User user) {
+    if (Objects.equals(this.assignedTo, user)) return; // Guard against duplicate no-op
+    User oldAssignee = this.assignedTo;
+    this.assignedTo = user;
+    this.domainEvents.add(new TaskAssigneeChangeEvent(this.id, oldAssignee, user));
+    updateLastModifiedDate();
 }
 ```
 
 ---
 
-### 2. Data Access Object (DAO) Pattern
+### 2. Observer Pattern: Generic Event Publisher & Subscribers
+- **Problem:** Tying notifications directly to `Task` prevents reusing the notification infrastructure for other entities (e.g., `Story`, `Spike`, `Project`).
+- **Solution:** The notification framework is completely generic and domain-agnostic:
+  - `Event<T>` provides `getEntityId()`, `getEventName()`, `getOldValue()`, `getNewValue()`, and `getEventTime()`.
+  - `EventPublisher` maintains a list of `Subscriber`s and broadcasts events.
+  - `Subscriber` implementations (`EmailNotifier`) process any event without needing hardcoded task dependencies.
+
+```java
+// Generic Subscriber consumes any event safely:
+public class EmailNotifier implements Subscriber {
+    @Override
+    public <T> void consume(Event<T> event) {
+        String oldVal = event.getOldValue() == null ? "None" : event.getOldValue().toString();
+        String newVal = event.getNewValue() == null ? "None" : event.getNewValue().toString();
+
+        System.out.println("📧 [EMAIL NOTIFICATION] Event: " + event.getEventName()
+                + " | Entity ID: " + event.getEntityId()
+                + " | Old: " + oldVal
+                + " -> New: " + newVal
+                + " | At: " + event.getEventTime());
+    }
+}
+```
+
+---
+
+### 3. Data Transfer Object (DTO) Pattern: The Web Client Gate
+- **Problem:** Over HTTP/REST, a web client cannot mutate in-memory Java objects. Forcing individual endpoints for every single field (`PATCH /assignee`, `PATCH /status`) produces network chatty-ness and partial failure risks.
+- **Solution:** `UpdateTaskRequest` is an immutable record that encapsulates all optional fields submitted in a single request. `TaskService` acts as the gate: it loads the aggregate, executes only the relevant domain mutations, saves once, and flushes all resulting events atomically.
+
+```java
+public void updateTask(UpdateTaskRequest request) {
+    Task task = repository.getTask(request.uuid());
+
+    if (request.name() != null) task.updateName(request.name());
+    if (request.description() != null) task.updateDescription(request.description());
+    if (request.assignedTo() != null) task.updateAssignee(request.assignedTo());
+    if (request.dueDate() != null) task.updateDueDate(request.dueDate());
+    if (request.status() != null) task.updateStatus(request.status());
+
+    repository.updateTask(task);
+    task.pullDomainEvents().forEach(publisher::notify);
+}
+```
+
+---
+
+### 4. Repository Pattern
+- **Problem:** When business services directly interact with both databases and caches, caching logic leaks throughout the service tier, producing code duplication and subtle bugs.
+- **Solution:** `TaskRepository` acts as an in-memory collection-like interface. `TaskService` does not know whether a task came from a fast memory cache or an underlying database; the repository seamlessly orchestrates lookups, saves, and updates.
+
+---
+
+### 5. Data Access Object (DAO) Pattern
 - **Problem:** Directly exposing storage implementations tightly binds domain rules to technical storage choices.
 - **Solution:** We define `TaskDao` and `CacheDao` interfaces. `InMemoryTaskDao` and `InMemoryCache` provide concrete implementations. If we decide to swap out `InMemoryTaskDao` for a relational SQL database via JDBC/Hibernate, or `InMemoryCache` for Redis, zero changes are required in `TaskRepository` or `TaskService`.
 
 ---
 
-### 3. Singleton Pattern (Double-Checked Locking)
+### 6. Singleton Pattern (Double-Checked Locking)
 - **Problem:** Multiple concurrent instances of an in-memory database DAO would fragment stored records into isolated states.
 - **Solution:** `InMemoryTaskDao` implements the **Thread-Safe Singleton Pattern** using a `volatile` instance reference and **Double-Checked Locking**. This avoids continuous synchronization bottlenecks while guaranteeing single-instance initialization.
 
@@ -255,7 +387,7 @@ public class InMemoryTaskDao implements TaskDao {
 
 ---
 
-### 4. Builder Pattern
+### 7. Builder Pattern
 - **Problem:** Initializing a cache with multiple optional tuning parameters (initial capacity, eviction boundaries, load factors) via telescoping constructors is error-prone.
 - **Solution:** `InMemoryCache.Builder` provides a readable, fluent configuration interface while enforcing validation invariants (e.g., verifying capacity $> 0$) prior to constructing the immutable cache instance.
 
@@ -267,7 +399,7 @@ CacheDao cacheDao = new InMemoryCache.Builder()
 
 ---
 
-### 5. Cache-Aside & Write-Through Caching
+### 8. Cache-Aside & Write-Through Caching
 The repository employs a coordinated dual-datasource strategy:
 
 #### Read (Cache-Aside with Lazy Loading):
@@ -287,7 +419,7 @@ The repository employs a coordinated dual-datasource strategy:
 
 ---
 
-### 6. O(1) LRU Eviction via Doubly Linked List
+### 9. O(1) LRU Eviction via Doubly Linked List
 
 The `InMemoryCache` achieves constant time **$O(1)$** lookup, insertion, update, and eviction by combining:
 1. **`HashMap<UUID, Node<Task>>`**: Provides $O(1)$ random access directly to any node in the list.
@@ -304,172 +436,52 @@ The `InMemoryCache` achieves constant time **$O(1)$** lookup, insertion, update,
 
 ---
 
-### 7. Observer Pattern (Typed Domain Events)
-- **Problem:** When a task's state changes (assignee, due date, status), secondary subsystems (email/Slack notifications, audit logging, analytics) must react. Hardcoding direct calls to these services inside `TaskService` tightly couples the domain logic and violates the Open-Closed Principle.
-- **Solution:** `TaskService` acts as the event trigger, publishing strongly-typed domain events (`TaskStatusChangedEvent`, `TaskAssigneeChangedEvent`, `TaskDueDateChangedEvent`) to an `EventPublisher`. Observers (`NotificationService`, `LogService`) subscribe specifically to the event classes they care about with 100% compile-time type safety—eliminating runtime `instanceof` inspection.
-
----
-
-## 🔔 Notification Service & Event Architecture
+## 🔔 Notification Subsystem & Event Architecture
 
 The notification system models an enterprise **Event-Driven Observer Pattern** designed around domain lifecycle state transitions:
 
-```mermaid
-classDiagram
-    %% ------------------- EVENT HIERARCHY -------------------
-    class TaskEvent {
-        <<interface>>
-        +getTask() Task
-        +getOccurredAt() Instant
-    }
-
-    class TaskStatusChangedEvent {
-        -Task task
-        -Status oldStatus
-        -Status newStatus
-        -Instant occurredAt
-        +getTask() Task
-        +getOldStatus() Status
-        +getNewStatus() Status
-    }
-
-    class TaskAssigneeChangedEvent {
-        -Task task
-        -User oldAssignee
-        -User newAssignee
-        -Instant occurredAt
-        +getTask() Task
-        +getOldAssignee() User
-        +getNewAssignee() User
-    }
-
-    class TaskDueDateChangedEvent {
-        -Task task
-        -LocalDate oldDueDate
-        -LocalDate newDueDate
-        -Instant occurredAt
-        +getTask() Task
-        +getOldDueDate() LocalDate
-        +getNewDueDate() LocalDate
-    }
-
-    TaskEvent <|.. TaskStatusChangedEvent : implements
-    TaskEvent <|.. TaskAssigneeChangedEvent : implements
-    TaskEvent <|.. TaskDueDateChangedEvent : implements
-
-    %% ------------------- LISTENER CONTRACT -------------------
-    class EventListener~T~ {
-        <<interface>>
-        +onEvent(T event) void
-    }
-
-    %% ------------------- EVENT PUBLISHER -------------------
-    class EventPublisher {
-        <<interface>>
-        +subscribe(Class~T~ eventType, EventListener~T~ listener) void
-        +unsubscribe(Class~T~ eventType, EventListener~T~ listener) void
-        +publish(TaskEvent event) void
-    }
-
-    class InMemoryEventPublisher {
-        -Map~Class, List~EventListener~~ listeners
-        +subscribe(Class~T~, EventListener~T~) void
-        +unsubscribe(Class~T~, EventListener~T~) void
-        +publish(TaskEvent) void
-    }
-
-    EventPublisher <|.. InMemoryEventPublisher : implements
-    InMemoryEventPublisher o-- EventListener : maintains registry
-
-    %% ------------------- APPLICATION SERVICES -------------------
-    class TaskService {
-        -TaskRepository repository
-        -EventPublisher publisher
-        +updateStatus(UUID, Status)
-        +updateAssignee(UUID, User)
-        +updateDueDate(UUID, LocalDate)
-    }
-
-    class NotificationService {
-        -List~NotificationChannel~ channels
-        +onStatusChanged(TaskStatusChangedEvent event) void
-        +onAssigneeChanged(TaskAssigneeChangedEvent event) void
-        +onDueDateChanged(TaskDueDateChangedEvent event) void
-        +sendNotification(String message, Task task) void
-    }
-
-    class LogService {
-        +logEvent(TaskEvent event) void
-    }
-
-    %% ------------------- NOTIFICATION CHANNELS -------------------
-    class NotificationChannel {
-        <<interface>>
-        +send(String recipient, String message) void
-    }
-
-    class EmailNotificationChannel {
-        +send(String recipient, String message) void
-    }
-
-    class SlackNotificationChannel {
-        +send(String recipient, String message) void
-    }
-
-    NotificationChannel <|.. EmailNotificationChannel : implements
-    NotificationChannel <|.. SlackNotificationChannel : implements
-
-    %% ------------------- RELATIONSHIPS -------------------
-    TaskService --> EventPublisher : publishes events to
-    TaskService --> TaskRepository : persists state
-    NotificationService o-- NotificationChannel : dispatches through
-    NotificationService ..> EventListener : method handles match
-    LogService ..> EventListener : method handles match
-```
-
-### State Changes Triggering Notifications
-1. **Assignee Change (`TaskAssigneeChangedEvent`):** Triggers alerts when a task is assigned, reassigned, or unassigned.
-2. **Due Date Change (`TaskDueDateChangedEvent`):** Notifies stakeholders of deadline postponements or escalations.
-3. **Status Change (`TaskStatusChangedEvent`):** Signals state movement across `TODO -> IN_PROGRESS -> DONE`.
-
-### Multi-Channel Notification Dispatching
-`NotificationService` operates as an observer that fans out to pluggable channels (Strategy Pattern):
-- **Email Channel:** Dispatches transactional email updates to assigned users.
-- **Slack Channel:** Posts updates directly to team channels or project webhooks.
-- **In-App / SMS Channel:** Additional pluggable channels conforming to `NotificationChannel`.
+### State Changes Tracked
+1. **Assignee Change (`TaskAssigneeChangeEvent`):** Emitted when a task is assigned, reassigned, or unassigned.
+2. **Due Date Change:** Notifies stakeholders of deadline postponements or escalations.
+3. **Status Change:** Signals state movement across `TODO -> IN_PROGRESS -> DONE`.
 
 ### Event Dispatch & Notification Workflow
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Client
-    participant Service as TaskService
-    participant Publisher as InMemoryEventPublisher
-    participant Notify as NotificationService
-    participant Channel as EmailNotificationChannel
-    participant Log as LogService
+    actor Client as "Web Client / Main"
+    participant Service as "TaskService (The Gate)"
+    participant Repo as TaskRepository
+    participant Task as "Task (Aggregate Root)"
+    participant Pub as SimpleEventPublisher
+    participant Sub as EmailNotifier
 
-    Note over Publisher,Notify: System Startup / Registration Phase
-    Publisher->>Publisher: subscribe(TaskStatusChangedEvent.class, Notify::onStatusChanged)
-    Publisher->>Publisher: subscribe(TaskEvent.class, Log::logEvent)
+    Note over Client,Sub: 1. Client Submits Update Request DTO
+    Client->>Service: updateTask(UpdateTaskRequest)
+    Service->>Repo: getTask(uuid)
+    Repo-->>Service: Task (from Cache/DB)
 
-    Note over Client,Channel: Runtime Flow
-    Client->>Service: updateStatus(taskId, IN_PROGRESS)
-    Service->>Service: Mutate Task state in DB/Cache
-    Service->>Publisher: publish(new TaskStatusChangedEvent(task, TODO, IN_PROGRESS))
+    Note over Service,Task: 2. Domain Model Executes & Records Events
+    Service->>Task: task.updateAssignee(alice)
+    Task->>Task: Check change != current
+    Task->>Task: Append TaskAssigneeChangeEvent to domainEvents
 
-    par Notify Registered Listeners
-        Publisher->>Notify: onStatusChanged(event)
-        Notify->>Channel: send("Assignee", "Status changed to IN_PROGRESS")
-    and Log Event
-        Publisher->>Log: logEvent(event)
-    end
+    Note over Service,Repo: 3. Persistence
+    Service->>Repo: updateTask(task)
+    Repo->>Repo: Write to DB & refresh Cache
+
+    Note over Service,Sub: 4. Flush Uncommitted Events to Observers
+    Service->>Task: task.pullDomainEvents()
+    Task-->>Service: [TaskAssigneeChangeEvent]
+    Service->>Pub: notify(event)
+    Pub->>Sub: consume(event)
+    Sub->>Sub: Print / Dispatch email notification
 ```
 
 ### Architectural Guarantees:
-- **Compile-Time Type Safety:** Listeners subscribe to explicit generic types (`EventListener<T extends TaskEvent>`). No runtime `instanceof` downcasting or type checking required in observer handlers.
-- **Open-Closed Extensibility:** Adding a new event type (e.g., `TaskPriorityChangedEvent`) or new observers (`AuditService`, `MetricsService`) requires zero code changes to existing classes.
-- **Decoupled Delivery:** Business operations in `TaskService` do not know whether notifications are sent via Email, Slack, or logged.
+- **Zero Service-Side Diffing:** The entity tracks what changed when it changed, capturing `oldValue` and `newValue` automatically.
+- **Generic & Domain-Agnostic Engine:** `Event<T>`, `EventPublisher`, and `Subscriber` do not depend on `Task`. They work for any entity (e.g., Stories, Spikes).
+- **Atomic Single-Request Updates:** Web clients submit one DTO payload; `TaskService` processes all mutations in one unit of work.
 
 ---
 
@@ -553,11 +565,13 @@ task-management-system/
         └── java/
             └── com/
                 └── jyotimoykashyap/
-                    ├── Main.java                    # Interactive lifecycle & LRU demo
+                    ├── Main.java                    # Interactive lifecycle & notification demo
                     ├── models/
                     │   ├── Status.java              # Task status enum (TODO, IN_PROGRESS, DONE)
-                    │   ├── User.java                # User domain model with validations
-                    │   └── Task.java                # Task entity with lifecycle rules
+                    │   ├── User.java                # User domain model with validations & ID
+                    │   └── Task.java                # Aggregate Root with domain event buffer
+                    ├── dto/
+                    │   └── UpdateTaskRequest.java   # Immutable DTO for atomic client updates
                     ├── datastructures/
                     │   ├── Node.java                # Generic Doubly-Linked List Node
                     │   └── DoublyLinkedList.java    # Custom O(1) Doubly Linked List with Sentinels
@@ -569,8 +583,18 @@ task-management-system/
                     │   └── InMemoryTaskDao.java     # Singleton In-Memory Task Database
                     ├── repository/
                     │   └── TaskRepository.java      # Coordinates Cache & DAO access
-                    └── service/
-                        └── TaskService.java         # Public business logic service
+                    ├── service/
+                    │   └── TaskService.java         # Public service gate & event dispatcher
+                    └── notification/
+                        ├── event/
+                        │   ├── Event.java           # Generic event interface (entityId, eventName)
+                        │   └── TaskAssigneeChangeEvent.java # Strongly-typed assignee change event
+                        ├── publisher/
+                        │   ├── EventPublisher.java  # Publisher contract
+                        │   └── SimpleEventPublisher.java # Concrete broadcast publisher
+                        └── subscriber/
+                            ├── Subscriber.java      # Generic subscriber consumer contract
+                            └── EmailNotifier.java   # Concrete email subscriber
 ```
 
 ---
@@ -586,7 +610,7 @@ task-management-system/
 ```
 
 ### 3. Run the Demonstration
-The included [`Main.java`](./src/main/java/com/jyotimoykashyap/Main.java) configures a cache capacity of `2` to clearly showcase LRU eviction, cache hits, cache misses, updates, and removals:
+The included [`Main.java`](./src/main/java/com/jyotimoykashyap/Main.java) configures a cache capacity of `2` to clearly showcase LRU eviction, cache hits, cache misses, updates, and email notifications:
 
 ```bash
 # Compile and run via java directly:
@@ -599,26 +623,27 @@ java -cp build/classes/java/main com.jyotimoykashyap.Main
 === Starting Task Management System Demo ===
 
 --- 1. Creating and Saving Tasks ---
-Saved Task 1: cae294fa-9942-4566-9c5c-c6bce9cdf2d0
-Saved Task 2: 480432c3-bb66-4b93-b55f-513c196a7a6a
+Saved Task 1: 2d2d1937-d5e6-401c-b036-13083437adfa
+Saved Task 2: 8ed4ffb2-c9b6-4054-b2e8-f7e7d4ff7a69
 
 --- 2. Fetching Task 1 (Cache Hit & LRU Promotion) ---
-Successfully fetched Task 1: cae294fa-9942-4566-9c5c-c6bce9cdf2d0
+Successfully fetched Task 1: 2d2d1937-d5e6-401c-b036-13083437adfa
 
 --- 3. Saving Task 3 (Triggers LRU Eviction of Task 2) ---
-Saved Task 3: fd288a3f-7540-4a08-963d-8ff2609ecf12
+Saved Task 3: 215231fb-db0d-494b-a836-2660ce6f4b4d
 
 --- 4. Fetching Task 2 (Cache Miss -> DB Fetch) ---
-Successfully fetched Task 2 from DB: 480432c3-bb66-4b93-b55f-513c196a7a6a
+Successfully fetched Task 2 from DB: 8ed4ffb2-c9b6-4054-b2e8-f7e7d4ff7a69
 
---- 5. Updating Task 1 ---
-Updated Task 1 description successfully.
+--- 5. Updating Task 1 (Assignee Change & Email Notification) ---
+📧 [EMAIL NOTIFICATION] Event: TASK_ASSIGNEE_CHANGED | Entity ID: 2d2d1937-d5e6-401c-b036-13083437adfa | Old: None -> New: alice | At: 2026-09-10T18:17:48.802015Z
+Updated Task 1 via UpdateTaskRequest successfully.
 
 --- 6. Listing All Tasks ---
 Total tasks in system: 3
- - Task ID: cae294fa-9942-4566-9c5c-c6bce9cdf2d0
- - Task ID: 480432c3-bb66-4b93-b55f-513c196a7a6a
- - Task ID: fd288a3f-7540-4a08-963d-8ff2609ecf12
+ - Task ID: 2d2d1937-d5e6-401c-b036-13083437adfa
+ - Task ID: 215231fb-db0d-494b-a836-2660ce6f4b4d
+ - Task ID: 8ed4ffb2-c9b6-4054-b2e8-f7e7d4ff7a69
 
 --- 7. Deleting Task 3 ---
 Deleted Task 3.
@@ -632,5 +657,5 @@ Verified: Task 3 no longer exists (Task not found)
 ## 🔮 Concurrency & Future Roadmap
 While the current database DAO leverages thread-safe Singleton instantiation and maps, under heavy multi-threaded workloads the following enhancements can be incorporated:
 1. **Concurrent Data Structures:** Replacing raw `HashMap` with `ConcurrentHashMap` and wrapping doubly linked list operations in a `ReentrantReadWriteLock`.
-2. **Pluggable Eviction Strategies:** Refactoring `InMemoryCache` to support pluggable policies (LFU, FIFO, Clock-Pro) via the Strategy Pattern (similar to [`cache-lld`](../cache-lld)).
-3. **Event Notification (Observer Pattern):** Emitting domain events (`TaskAssignedEvent`, `TaskStatusChangedEvent`) to notify external services asynchronously.
+2. **Asynchronous Dispatching:** Backing `EventPublisher` with an `ExecutorService` (or virtual threads via Project Loom) to process subscriber delivery on background threads.
+3. **Pluggable Eviction Strategies:** Refactoring `InMemoryCache` to support pluggable policies (LFU, FIFO, Clock-Pro) via the Strategy Pattern (similar to [`cache-lld`](../cache-lld)).
