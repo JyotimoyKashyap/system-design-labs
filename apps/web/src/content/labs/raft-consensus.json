@@ -1,0 +1,11 @@
+{
+  "id": "raft-consensus",
+  "title": "Raft Consensus Visualizer",
+  "description": "Interactive simulation of the Raft leader election algorithm featuring asynchronous network delays, split votes, term changes, and event-loop state machines.",
+  "tag": "Consensus / State",
+  "tagColor": "#f97316",
+  "tagTextColor": "#fff",
+  "category": "Consensus",
+  "featured": true,
+  "status": "Interactive Simulation"
+}

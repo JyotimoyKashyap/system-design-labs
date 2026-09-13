@@ -1,0 +1,275 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SocialPill from '../components/SocialPill.astro';
+import ExploreCard from '../components/ExploreCard.astro';
+import { getCollection } from 'astro:content';
+
+const blogs = (await getCollection('blogs')).sort(
+  (a, b) => new Date(b.data.publishedAt).getTime() - new Date(a.data.publishedAt).getTime()
+);
+
+const lldList = (await getCollection('lld')).sort(
+  (a, b) => new Date(b.data.publishedAt).getTime() - new Date(a.data.publishedAt).getTime()
+);
+
+const labs = await getCollection('labs');
+const featuredLabs = labs.filter((l) => l.data.featured);
+---
+
+<BaseLayout>
+  <!-- 1. HERO SECTION (Two-Column Layout inspired by Arpit Bhayani) -->
+  <section class="pb-16 border-b-3 border-stone-900 mb-16">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
+      <!-- Left Column: Narrative Bio & Links (7 of 12 cols) -->
+      <div class="lg:col-span-8 space-y-6">
+        <div>
+          <h1 class="font-serif italic font-black text-4xl sm:text-6xl text-stone-900 tracking-tight leading-none mb-3">
+            Hey, I am Jyotimoy
+          </h1>
+          <h2 class="font-serif italic font-semibold text-xl sm:text-2xl text-orange-600 leading-snug">
+            engineering, distributed systems, and low-level design. always building.
+          </h2>
+        </div>
+
+        <!-- Narrative Paragraphs -->
+        <div class="space-y-4 text-stone-700 text-base sm:text-lg leading-relaxed font-sans">
+          <p>
+            I am a software engineer passionate about <strong>distributed systems</strong>, high-throughput backend architectures, and database internals. I focus on building reliable systems that scale predictably and exploring the fundamental trade-offs in modern computing.
+          </p>
+          <p>
+            I run <a href="https://github.com/JyotimoyKashyap/system-design-labs" target="_blank" class="text-stone-950 font-bold underline decoration-2 decoration-orange-500 hover:text-orange-600">System Design Labs</a>, an open-source initiative dedicated to demystifying complex distributed algorithms—such as <strong>Raft consensus</strong>, <strong>consistent hashing rings</strong>, <strong>append-only logs</strong>, and <strong>probabilistic data structures</strong>—through interactive visual simulations and in-depth writeups.
+          </p>
+          <p>
+            On the low-level side, I dissect <strong>Low-Level Design (LLD)</strong> problems from first principles—designing concurrent in-memory caches with lock striping, event-sourced notification buses, and enterprise task management engines.
+          </p>
+          <p>
+            I believe the best way to understand systems is to break them down visually, test their edge cases, and share the learnings in the open.
+          </p>
+        </div>
+
+        <!-- Social Buttons Group -->
+        <div class="pt-2 flex flex-wrap gap-2.5 sm:gap-3">
+          <!-- GitHub -->
+          <SocialPill href="https://github.com/JyotimoyKashyap" label="GitHub" count="Labs" variant="highlight">
+            <svg slot="icon" class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            </svg>
+          </SocialPill>
+
+          <!-- LinkedIn -->
+          <SocialPill href="https://linkedin.com/in/jyotimoykashyap" label="LinkedIn">
+            <svg slot="icon" class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+              <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+            </svg>
+          </SocialPill>
+
+          <!-- Twitter / X -->
+          <SocialPill href="https://x.com/jyotimoykashyap" label="Twitter / X">
+            <svg slot="icon" class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
+          </SocialPill>
+
+          <!-- Email -->
+          <SocialPill href="mailto:contact@jyotimoykashyap.me" label="Contact">
+            <svg slot="icon" class="w-4 h-4 stroke-current fill-none stroke-2" viewBox="0 0 24 24">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+          </SocialPill>
+        </div>
+      </div>
+
+      <!-- Right Column: Brutalist Profile Frame (4 of 12 cols) -->
+      <div class="lg:col-span-4 flex flex-col items-center lg:items-end">
+        <div class="w-full max-w-[320px] bg-white border-3 border-stone-900 p-3 shadow-[8px_8px_0px_0px_rgba(28,25,23,1)]">
+          <div class="w-full aspect-square border-2 border-stone-900 overflow-hidden bg-stone-100 flex items-center justify-center">
+            <img
+              src="/profile.svg"
+              alt="Jyotimoy Kashyap"
+              class="w-full h-full object-cover select-none"
+              loading="eager"
+            />
+          </div>
+          <div class="mt-3 pt-2 border-t-2 border-dashed border-stone-200 flex items-center justify-between font-mono text-[11px] text-stone-600">
+            <span class="font-bold">STATUS:</span>
+            <span class="text-emerald-700 flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Architecting &amp; Writing
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. EXPLORE WORK & WRITINGS SECTION -->
+  <section class="mb-20">
+    <div class="mb-8">
+      <h2 class="font-serif italic font-black text-3xl sm:text-4xl text-stone-900 leading-tight">
+        Explore Work &amp; Writings
+      </h2>
+      <p class="text-stone-600 text-base font-sans mt-1">
+        Everything I build, write, publish, and engineer in the open.
+      </p>
+    </div>
+
+    <!-- 4 Category Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- 1. Interactive Labs -->
+      <ExploreCard
+        href="/labs"
+        tag="INTERACTIVE"
+        count={`${labs.length} Labs`}
+        title="Interactive Labs"
+        description="Visual in-browser simulations of Raft elections, Consistent Hashing rings, Bloom filters, and message queues."
+        actionText="Launch labs"
+        tagBgColor="#f97316"
+      />
+
+      <!-- 2. System Design Blogs -->
+      <ExploreCard
+        href="/blogs"
+        tag="ARCHITECTURE"
+        count={`${blogs.length} Essays`}
+        title="System Design Blogs"
+        description="Macro-level architectural deep dives into scaling API servers 0 to 1, database replication, and cache topologies."
+        actionText="Read blogs"
+        tagBgColor="#2563eb"
+      />
+
+      <!-- 3. Low-Level Design (LLD) -->
+      <ExploreCard
+        href="/lld"
+        tag="OBJECT-ORIENTED"
+        count={`${lldList.length} Studies`}
+        title="Low-Level Design"
+        description="Production-grade object-oriented patterns, thread-safe in-memory cache architectures, and domain-driven design."
+        actionText="Explore LLD"
+        tagBgColor="#ec4899"
+      />
+
+      <!-- 4. Open Source Mono-Repo -->
+      <ExploreCard
+        href="https://github.com/JyotimoyKashyap/system-design-labs"
+        tag="OPEN SOURCE"
+        count="Monorepo"
+        title="System Design Labs"
+        description="Containerized Docker topologies, Spring Boot microservices, Kafka cluster nodes, and Redis caches."
+        actionText="View repository"
+        tagBgColor="#10b981"
+      />
+    </div>
+  </section>
+
+  <!-- 3. RECENT ACTIVITY & HIGHLIGHTS -->
+  <section class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+    <!-- Left Column: Recent Blogs & LLD -->
+    <div class="bg-white border-3 border-stone-900 p-6 sm:p-8 shadow-[6px_6px_0px_0px_rgba(28,25,23,1)] flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between pb-4 mb-6 border-b-2 border-stone-900">
+          <h3 class="font-serif italic font-black text-2xl text-stone-900">
+            Recent Writings &amp; LLD
+          </h3>
+          <a href="/blogs" class="font-mono text-xs font-bold uppercase tracking-wider text-orange-600 hover:underline">
+            All Archive &rarr;
+          </a>
+        </div>
+
+        <ul class="space-y-4 divide-y divide-stone-100">
+          {blogs.slice(0, 2).map((post) => (
+            <li class="pt-3 first:pt-0">
+              <a href={`/blogs/${post.id}`} class="group block no-underline">
+                <div class="flex items-baseline gap-2 text-stone-500 font-mono text-xs mb-1">
+                  <span>{post.data.publishedAt}</span>
+                  <span>•</span>
+                  <span class="text-blue-600 font-bold uppercase">{post.data.category}</span>
+                </div>
+                <h4 class="font-serif italic font-bold text-lg text-stone-900 group-hover:text-orange-600 transition-colors leading-snug">
+                  {post.data.title}
+                </h4>
+                <p class="text-xs text-stone-600 font-sans mt-1 line-clamp-2">
+                  {post.data.description}
+                </p>
+              </a>
+            </li>
+          ))}
+
+          {lldList.slice(0, 1).map((item) => (
+            <li class="pt-4">
+              <a href={`/lld/${item.id}`} class="group block no-underline">
+                <div class="flex items-baseline gap-2 text-stone-500 font-mono text-xs mb-1">
+                  <span>{item.data.publishedAt}</span>
+                  <span>•</span>
+                  <span class="text-pink-600 font-bold uppercase">LLD Case Study</span>
+                </div>
+                <h4 class="font-serif italic font-bold text-lg text-stone-900 group-hover:text-pink-600 transition-colors leading-snug">
+                  {item.data.title}
+                </h4>
+                <p class="text-xs text-stone-600 font-sans mt-1 line-clamp-2">
+                  {item.data.description}
+                </p>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div class="mt-8 pt-4 border-t-2 border-dashed border-stone-200 flex justify-between font-mono text-xs font-bold">
+        <a href="/blogs" class="text-blue-600 hover:underline">Browse Blogs ({blogs.length}) &rarr;</a>
+        <a href="/lld" class="text-pink-600 hover:underline">Browse LLD ({lldList.length}) &rarr;</a>
+      </div>
+    </div>
+
+    <!-- Right Column: Featured Interactive Labs -->
+    <div class="bg-white border-3 border-stone-900 p-6 sm:p-8 shadow-[6px_6px_0px_0px_rgba(28,25,23,1)] flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between pb-4 mb-6 border-b-2 border-stone-900">
+          <h3 class="font-serif italic font-black text-2xl text-stone-900">
+            Featured Interactive Labs
+          </h3>
+          <a href="/labs" class="font-mono text-xs font-bold uppercase tracking-wider text-orange-600 hover:underline">
+            All Labs ({labs.length}) &rarr;
+          </a>
+        </div>
+
+        <div class="space-y-4">
+          {featuredLabs.slice(0, 3).map((lab) => (
+            <div class="border-2 border-stone-900 p-4 shadow-[3px_3px_0px_0px_rgba(28,25,23,1)] bg-stone-50/50 hover:bg-stone-50 transition-colors">
+              <div class="flex items-center justify-between mb-1.5">
+                <span
+                  class="px-2 py-0.5 font-mono text-[10px] font-black uppercase tracking-wider border border-stone-900"
+                  style={`background-color: ${lab.data.tagColor}; color: ${lab.data.tagTextColor};`}
+                >
+                  {lab.data.tag}
+                </span>
+                <span class="font-mono text-[11px] text-emerald-700 font-bold flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Ready
+                </span>
+              </div>
+              <h4 class="font-serif italic font-bold text-base text-stone-900">
+                {lab.data.title}
+              </h4>
+              <p class="text-xs text-stone-600 font-sans mt-1 line-clamp-2">
+                {lab.data.description}
+              </p>
+              <div class="mt-3 flex justify-end">
+                <a
+                  href={`/labs/${lab.data.id}`}
+                  class="px-3 py-1 bg-stone-900 text-white font-mono text-xs font-bold uppercase tracking-wider hover:bg-orange-600 transition-colors border border-stone-900"
+                >
+                  Launch Simulation &rarr;
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div class="mt-8 pt-4 border-t-2 border-dashed border-stone-200 flex justify-end font-mono text-xs font-bold">
+        <a href="/labs" class="text-orange-600 hover:underline">Launch All {labs.length} Interactive Simulators &rarr;</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

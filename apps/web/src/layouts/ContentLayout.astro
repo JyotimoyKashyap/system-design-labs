@@ -1,0 +1,98 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  publishedAt: string;
+  category?: string;
+  tags?: string[];
+  backLink: string;
+  backLabel: string;
+  readTimeMinutes?: number;
+  githubRepo?: string;
+}
+
+const {
+  title,
+  description,
+  publishedAt,
+  category = 'System Design',
+  tags = [],
+  backLink,
+  backLabel,
+  readTimeMinutes,
+  githubRepo,
+} = Astro.props;
+---
+
+<BaseLayout title={`${title} • Jyotimoy Kashyap`} description={description}>
+  <div class="max-w-4xl mx-auto">
+    <!-- Back Button -->
+    <div class="mb-8">
+      <a
+        href={backLink}
+        class="inline-flex items-center gap-2 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-stone-900 bg-stone-100 border-2 border-stone-900 shadow-[3px_3px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_rgba(28,25,23,1)] hover:bg-white transition-all no-underline"
+      >
+        <span>&larr;</span>
+        <span>{backLabel}</span>
+      </a>
+    </div>
+
+    <!-- Article Shell (Paper Brutalist Card) -->
+    <article class="bg-white border-3 border-stone-900 p-6 sm:p-12 shadow-[8px_8px_0px_0px_rgba(28,25,23,1)]">
+      <!-- Article Header -->
+      <header class="pb-8 mb-8 border-b-3 border-stone-900">
+        <div class="flex flex-wrap items-center gap-2 mb-4">
+          <span class="px-2.5 py-0.5 font-mono text-xs font-black uppercase tracking-wider bg-orange-500 text-white border border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)]">
+            {category}
+          </span>
+          {readTimeMinutes && (
+            <span class="font-mono text-xs font-bold text-stone-600 bg-stone-100 px-2 py-0.5 border border-stone-300">
+              {readTimeMinutes} min read
+            </span>
+          )}
+          <span class="font-mono text-xs text-stone-500 ml-auto">
+            {publishedAt}
+          </span>
+        </div>
+
+        <h1 class="font-serif italic font-black text-3xl sm:text-5xl text-stone-900 mb-4 leading-tight">
+          {title}
+        </h1>
+
+        <p class="text-stone-600 text-lg leading-relaxed font-sans mb-6">
+          {description}
+        </p>
+
+        <!-- Tags & Links -->
+        <div class="flex flex-wrap items-center justify-between gap-4 pt-4 border-t-2 border-dashed border-stone-200">
+          <div class="flex flex-wrap gap-1.5">
+            {tags.map((tag) => (
+              <span class="font-mono text-[11px] text-stone-700 bg-stone-100 px-2 py-0.5 border border-stone-300">
+                #{tag}
+              </span>
+            ))}
+          </div>
+
+          {githubRepo && (
+            <a
+              href={githubRepo}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1.5 font-mono text-xs font-bold text-stone-900 hover:text-amber-600 underline"
+            >
+              <span>View Source on GitHub</span>
+              <span>↗</span>
+            </a>
+          )}
+        </div>
+      </header>
+
+      <!-- Markdown Prose Content -->
+      <div class="prose prose-stone prose-lg max-w-none prose-headings:font-serif prose-headings:italic prose-headings:font-bold prose-headings:tracking-tight prose-a:text-orange-600 prose-a:no-underline hover:prose-a:underline prose-pre:bg-stone-900 prose-pre:border-2 prose-pre:border-stone-900 prose-pre:rounded-none prose-pre:shadow-[4px_4px_0px_0px_rgba(28,25,23,1)] prose-img:border-2 prose-img:border-stone-900 prose-img:shadow-[4px_4px_0px_0px_rgba(28,25,23,1)]">
+        <slot />
+      </div>
+    </article>
+  </div>
+</BaseLayout>

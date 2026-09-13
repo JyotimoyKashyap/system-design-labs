@@ -1,0 +1,59 @@
+---
+interface Props {
+  href: string;
+  tag: string;
+  count: string;
+  title: string;
+  description: string;
+  actionText: string;
+  tagBgColor?: string;
+  tagTextColor?: string;
+}
+
+const {
+  href,
+  tag,
+  count,
+  title,
+  description,
+  actionText,
+  tagBgColor = '#f97316',
+  tagTextColor = '#ffffff',
+} = Astro.props;
+---
+
+<a
+  href={href}
+  class="group flex flex-col h-full bg-white border-3 border-stone-900 p-6 sm:p-7 no-underline text-stone-900 shadow-[6px_6px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[10px_10px_0px_0px_rgba(28,25,23,1)] transition-all relative select-none"
+>
+  <!-- Top Bar: Tag & Count -->
+  <div class="flex items-center justify-between gap-2 mb-4">
+    <span
+      class="px-2.5 py-0.5 font-mono text-[11px] font-black uppercase tracking-wider border border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)]"
+      style={`background-color: ${tagBgColor}; color: ${tagTextColor};`}
+    >
+      {tag}
+    </span>
+    <span class="font-mono text-xs font-bold text-stone-700 bg-stone-100 px-2 py-0.5 border border-stone-300">
+      {count}
+    </span>
+  </div>
+
+  <!-- Title -->
+  <h3 class="font-serif italic font-black text-2xl text-stone-900 mb-2 leading-snug group-hover:text-amber-700 transition-colors">
+    {title}
+  </h3>
+
+  <!-- Description -->
+  <p class="text-stone-600 text-sm leading-relaxed mb-6 flex-grow font-sans">
+    {description}
+  </p>
+
+  <!-- Action Link -->
+  <div class="pt-3 border-t-2 border-dashed border-stone-200 flex items-center justify-between font-mono text-xs font-bold uppercase tracking-wider text-stone-900 group-hover:text-amber-700">
+    <span>{actionText}</span>
+    <span class="text-base transition-transform group-hover:translate-x-1.5 leading-none">
+      &rarr;
+    </span>
+  </div>
+</a>

@@ -1,0 +1,30 @@
+---
+interface Props {
+  href: string;
+  label: string;
+  count?: string;
+  variant?: 'default' | 'highlight';
+}
+
+const { href, label, count, variant = 'default' } = Astro.props;
+---
+
+<a
+  href={href}
+  target="_blank"
+  rel="noopener noreferrer"
+  class:list={[
+    'inline-flex items-center gap-2 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-stone-900 border-2 border-stone-900 transition-all cursor-pointer select-none no-underline',
+    variant === 'highlight'
+      ? 'bg-amber-300 shadow-[4px_4px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(28,25,23,1)]'
+      : 'bg-white shadow-[3px_3px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_rgba(28,25,23,1)] hover:bg-stone-50',
+  ]}
+>
+  <slot name="icon" />
+  <span>{label}</span>
+  {count && (
+    <span class="ml-0.5 px-1.5 py-0.2 bg-stone-100 border border-stone-400 text-[10px] text-stone-700">
+      {count}
+    </span>
+  )}
+</a>

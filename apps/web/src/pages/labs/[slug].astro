@@ -1,0 +1,89 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const labs = await getCollection('labs');
+  return labs.map((lab) => ({
+    params: { slug: lab.data.id },
+    props: { lab },
+  }));
+}
+
+const { lab } = Astro.props;
+---
+
+<BaseLayout
+  title={`${lab.data.title} • Interactive Lab`}
+  description={lab.data.description}
+  fullscreen={true}
+>
+  <div class="flex flex-col h-[calc(100vh-73px)] bg-[#fdfcfb]">
+    <!-- Top Action Toolbar -->
+    <div class="bg-white border-b-3 border-stone-900 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
+      <div class="flex items-center gap-3">
+        <a
+          href="/labs"
+          class="px-3 py-1 font-mono text-xs font-bold uppercase tracking-wider text-stone-900 bg-stone-100 border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all no-underline flex items-center gap-1"
+        >
+          <span>&larr;</span>
+          <span>Labs Directory</span>
+        </a>
+
+        <div class="h-4 w-[2px] bg-stone-300 hidden sm:block"></div>
+
+        <div class="flex items-center gap-2">
+          <span
+            class="px-2 py-0.5 font-mono text-[10px] font-black uppercase tracking-wider border border-stone-900"
+            style={`background-color: ${lab.data.tagColor}; color: ${lab.data.tagTextColor};`}
+          >
+            {lab.data.tag}
+          </span>
+          <h1 class="font-serif italic font-black text-lg sm:text-xl text-stone-900 leading-none">
+            {lab.data.title}
+          </h1>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <span class="font-mono text-xs text-stone-500 hidden md:inline">
+          Interactive Simulation
+        </span>
+        <a
+          href={`https://github.com/JyotimoyKashyap/system-design-labs/tree/main/${lab.data.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="px-3 py-1 font-mono text-xs font-bold text-stone-900 border-2 border-stone-900 hover:bg-stone-100 no-underline"
+        >
+          GitHub Repo ↗
+        </a>
+      </div>
+    </div>
+
+    <!-- Main Sandbox Simulation View -->
+    <div class="flex-1 w-full h-full relative overflow-hidden bg-stone-100 flex flex-col items-center justify-center p-4">
+      <div class="max-w-2xl w-full bg-white border-3 border-stone-900 p-8 shadow-[8px_8px_0px_0px_rgba(28,25,23,1)] text-center space-y-4">
+        <span
+          class="inline-block px-3 py-1 font-mono text-xs font-black uppercase tracking-wider border-2 border-stone-900"
+          style={`background-color: ${lab.data.tagColor}; color: ${lab.data.tagTextColor};`}
+        >
+          {lab.data.category}
+        </span>
+
+        <h2 class="font-serif italic font-black text-3xl sm:text-4xl text-stone-900">
+          {lab.data.title}
+        </h2>
+
+        <p class="text-stone-600 text-base leading-relaxed max-w-xl mx-auto font-sans">
+          {lab.data.description}
+        </p>
+
+        <div class="pt-6 border-t-2 border-dashed border-stone-200">
+          <div class="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 border-2 border-amber-400 font-mono text-xs text-amber-900">
+            <span>⚡ Visualizer island migration target in Phase 2</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
