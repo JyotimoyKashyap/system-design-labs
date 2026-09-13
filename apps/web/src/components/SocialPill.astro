@@ -4,9 +4,16 @@ interface Props {
   label: string;
   count?: string;
   variant?: 'default' | 'highlight';
+  bgClass?: string;
 }
 
-const { href, label, count, variant = 'default' } = Astro.props;
+const { href, label, count, variant = 'default', bgClass } = Astro.props;
+
+const backgroundStyle = bgClass
+  ? bgClass
+  : variant === 'highlight'
+    ? 'bg-amber-300 hover:bg-amber-400'
+    : 'bg-white hover:bg-stone-50';
 ---
 
 <a
@@ -14,10 +21,8 @@ const { href, label, count, variant = 'default' } = Astro.props;
   target="_blank"
   rel="noopener noreferrer"
   class:list={[
-    'inline-flex items-center gap-2 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-stone-900 border-2 border-stone-900 transition-all cursor-pointer select-none no-underline',
-    variant === 'highlight'
-      ? 'bg-amber-300 shadow-[4px_4px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(28,25,23,1)]'
-      : 'bg-white shadow-[3px_3px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_rgba(28,25,23,1)] hover:bg-stone-50',
+    'inline-flex items-center gap-2 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-stone-900 border-2 border-stone-900 shadow-[3px_3px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_rgba(28,25,23,1)] transition-all cursor-pointer select-none no-underline',
+    backgroundStyle,
   ]}
 >
   <slot name="icon" />
