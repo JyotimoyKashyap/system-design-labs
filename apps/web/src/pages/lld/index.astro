@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
 import { buttonVariants, cardVariants } from '@repo/ui';
+import { url } from '../../utils/url';
 
 const lldList = (await getCollection('lld')).sort(
   (a, b) => new Date(b.data.publishedAt).getTime() - new Date(a.data.publishedAt).getTime()
@@ -45,7 +46,7 @@ const lldList = (await getCollection('lld')).sort(
 
             <!-- Card Title: Non-italic, bold sans-serif -->
             <h2 class="font-sans font-black text-2xl text-stone-900 mb-3 leading-snug tracking-tight not-italic">
-              <a href={`/lld/${item.id}`} class="hover:text-pink-600 transition-colors no-underline text-stone-900">
+              <a href={url(`/lld/${item.id}`)} class="hover:text-pink-600 transition-colors no-underline text-stone-900">
                 {item.data.title}
               </a>
             </h2>
@@ -67,7 +68,7 @@ const lldList = (await getCollection('lld')).sort(
           <!-- Bottom Actions with Signature Boxy Brutalist Buttons -->
           <div class="pt-4 border-t-2 border-stone-100 flex items-center justify-between gap-3">
             <a
-              href={`/lld/${item.id}`}
+              href={url(`/lld/${item.id}`)}
               class={buttonVariants({ variant: 'secondary', size: 'sm' })}
             >
               Read Design &rarr;

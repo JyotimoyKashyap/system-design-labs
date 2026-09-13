@@ -1,6 +1,7 @@
 ---
 import BaseLayout from './BaseLayout.astro';
 import { buttonVariants, cardVariants } from '@repo/ui';
+import { url } from '../utils/url';
 
 interface Props {
   title: string;
@@ -36,7 +37,7 @@ const {
     <!-- Top Nav Action Bar -->
     <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
       <a
-        href={backLink}
+        href={url(backLink)}
         class={buttonVariants({ variant: 'tertiary', size: 'sm', className: 'bg-stone-100' })}
       >
         <span>&larr;</span>
@@ -45,7 +46,7 @@ const {
 
       {launchAppLink && (
         <a
-          href={launchAppLink}
+          href={url(launchAppLink)}
           class={buttonVariants({ variant: 'primary', size: 'sm' })}
         >
           <span>🚀</span>

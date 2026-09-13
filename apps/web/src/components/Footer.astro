@@ -1,4 +1,6 @@
 ---
+import { url } from '../utils/url';
+
 const currentYear = new Date().getFullYear();
 ---
 
@@ -30,22 +32,22 @@ const currentYear = new Date().getFullYear();
         </h4>
         <ul class="space-y-2 font-mono text-xs">
           <li>
-            <a href="/" class="text-stone-700 hover:text-stone-950 hover:underline">
+            <a href={url('/')} class="text-stone-700 hover:text-stone-950 hover:underline">
               → Portfolio Home
             </a>
           </li>
           <li>
-            <a href="/notes" class="text-stone-700 hover:text-stone-950 hover:underline">
+            <a href={url('/notes')} class="text-stone-700 hover:text-stone-950 hover:underline">
               → System Design Notes
             </a>
           </li>
           <li>
-            <a href="/lld" class="text-stone-700 hover:text-stone-950 hover:underline">
+            <a href={url('/lld')} class="text-stone-700 hover:text-stone-950 hover:underline">
               → Low-Level Design (LLD)
             </a>
           </li>
           <li>
-            <a href="/labs" class="text-stone-700 hover:text-stone-950 hover:underline">
+            <a href={url('/labs')} class="text-stone-700 hover:text-stone-950 hover:underline">
               → Interactive Visualizers
             </a>
           </li>

@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
 import { buttonVariants, cardVariants } from '@repo/ui';
+import { url } from '../../utils/url';
 
 const notes = (await getCollection('notes')).sort(
   (a, b) => new Date(b.data.publishedAt).getTime() - new Date(a.data.publishedAt).getTime()
@@ -47,7 +48,7 @@ const notes = (await getCollection('notes')).sort(
 
             <!-- Card Title: Non-italic, bold sans-serif -->
             <h2 class="font-sans font-black text-2xl text-stone-900 mb-3 leading-snug tracking-tight not-italic">
-              <a href={`/notes/${note.id}`} class="hover:text-blue-600 transition-colors no-underline text-stone-900">
+              <a href={url(`/notes/${note.id}`)} class="hover:text-blue-600 transition-colors no-underline text-stone-900">
                 {note.data.title}
               </a>
             </h2>
@@ -69,7 +70,7 @@ const notes = (await getCollection('notes')).sort(
           <!-- Bottom Actions with Signature Boxy Brutalist Button -->
           <div class="pt-4 border-t-2 border-stone-100 flex items-center justify-between gap-3">
             <a
-              href={`/notes/${note.id}`}
+              href={url(`/notes/${note.id}`)}
               class={buttonVariants({ variant: 'secondary', size: 'sm' })}
             >
               Read Note &rarr;

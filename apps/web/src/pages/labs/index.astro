@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
 import { buttonVariants, cardVariants } from '@repo/ui';
+import { url } from '../../utils/url';
 
 const labs = await getCollection('labs');
 ---
@@ -46,7 +47,7 @@ const labs = await getCollection('labs');
 
             <!-- Non-italic, bold sans-serif card title -->
             <h2 class="font-sans font-black text-2xl text-stone-900 mb-3 leading-snug tracking-tight not-italic">
-              <a href={`/labs/${lab.data.id}`} class="hover:text-orange-600 transition-colors no-underline text-stone-900">
+              <a href={url(`/labs/${lab.data.id}`)} class="hover:text-orange-600 transition-colors no-underline text-stone-900">
                 {lab.data.title}
               </a>
             </h2>
@@ -59,13 +60,13 @@ const labs = await getCollection('labs');
           <!-- Dual Buttons: Launch App (#FF6B6B) & Read Docs (#4ECDC4) -->
           <div class="pt-4 border-t-2 border-stone-100 flex flex-wrap gap-3">
             <a
-              href={`/labs/${lab.data.id}`}
+              href={url(`/labs/${lab.data.id}`)}
               class={buttonVariants({ variant: 'primary' })}
             >
               Launch App
             </a>
             <a
-              href={`/labs/${lab.data.id}/docs`}
+              href={url(`/labs/${lab.data.id}/docs`)}
               class={buttonVariants({ variant: 'secondary' })}
             >
               Read Docs

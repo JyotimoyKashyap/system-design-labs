@@ -1,5 +1,6 @@
 ---
 import { buttonVariants } from '@repo/ui';
+import { url } from '../utils/url';
 
 interface Props {
   currentPath?: string;
@@ -8,14 +9,14 @@ interface Props {
 const { currentPath = Astro.url.pathname } = Astro.props;
 
 const navLinks = [
-  { name: 'Portfolio', href: '/' },
-  { name: 'Notes', href: '/notes' },
-  { name: 'LLD', href: '/lld' },
-  { name: 'Labs', href: '/labs' },
+  { name: 'Portfolio', href: url('/') },
+  { name: 'Notes', href: url('/notes') },
+  { name: 'LLD', href: url('/lld') },
+  { name: 'Labs', href: url('/labs') },
 ];
 
 const isActive = (href: string) => {
-  if (href === '/') return currentPath === '/';
+  if (href === url('/')) return currentPath === url('/') || currentPath === url('/') + '/';
   return currentPath.startsWith(href);
 };
 ---
@@ -23,7 +24,7 @@ const isActive = (href: string) => {
 <header class="sticky top-0 z-50 bg-[#fdfcfb]/95 backdrop-blur-sm border-b-3 border-stone-900">
   <div class="max-w-7xl mx-auto px-4 sm:px-8 h-18 flex items-center justify-between">
     <!-- Brand / Logo -->
-    <a href="/" class="group flex items-center gap-3 text-stone-900 no-underline">
+    <a href={url('/')} class="group flex items-center gap-3 text-stone-900 no-underline">
       <div class="w-9 h-9 bg-stone-900 text-white font-silkscreen not-italic font-bold flex items-center justify-center text-lg shadow-[3px_3px_0px_0px_rgba(28,25,23,1)] group-hover:-translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">
         J
       </div>
@@ -73,19 +74,19 @@ const isActive = (href: string) => {
     <!-- Mobile Navigation Toggle -->
     <div class="flex items-center gap-2 md:hidden">
       <a
-        href="/labs"
+        href={url('/labs')}
         class="px-2.5 py-1 font-mono text-[11px] font-bold uppercase bg-stone-900 text-white border-2 border-stone-900"
       >
         Labs
       </a>
       <a
-        href="/notes"
+        href={url('/notes')}
         class="px-2.5 py-1 font-mono text-[11px] font-bold uppercase bg-white text-stone-900 border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)]"
       >
         Notes
       </a>
       <a
-        href="/lld"
+        href={url('/lld')}
         class="px-2.5 py-1 font-mono text-[11px] font-bold uppercase bg-white text-stone-900 border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)]"
       >
         LLD

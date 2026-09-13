@@ -1,5 +1,6 @@
 import React from 'react';
 import { visualizerRegistry, hasVisualizer } from '../labs/registry';
+import { url } from '../utils/url';
 
 export { hasVisualizer };
 
@@ -26,7 +27,7 @@ export default function DynamicVisualizer({ slug }: DynamicVisualizerProps) {
             .
           </p>
           <a
-            href={`/labs/${slug}/docs`}
+            href={url(`/labs/${slug}/docs`)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 font-mono text-xs font-bold uppercase bg-stone-900 text-white hover:bg-stone-800 border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)]"
           >
             <span>📖 Read Documentation</span>
