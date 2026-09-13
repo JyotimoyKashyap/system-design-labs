@@ -7,7 +7,7 @@ const { currentPath = Astro.url.pathname } = Astro.props;
 
 const navLinks = [
   { name: 'Portfolio', href: '/' },
-  { name: 'Blogs', href: '/blogs' },
+  { name: 'Notes', href: '/notes' },
   { name: 'LLD', href: '/lld' },
   { name: 'Labs', href: '/labs' },
 ];
@@ -77,10 +77,10 @@ const isActive = (href: string) => {
         Labs
       </a>
       <a
-        href="/blogs"
+        href="/notes"
         class="px-2.5 py-1 font-mono text-[11px] font-bold uppercase bg-white text-stone-900 border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)]"
       >
-        Blogs
+        Notes
       </a>
       <a
         href="/lld"

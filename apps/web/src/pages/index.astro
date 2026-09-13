@@ -4,7 +4,7 @@ import SocialPill from '../components/SocialPill.astro';
 import ExploreCard from '../components/ExploreCard.astro';
 import { getCollection } from 'astro:content';
 
-const blogs = (await getCollection('blogs')).sort(
+const notes = (await getCollection('notes')).sort(
   (a, b) => new Date(b.data.publishedAt).getTime() - new Date(a.data.publishedAt).getTime()
 );
 
@@ -126,12 +126,12 @@ const labs = await getCollection('labs');
       />
 
       <ExploreCard
-        href="/blogs"
+        href="/notes"
         tag="ARCHITECTURE"
-        count={`${blogs.length} Essays`}
-        title="System Design Blogs"
-        description="Macro-level architectural deep dives into scaling API servers 0 to 1, database replication, and cache topologies."
-        actionText="Read blogs"
+        count={`${notes.length} ${notes.length === 1 ? 'Note' : 'Notes'}`}
+        title="System Design Notes"
+        description="Architectural deep dives, notes, and exploratory writeups from building scalable backend systems."
+        actionText="Read notes"
         tagBgColor="#2563eb"
       />
 
@@ -157,7 +157,7 @@ const labs = await getCollection('labs');
     </div>
   </section>
 
-  <!-- 3. LIVE SHOWROOM: INTERACTIVE LABS & BLOGS (Exact Paper Brutalist Style from Old Site) -->
+  <!-- 3. LIVE SHOWROOM: INTERACTIVE LABS & NOTES (Exact Paper Brutalist Style from Old Site) -->
   <section class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
     <!-- Left Column: Interactive Labs (7 of 12 cols) -->
     <div class="lg:col-span-7">
@@ -211,44 +211,44 @@ const labs = await getCollection('labs');
       </div>
     </div>
 
-    <!-- Right Column: Blogs & LLD (5 of 12 cols) -->
+    <!-- Right Column: Notes & LLD (5 of 12 cols) -->
     <div class="lg:col-span-5">
       <div class="flex items-baseline justify-between border-b-3 border-stone-900 pb-3 mb-8">
         <h2 class="font-serif italic font-black text-3xl sm:text-4xl text-stone-900">
-          Blogs &amp; LLD
+          Notes &amp; LLD
         </h2>
-        <a href="/blogs" class="font-mono text-xs font-bold text-orange-600 hover:underline uppercase tracking-wider">
-          All Writings &rarr;
+        <a href="/notes" class="font-mono text-xs font-bold text-orange-600 hover:underline uppercase tracking-wider">
+          All Notes ({notes.length}) &rarr;
         </a>
       </div>
 
       <div class="space-y-6">
-        {blogs.slice(0, 1).map((post) => (
+        {notes.slice(0, 1).map((note) => (
           <div class="bg-white border-3 border-stone-900 p-6 sm:p-7 shadow-[8px_8px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[12px_12px_0px_0px_rgba(28,25,23,1)] transition-all flex flex-col justify-between">
             <div>
-              <span class="inline-block px-3 py-1 font-mono text-[11px] font-black uppercase tracking-wider bg-orange-500 text-white border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] mb-4">
-                {post.data.category}
+              <span class="inline-block px-3 py-1 font-mono text-[11px] font-black uppercase tracking-wider bg-blue-600 text-white border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] mb-4">
+                {note.data.category}
               </span>
 
               <!-- Non-italic, bold sans-serif card title -->
               <h3 class="font-sans font-black text-xl sm:text-2xl text-stone-900 mb-3 leading-snug tracking-tight not-italic">
-                {post.data.title}
+                {note.data.title}
               </h3>
 
               <p class="text-stone-700 text-sm leading-relaxed mb-6 font-sans">
-                {post.data.description}
+                {note.data.description}
               </p>
             </div>
 
             <div class="pt-4 border-t-2 border-stone-100 flex items-center justify-between">
               <a
-                href={`/blogs/${post.id}`}
+                href={`/notes/${note.id}`}
                 class="px-5 py-2 bg-[#4ECDC4] text-stone-950 font-mono text-xs font-black uppercase tracking-wider border-3 border-stone-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] no-underline transition-all"
               >
-                Read Article
+                Read Note
               </a>
               <span class="font-mono text-xs text-stone-500 font-bold">
-                {post.data.publishedAt}
+                {note.data.publishedAt}
               </span>
             </div>
           </div>

@@ -3,8 +3,8 @@ import { getCollection, render } from 'astro:content';
 import ContentLayout from '../../layouts/ContentLayout.astro';
 
 export async function getStaticPaths() {
-  const blogs = await getCollection('blogs');
-  return blogs.map((entry) => ({
+  const notes = await getCollection('notes');
+  return notes.map((entry) => ({
     params: { slug: entry.id },
     props: { entry },
   }));
@@ -21,8 +21,8 @@ const { Content } = await render(entry);
   category={entry.data.category}
   tags={entry.data.tags}
   readTimeMinutes={entry.data.readTimeMinutes}
-  backLink="/blogs"
-  backLabel="Back to All Blogs"
+  backLink="/notes"
+  backLabel="Back to All Notes"
 >
   <Content />
 </ContentLayout>
