@@ -1,6 +1,14 @@
 @import "tailwindcss";
 @source "../../../packages/ui/src";
 
+@theme {
+  --font-silkscreen: 'Silkscreen', monospace;
+}
+
+.font-silkscreen {
+  font-family: 'Silkscreen', monospace;
+}
+
 @layer base {
   body {
     background-color: #fdfcfb;
