@@ -1,3 +1,12 @@
+<!-- hub-metadata
+type: lab
+id: rabbitmq-backend
+tag: Message Broker
+tagColor: #8b5cf6
+title: RabbitMQ Competing Consumers Lab
+description: Demonstrating the Competing Consumers Pattern using RabbitMQ, Spring Boot (Java), and Docker Compose.
+-->
+
 # RabbitMQ Competing Consumers Lab 🐇
 
 This lab demonstrates the **Competing Consumers Pattern** using RabbitMQ, Spring Boot (Java), and Docker Compose.

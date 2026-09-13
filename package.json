@@ -2,9 +2,21 @@
   "name": "system-design-labs",
   "private": true,
   "scripts": {
-    "build:docs": "node scripts/build-docs.mjs"
+    "dev:web": "npm --workspace=apps/web run dev",
+    "build:web": "npm --workspace=apps/web run build",
+    "test:design": "node --experimental-strip-types --test --test-reporter=spec tests/design-system.test.mjs",
+    "test:metadata": "node --test --test-reporter=spec tests/metadata-linter.test.mjs",
+    "test:discovery": "node --test --test-reporter=spec tests/auto-discovery.test.mjs",
+    "test:all": "node --experimental-strip-types --test --test-reporter=spec tests/*.test.mjs",
+    "test": "node --experimental-strip-types --test --test-reporter=spec tests/*.test.mjs",
+    "sync": "node scripts/auto-discover-content.mjs",
+    "sync:labs": "node scripts/auto-discover-content.mjs",
+    "build:docs": "node scripts/auto-discover-content.mjs && node scripts/build-docs.mjs",
+    "docker:build": "docker build -t system-design-labs:latest .",
+    "docker:run": "docker run -p 3000:80 system-design-labs:latest"
   },
   "workspaces": [
+    "apps/*",
     "packages/*",
     "*-web",
     "rabbitmq-lab/*-web",

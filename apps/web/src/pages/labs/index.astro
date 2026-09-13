@@ -1,0 +1,78 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+import { buttonVariants, cardVariants } from '@repo/ui';
+
+const labs = await getCollection('labs');
+---
+
+<BaseLayout
+  title="Interactive Systems Labs • Jyotimoy Kashyap"
+  description="In-browser visual simulations of distributed consensus, consistent hashing, append-only logs, and probabilistic data structures."
+>
+  <div class="w-full">
+    <!-- Header -->
+    <header class="pb-8 mb-12 border-b-3 border-stone-900">
+      <div class="flex items-center gap-2 mb-2 font-mono text-xs font-bold uppercase tracking-wider text-orange-600">
+        <span>INTERACTIVE PLAYGROUND</span>
+        <span>•</span>
+        <span>{labs.length} SIMULATIONS</span>
+      </div>
+      <h1 class="font-silkscreen not-italic text-3xl sm:text-4xl text-stone-900 mb-3">
+        Interactive Distributed Labs
+      </h1>
+      <p class="text-stone-600 text-lg font-sans leading-relaxed max-w-3xl">
+        Step inside the algorithms. Test node additions, trigger network partitions, inject false positives, and watch distributed systems react in real time.
+      </p>
+    </header>
+
+    <!-- Labs Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      {labs.map((lab) => (
+        <article class={cardVariants({ variant: 'interactive', className: 'p-6 sm:p-7' })}>
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span
+                class="px-3 py-1 font-mono text-xs font-black uppercase tracking-wider border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)]"
+                style={`background-color: ${lab.data.tagColor}; color: ${lab.data.tagTextColor};`}
+              >
+                {lab.data.tag}
+              </span>
+              <span class="font-mono text-[11px] text-emerald-700 font-bold flex items-center gap-1.5 bg-emerald-50 px-2 py-0.5 border border-emerald-300">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                Active
+              </span>
+            </div>
+
+            <!-- Non-italic, bold sans-serif card title -->
+            <h2 class="font-sans font-black text-2xl text-stone-900 mb-3 leading-snug tracking-tight not-italic">
+              <a href={`/labs/${lab.data.id}`} class="hover:text-orange-600 transition-colors no-underline text-stone-900">
+                {lab.data.title}
+              </a>
+            </h2>
+
+            <p class="text-stone-700 text-sm leading-relaxed mb-6 font-sans">
+              {lab.data.description}
+            </p>
+          </div>
+
+          <!-- Dual Buttons: Launch App (#FF6B6B) & Read Docs (#4ECDC4) -->
+          <div class="pt-4 border-t-2 border-stone-100 flex flex-wrap gap-3">
+            <a
+              href={`/labs/${lab.data.id}`}
+              class={buttonVariants({ variant: 'primary' })}
+            >
+              Launch App
+            </a>
+            <a
+              href={`/labs/${lab.data.id}/docs`}
+              class={buttonVariants({ variant: 'secondary' })}
+            >
+              Read Docs
+            </a>
+          </div>
+        </article>
+      ))}
+    </div>
+  </div>
+</BaseLayout>

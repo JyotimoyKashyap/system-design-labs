@@ -1,3 +1,12 @@
+<!-- hub-metadata
+type: lab
+id: api-rate-limiter-backend
+tag: API Gateway
+tagColor: #d97706
+title: Distributed API Rate Limiter
+description: A distributed rate limiter built with Java Spring Boot, Redis, and orchestrated using Docker Compose with Consistent Hashing.
+-->
+
 # Distributed API Rate Limiter
 
 This project is a distributed rate limiter built with **Java Spring Boot**, **Redis**, and orchestrated entirely using **Docker Compose**. It handles rate limiting across multiple backend nodes by using a Consistent Hashing algorithm to route incoming IPs to specific Redis shards.

@@ -1,9 +1,9 @@
 services:
-  deploy-hub:
+  web:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
       - "3000:80"
-    container_name: system-design-labs-hub
+    container_name: system-design-labs-web
     restart: unless-stopped

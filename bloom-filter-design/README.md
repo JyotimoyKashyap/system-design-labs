@@ -1,3 +1,12 @@
+<!-- hub-metadata
+type: lld
+id: bloom-filter-design
+tag: Data Structures LLD
+tagColor: #10b981
+title: Bloom Filter Terminal Visualizer
+description: A terminal-based Bloom Filter implementation in Java showcasing FunnelStrategy, Double Hashing, and MurmurHash3 algorithms.
+-->
+
 # Bloom Filter Terminal Visualizer
 
 ![Bloom Filter Preview](./assets/bloom_filter_preview.png)

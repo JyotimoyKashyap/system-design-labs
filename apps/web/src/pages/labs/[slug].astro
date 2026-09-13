@@ -1,0 +1,77 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+import { buttonVariants } from '@repo/ui';
+import DynamicVisualizer from '../../components/DynamicVisualizer';
+
+export async function getStaticPaths() {
+  const labs = await getCollection('labs');
+  return labs.map((lab) => ({
+    params: { slug: lab.data.id },
+    props: { lab },
+  }));
+}
+
+const { lab } = Astro.props;
+---
+
+<BaseLayout
+  title={`${lab.data.title} • Interactive Lab`}
+  description={lab.data.description}
+  fullscreen={true}
+>
+  <div class="flex flex-col h-[calc(100vh-73px)] bg-[#fdfcfb]">
+    <!-- Top Action Toolbar -->
+    <div class="bg-white border-b-3 border-stone-900 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0 z-30">
+      <div class="flex items-center gap-3">
+        <a
+          href="/labs"
+          class={buttonVariants({ variant: 'tertiary', size: 'sm', className: 'bg-stone-100' })}
+        >
+          <span>&larr;</span>
+          <span>Labs Directory</span>
+        </a>
+
+        <div class="h-4 w-[2px] bg-stone-300 hidden sm:block"></div>
+
+        <div class="flex items-center gap-2">
+          <span
+            class="px-2 py-0.5 font-mono text-[10px] font-black uppercase tracking-wider border border-stone-900 shadow-[1px_1px_0px_0px_rgba(28,25,23,1)]"
+            style={`background-color: ${lab.data.tagColor}; color: ${lab.data.tagTextColor};`}
+          >
+            {lab.data.tag}
+          </span>
+          <h1 class="font-silkscreen not-italic font-bold text-sm sm:text-base text-stone-900 leading-none">
+            {lab.data.title}
+          </h1>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <span class="font-mono text-xs text-stone-500 hidden md:inline">
+          Interactive Simulation
+        </span>
+        <a
+          href={`/labs/${lab.data.id}/docs`}
+          class={buttonVariants({ variant: 'secondary', size: 'sm' })}
+        >
+          <span>📖</span>
+          <span>Read Docs</span>
+        </a>
+        <a
+          href={lab.data.githubRepo || `https://github.com/JyotimoyKashyap/system-design-labs/tree/main/${lab.data.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          class={buttonVariants({ variant: 'tertiary', size: 'sm' })}
+        >
+          GitHub Repo ↗
+        </a>
+      </div>
+    </div>
+
+    <!-- Main Interactive Simulation Island View -->
+    <div class="flex-1 w-full h-full min-h-0 relative overflow-hidden bg-[#fdfcfb]">
+      <DynamicVisualizer client:only="react" slug={lab.data.id} />
+    </div>
+  </div>
+</BaseLayout>

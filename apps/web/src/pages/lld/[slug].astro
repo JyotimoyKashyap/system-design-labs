@@ -1,0 +1,28 @@
+---
+import { getCollection, render } from 'astro:content';
+import ContentLayout from '../../layouts/ContentLayout.astro';
+
+export async function getStaticPaths() {
+  const lldItems = await getCollection('lld');
+  return lldItems.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+---
+
+<ContentLayout
+  title={entry.data.title}
+  description={entry.data.description}
+  publishedAt={entry.data.publishedAt}
+  category="Low-Level Design"
+  tags={entry.data.designPatterns}
+  githubRepo={entry.data.githubRepo}
+  backLink="/lld"
+  backLabel="Back to All LLD"
+>
+  <Content />
+</ContentLayout>

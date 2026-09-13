@@ -9,9 +9,10 @@ target/
 gradlew
 gradlew.bat
 
-# Node
+# Node & Frameworks
 node_modules/
 dist/
+.astro/
 npm-debug.log
 
 # IDE / OS

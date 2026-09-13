@@ -1,19 +1,31 @@
 import * as React from "react"
 import { cn } from "../../lib/utils"
+import {
+  cardVariants,
+  type CardVariant,
+  type CardVariantsOptions,
+} from "../../variants"
 
-const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
+export {
+  cardVariants,
+  type CardVariant,
+  type CardVariantsOptions,
+};
+
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: CardVariant;
+}
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ className, variant = "default", ...props }, ref) => (
     <div
       ref={ref}
-      className={cn(
-        "rounded-none border-2 border-stone-900 bg-white text-stone-900 shadow-[4px_4px_0px_0px_rgba(28,25,23,1)]",
-        className
-      )}
+      className={cardVariants({ variant, className })}
       {...props}
     />
   )
-)
-Card.displayName = "Card"
+);
+Card.displayName = "Card";
 
 const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
@@ -23,25 +35,25 @@ const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
       {...props}
     />
   )
-)
-CardHeader.displayName = "CardHeader"
+);
+CardHeader.displayName = "CardHeader";
 
-const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
+const CardTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}
-      className={cn("font-serif italic text-2xl leading-none tracking-tight text-stone-900", className)}
+      className={cn("font-silkscreen not-italic text-xl sm:text-2xl leading-tight text-stone-900", className)}
       {...props}
     />
   )
-)
-CardTitle.displayName = "CardTitle"
+);
+CardTitle.displayName = "CardTitle";
 
 const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
   )
-)
-CardContent.displayName = "CardContent"
+);
+CardContent.displayName = "CardContent";
 
-export { Card, CardHeader, CardTitle, CardContent }
+export { Card, CardHeader, CardTitle, CardContent };

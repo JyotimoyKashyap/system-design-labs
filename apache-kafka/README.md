@@ -1,3 +1,12 @@
+<!-- hub-metadata
+type: lab
+id: apache-kafka-playground
+tag: Event Streaming
+tagColor: #ef4444
+title: Apache Kafka Playground
+description: Local playground for Kafka with KRaft mode, Spring Boot producer, Kafdrop, and polyglot consumer microservices.
+-->
+
 # Apache Kafka Playground
 
 This directory contains a complete local playground for understanding Apache Kafka message streams. It features a Producer microservice and two distinct Consumer microservices, all orchestrated via Docker Compose.
