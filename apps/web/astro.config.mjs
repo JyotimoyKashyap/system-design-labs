@@ -9,7 +9,7 @@ export default defineConfig({
   site: 'https://jyotimoykashyap.me',
   redirects: {
     '/blogs': '/notes',
-    '/blogs/[...slug]': '/notes/[...slug]',
+    '/blogs/scale-architecture-0-1': '/notes/scale-architecture-0-1',
   },
   integrations: [
     mdx(),
