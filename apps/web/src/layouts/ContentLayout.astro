@@ -95,4 +95,64 @@ const {
       </div>
     </article>
   </div>
+
+  <!-- Mermaid Client-Side Renderer -->
+  <script>
+    async function initMermaid() {
+      const mermaidNodes = document.querySelectorAll<HTMLElement>(
+        'pre[data-language="mermaid"], pre > code.language-mermaid, .language-mermaid'
+      );
+      if (mermaidNodes.length === 0) return;
+
+      try {
+        const { default: mermaid } = await import('mermaid');
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: 'neutral',
+          fontFamily: 'Inter, sans-serif',
+          themeVariables: {
+            primaryColor: '#ffffff',
+            primaryBorderColor: '#1c1917',
+            primaryTextColor: '#1c1917',
+            lineColor: '#1c1917',
+            secondaryColor: '#fdfcfb',
+            tertiaryColor: '#f5f4f0',
+            border2: '#1c1917',
+            mainBkg: '#ffffff',
+            nodeBorder: '#1c1917',
+            clusterBkg: '#fdfcfb',
+            clusterBorder: '#1c1917',
+            fontSize: '14px',
+          },
+        });
+
+        for (let i = 0; i < mermaidNodes.length; i++) {
+          const node = mermaidNodes[i];
+          const pre = node.tagName.toLowerCase() === 'pre' ? node : node.closest('pre') || node;
+          const code = pre.textContent?.trim() || '';
+          if (!code) continue;
+
+          try {
+            const id = `mermaid-graph-${Date.now()}-${i}`;
+            const { svg } = await mermaid.render(id, code);
+            const wrapper = document.createElement('div');
+            wrapper.className = 'my-8 p-6 bg-white border-2 border-stone-900 shadow-[4px_4px_0px_0px_rgba(28,25,23,1)] flex justify-center overflow-x-auto select-none';
+            wrapper.innerHTML = svg;
+            pre.replaceWith(wrapper);
+          } catch (err) {
+            console.warn('Mermaid rendering skipped for block', i, err);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load mermaid library', e);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initMermaid);
+    } else {
+      initMermaid();
+    }
+    document.addEventListener('astro:page-load', initMermaid);
+  </script>
 </BaseLayout>
