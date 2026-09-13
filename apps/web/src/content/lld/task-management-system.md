@@ -1,11 +1,11 @@
 ---
 title: "Task Management System LLD"
 description: "An in-depth Low-Level Design (LLD) of an enterprise Task Management System featuring custom LRU caching, the Repository pattern, and thread-safe DAO patterns."
-publishedAt: "2026-08-01"
-designPatterns: ["Repository", "DAO", "Builder", "Singleton", "Observer", "DDD"]
+publishedAt: "2026-07-20"
+designPatterns: ["Strategy Pattern","Observer Pattern","Repository Pattern","Builder Pattern"]
 language: "Java 21"
 githubRepo: "https://github.com/JyotimoyKashyap/system-design-labs/tree/main/task-management-system"
-difficulty: "Hard"
+difficulty: "Medium"
 ---
 
 # Task Management System: Low-Level Design (LLD)

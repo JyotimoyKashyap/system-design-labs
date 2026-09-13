@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
+import { buttonVariants, cardVariants } from '@repo/ui';
 
 const labs = await getCollection('labs');
 ---
@@ -28,7 +29,7 @@ const labs = await getCollection('labs');
     <!-- Labs Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
       {labs.map((lab) => (
-        <article class="bg-white border-3 border-stone-900 p-6 sm:p-7 shadow-[8px_8px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[12px_12px_0px_0px_rgba(28,25,23,1)] transition-all flex flex-col justify-between">
+        <article class={cardVariants({ variant: 'interactive', className: 'p-6 sm:p-7' })}>
           <div>
             <div class="flex items-center justify-between mb-4">
               <span
@@ -59,13 +60,13 @@ const labs = await getCollection('labs');
           <div class="pt-4 border-t-2 border-stone-100 flex flex-wrap gap-3">
             <a
               href={`/labs/${lab.data.id}`}
-              class="px-4 py-2 bg-[#FF6B6B] text-stone-950 font-mono text-xs font-black uppercase tracking-wider border-3 border-stone-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] no-underline transition-all"
+              class={buttonVariants({ variant: 'primary' })}
             >
               Launch App
             </a>
             <a
-              href={`/labs/${lab.data.id}`}
-              class="px-4 py-2 bg-[#4ECDC4] text-stone-950 font-mono text-xs font-black uppercase tracking-wider border-3 border-stone-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] no-underline transition-all"
+              href={`/labs/${lab.data.id}/docs`}
+              class={buttonVariants({ variant: 'secondary' })}
             >
               Read Docs
             </a>

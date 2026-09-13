@@ -2,7 +2,7 @@
 title: "Extensible In-Memory Cache"
 description: "An architectural deep-dive into building high-performance, concurrent LRU/LFU caches using Event Sourcing and Lock Striping."
 publishedAt: "2026-07-20"
-designPatterns: ["Strategy Pattern", "Lock Striping", "Observer"]
+designPatterns: ["Strategy Pattern","Builder Pattern","Lock Striping","Event Sourcing"]
 language: "Java 21"
 githubRepo: "https://github.com/JyotimoyKashyap/system-design-labs/tree/main/cache-lld"
 difficulty: "Medium"

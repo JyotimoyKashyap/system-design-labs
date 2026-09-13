@@ -1,5 +1,6 @@
 ---
 import BaseLayout from './BaseLayout.astro';
+import { buttonVariants, cardVariants } from '@repo/ui';
 
 interface Props {
   title: string;
@@ -11,6 +12,8 @@ interface Props {
   backLabel: string;
   readTimeMinutes?: number;
   githubRepo?: string;
+  launchAppLink?: string;
+  launchAppLabel?: string;
 }
 
 const {
@@ -23,24 +26,36 @@ const {
   backLabel,
   readTimeMinutes,
   githubRepo,
+  launchAppLink,
+  launchAppLabel,
 } = Astro.props;
 ---
 
 <BaseLayout title={`${title} • Jyotimoy Kashyap`} description={description}>
   <div class="w-full">
-    <!-- Back Button -->
-    <div class="mb-8">
+    <!-- Top Nav Action Bar -->
+    <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
       <a
         href={backLink}
-        class="inline-flex items-center gap-2 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-stone-900 bg-stone-100 border-2 border-stone-900 shadow-[3px_3px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_rgba(28,25,23,1)] hover:bg-white transition-all no-underline"
+        class={buttonVariants({ variant: 'tertiary', size: 'sm', className: 'bg-stone-100' })}
       >
         <span>&larr;</span>
         <span>{backLabel}</span>
       </a>
+
+      {launchAppLink && (
+        <a
+          href={launchAppLink}
+          class={buttonVariants({ variant: 'primary', size: 'sm' })}
+        >
+          <span>🚀</span>
+          <span>{launchAppLabel || 'Launch Interactive App'}</span>
+        </a>
+      )}
     </div>
 
     <!-- Article Shell (Paper Brutalist Card) -->
-    <article class="bg-white border-3 border-stone-900 p-6 sm:p-12 lg:p-14 shadow-[8px_8px_0px_0px_rgba(28,25,23,1)]">
+    <article class={cardVariants({ variant: 'default', className: 'p-6 sm:p-12 lg:p-14' })}>
       <!-- Article Header -->
       <header class="pb-8 mb-8 border-b-3 border-stone-900">
         <div class="flex flex-wrap items-center gap-2 mb-4">

@@ -1,4 +1,6 @@
 ---
+import { cardVariants } from '@repo/ui';
+
 interface Props {
   href: string;
   tag: string;
@@ -24,7 +26,7 @@ const {
 
 <a
   href={href}
-  class="group flex flex-col h-full bg-white border-3 border-stone-900 p-6 sm:p-7 no-underline text-stone-900 shadow-[6px_6px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[10px_10px_0px_0px_rgba(28,25,23,1)] transition-all relative select-none"
+  class={cardVariants({ variant: 'interactive', className: 'group h-full p-6 sm:p-7 no-underline relative select-none' })}
 >
   <!-- Top Bar: Tag & Count -->
   <div class="flex items-center justify-between gap-2 mb-4">

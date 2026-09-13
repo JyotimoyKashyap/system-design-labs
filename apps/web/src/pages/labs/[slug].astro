@@ -1,12 +1,8 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
-import RaftVisualizer from '../../labs/raft-consensus/RaftVisualizer';
-import ConsistentHashingVisualizer from '../../labs/consistent-hashing/ConsistentHashingVisualizer';
-import BloomFilterVisualizer from '../../labs/bloom-filter/BloomFilterVisualizer';
-import RateLimiterVisualizer from '../../labs/api-rate-limiter/RateLimiterVisualizer';
-import KafkaVisualizer from '../../labs/apache-kafka/KafkaVisualizer';
-import RabbitMQVisualizer from '../../labs/rabbitmq/RabbitMQVisualizer';
+import { buttonVariants } from '@repo/ui';
+import DynamicVisualizer from '../../components/DynamicVisualizer';
 
 export async function getStaticPaths() {
   const labs = await getCollection('labs');
@@ -30,7 +26,7 @@ const { lab } = Astro.props;
       <div class="flex items-center gap-3">
         <a
           href="/labs"
-          class="px-3 py-1 font-mono text-xs font-bold uppercase tracking-wider text-stone-900 bg-stone-100 border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all no-underline flex items-center gap-1"
+          class={buttonVariants({ variant: 'tertiary', size: 'sm', className: 'bg-stone-100' })}
         >
           <span>&larr;</span>
           <span>Labs Directory</span>
@@ -56,10 +52,17 @@ const { lab } = Astro.props;
           Interactive Simulation
         </span>
         <a
-          href={`https://github.com/JyotimoyKashyap/system-design-labs/tree/main/${lab.data.id}`}
+          href={`/labs/${lab.data.id}/docs`}
+          class={buttonVariants({ variant: 'secondary', size: 'sm' })}
+        >
+          <span>📖</span>
+          <span>Read Docs</span>
+        </a>
+        <a
+          href={lab.data.githubRepo || `https://github.com/JyotimoyKashyap/system-design-labs/tree/main/${lab.data.id}`}
           target="_blank"
           rel="noopener noreferrer"
-          class="px-3 py-1 font-mono text-xs font-bold text-stone-900 border-2 border-stone-900 hover:bg-stone-100 no-underline shadow-[2px_2px_0px_0px_rgba(28,25,23,1)]"
+          class={buttonVariants({ variant: 'tertiary', size: 'sm' })}
         >
           GitHub Repo ↗
         </a>
@@ -68,12 +71,7 @@ const { lab } = Astro.props;
 
     <!-- Main Interactive Simulation Island View -->
     <div class="flex-1 w-full h-full min-h-0 relative overflow-hidden bg-[#fdfcfb]">
-      {lab.data.id === 'raft-consensus' && <RaftVisualizer client:only="react" />}
-      {lab.data.id === 'consistent-hashing' && <ConsistentHashingVisualizer client:only="react" />}
-      {lab.data.id === 'bloom-filter' && <BloomFilterVisualizer client:only="react" />}
-      {lab.data.id === 'api-rate-limiter' && <RateLimiterVisualizer client:only="react" />}
-      {lab.data.id === 'apache-kafka' && <KafkaVisualizer client:only="react" />}
-      {lab.data.id === 'rabbitmq' && <RabbitMQVisualizer client:only="react" />}
+      <DynamicVisualizer client:only="react" slug={lab.data.id} />
     </div>
   </div>
 </BaseLayout>

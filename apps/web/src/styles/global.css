@@ -1,8 +1,13 @@
 @import "tailwindcss";
-@source "../../../packages/ui/src";
+@source "../../../../packages/ui/src";
 
 @theme {
   --font-silkscreen: 'Silkscreen', monospace;
+  --color-brand-primary: #FF6B6B;
+  --color-brand-secondary: #4ECDC4;
+  --color-brand-accent: #FBBF24;
+  --color-brand-paper: #FDFCFB;
+  --color-brand-ink: #1C1917;
 }
 
 .font-silkscreen {

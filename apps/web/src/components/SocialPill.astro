@@ -1,4 +1,6 @@
 ---
+import { buttonVariants } from '@repo/ui';
+
 interface Props {
   href: string;
   label: string;
@@ -20,10 +22,7 @@ const backgroundStyle = bgClass
   href={href}
   target="_blank"
   rel="noopener noreferrer"
-  class:list={[
-    'inline-flex items-center gap-2 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-stone-900 border-2 border-stone-900 shadow-[3px_3px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_rgba(28,25,23,1)] transition-all cursor-pointer select-none no-underline',
-    backgroundStyle,
-  ]}
+  class={buttonVariants({ className: backgroundStyle })}
 >
   <slot name="icon" />
   <span>{label}</span>

@@ -81,7 +81,7 @@ export default function BloomFilterVisualizer() {
             </div>
           </form>
 
-          <Button onClick={handleReset} variant="secondary" className="text-xs">
+          <Button onClick={handleReset} variant="secondary" size="sm">
             <RotateCcw size={14} /> Clear Bit Array
           </Button>
 

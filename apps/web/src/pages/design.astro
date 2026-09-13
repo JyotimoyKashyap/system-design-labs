@@ -1,0 +1,13 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { DesignShowcase } from '@repo/ui';
+---
+
+<BaseLayout
+  title="Design System & Living Style Guide • Jyotimoy Kashyap"
+  description="Paper Brutalist design system, tokens, button variants, card geometry, and typography standards across all apps and visualizers."
+>
+  <div class="w-full">
+    <DesignShowcase client:load />
+  </div>
+</BaseLayout>

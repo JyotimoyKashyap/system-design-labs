@@ -28,7 +28,7 @@ const lld = defineCollection({
 });
 
 const labs = defineCollection({
-  loader: glob({ pattern: '**/*.json', base: './src/content/labs' }),
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/labs' }),
   schema: z.object({
     id: z.string(),
     title: z.string(),
@@ -39,6 +39,7 @@ const labs = defineCollection({
     category: z.string(),
     featured: z.boolean().default(false),
     status: z.enum(['Interactive Simulation', 'Beta', 'Experimental']).default('Interactive Simulation'),
+    githubRepo: z.string().optional(),
   }),
 });
 

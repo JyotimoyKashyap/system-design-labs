@@ -1,0 +1,30 @@
+---
+import { getCollection, render } from 'astro:content';
+import ContentLayout from '../../../layouts/ContentLayout.astro';
+
+export async function getStaticPaths() {
+  const labs = await getCollection('labs');
+  return labs.map((lab) => ({
+    params: { slug: lab.data.id },
+    props: { lab },
+  }));
+}
+
+const { lab } = Astro.props;
+const { Content } = await render(lab);
+---
+
+<ContentLayout
+  title={`${lab.data.title} • Documentation`}
+  description={lab.data.description}
+  publishedAt="Interactive Lab Docs"
+  category={lab.data.category}
+  tags={[lab.data.tag, 'Architecture', 'Interactive Simulation']}
+  githubRepo={lab.data.githubRepo}
+  backLink="/labs"
+  backLabel="Back to Labs Directory"
+  launchAppLink={`/labs/${lab.data.id}`}
+  launchAppLabel="Launch Interactive Simulation"
+>
+  <Content />
+</ContentLayout>
