@@ -27,7 +27,7 @@ const {
 ---
 
 <BaseLayout title={`${title} • Jyotimoy Kashyap`} description={description}>
-  <div class="max-w-4xl mx-auto">
+  <div class="w-full">
     <!-- Back Button -->
     <div class="mb-8">
       <a
@@ -40,7 +40,7 @@ const {
     </div>
 
     <!-- Article Shell (Paper Brutalist Card) -->
-    <article class="bg-white border-3 border-stone-900 p-6 sm:p-12 shadow-[8px_8px_0px_0px_rgba(28,25,23,1)]">
+    <article class="bg-white border-3 border-stone-900 p-6 sm:p-12 lg:p-14 shadow-[8px_8px_0px_0px_rgba(28,25,23,1)]">
       <!-- Article Header -->
       <header class="pb-8 mb-8 border-b-3 border-stone-900">
         <div class="flex flex-wrap items-center gap-2 mb-4">
@@ -89,14 +89,14 @@ const {
         </div>
       </header>
 
-      <!-- Markdown Prose Content -->
-      <div class="prose prose-stone prose-lg max-w-none prose-headings:font-serif prose-headings:italic prose-headings:font-bold prose-headings:tracking-tight prose-a:text-orange-600 prose-a:no-underline hover:prose-a:underline prose-pre:bg-stone-900 prose-pre:border-2 prose-pre:border-stone-900 prose-pre:rounded-none prose-pre:shadow-[4px_4px_0px_0px_rgba(28,25,23,1)] prose-img:border-2 prose-img:border-stone-900 prose-img:shadow-[4px_4px_0px_0px_rgba(28,25,23,1)]">
+      <!-- Markdown Body Content (Clean Sans-Serif Headers, Tables, Code) -->
+      <div class="markdown-body w-full">
         <slot />
       </div>
     </article>
   </div>
 
-  <!-- Mermaid Client-Side Renderer -->
+  <!-- Mermaid Client-Side Renderer with Full Color Support -->
   <script>
     async function initMermaid() {
       const mermaidNodes = document.querySelectorAll<HTMLElement>(
@@ -108,22 +108,8 @@ const {
         const { default: mermaid } = await import('mermaid');
         mermaid.initialize({
           startOnLoad: false,
-          theme: 'neutral',
-          fontFamily: 'Inter, sans-serif',
-          themeVariables: {
-            primaryColor: '#ffffff',
-            primaryBorderColor: '#1c1917',
-            primaryTextColor: '#1c1917',
-            lineColor: '#1c1917',
-            secondaryColor: '#fdfcfb',
-            tertiaryColor: '#f5f4f0',
-            border2: '#1c1917',
-            mainBkg: '#ffffff',
-            nodeBorder: '#1c1917',
-            clusterBkg: '#fdfcfb',
-            clusterBorder: '#1c1917',
-            fontSize: '14px',
-          },
+          theme: 'default',
+          securityLevel: 'loose',
         });
 
         for (let i = 0; i < mermaidNodes.length; i++) {
@@ -136,7 +122,7 @@ const {
             const id = `mermaid-graph-${Date.now()}-${i}`;
             const { svg } = await mermaid.render(id, code);
             const wrapper = document.createElement('div');
-            wrapper.className = 'my-8 p-6 bg-white border-2 border-stone-900 shadow-[4px_4px_0px_0px_rgba(28,25,23,1)] flex justify-center overflow-x-auto select-none';
+            wrapper.className = 'mermaid-wrapper my-8 py-2 flex justify-center overflow-x-auto';
             wrapper.innerHTML = svg;
             pre.replaceWith(wrapper);
           } catch (err) {

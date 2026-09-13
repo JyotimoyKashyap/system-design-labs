@@ -13,14 +13,13 @@ const lldList = (await getCollection('lld')).sort(
 );
 
 const labs = await getCollection('labs');
-const featuredLabs = labs.filter((l) => l.data.featured);
 ---
 
 <BaseLayout>
   <!-- 1. HERO SECTION (Two-Column Layout inspired by Arpit Bhayani) -->
   <section class="pb-16 border-b-3 border-stone-900 mb-16">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
-      <!-- Left Column: Narrative Bio & Links (7 of 12 cols) -->
+      <!-- Left Column: Narrative Bio & Links (8 of 12 cols) -->
       <div class="lg:col-span-8 space-y-6">
         <div>
           <h1 class="font-serif italic font-black text-4xl sm:text-6xl text-stone-900 tracking-tight leading-none mb-3">
@@ -93,7 +92,7 @@ const featuredLabs = labs.filter((l) => l.data.featured);
           </div>
           <div class="mt-3 pt-2 border-t-2 border-dashed border-stone-200 flex items-center justify-between font-mono text-[11px] text-stone-600">
             <span class="font-bold">STATUS:</span>
-            <span class="text-emerald-700 flex items-center gap-1">
+            <span class="text-emerald-700 flex items-center gap-1 font-bold">
               <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               Architecting &amp; Writing
             </span>
@@ -116,7 +115,6 @@ const featuredLabs = labs.filter((l) => l.data.featured);
 
     <!-- 4 Category Cards Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <!-- 1. Interactive Labs -->
       <ExploreCard
         href="/labs"
         tag="INTERACTIVE"
@@ -127,7 +125,6 @@ const featuredLabs = labs.filter((l) => l.data.featured);
         tagBgColor="#f97316"
       />
 
-      <!-- 2. System Design Blogs -->
       <ExploreCard
         href="/blogs"
         tag="ARCHITECTURE"
@@ -138,7 +135,6 @@ const featuredLabs = labs.filter((l) => l.data.featured);
         tagBgColor="#2563eb"
       />
 
-      <!-- 3. Low-Level Design (LLD) -->
       <ExploreCard
         href="/lld"
         tag="OBJECT-ORIENTED"
@@ -149,7 +145,6 @@ const featuredLabs = labs.filter((l) => l.data.featured);
         tagBgColor="#ec4899"
       />
 
-      <!-- 4. Open Source Mono-Repo -->
       <ExploreCard
         href="https://github.com/JyotimoyKashyap/system-design-labs"
         tag="OPEN SOURCE"
@@ -162,113 +157,133 @@ const featuredLabs = labs.filter((l) => l.data.featured);
     </div>
   </section>
 
-  <!-- 3. RECENT ACTIVITY & HIGHLIGHTS -->
-  <section class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-    <!-- Left Column: Recent Blogs & LLD -->
-    <div class="bg-white border-3 border-stone-900 p-6 sm:p-8 shadow-[6px_6px_0px_0px_rgba(28,25,23,1)] flex flex-col justify-between">
-      <div>
-        <div class="flex items-center justify-between pb-4 mb-6 border-b-2 border-stone-900">
-          <h3 class="font-serif italic font-black text-2xl text-stone-900">
-            Recent Writings &amp; LLD
-          </h3>
-          <a href="/blogs" class="font-mono text-xs font-bold uppercase tracking-wider text-orange-600 hover:underline">
-            All Archive &rarr;
-          </a>
-        </div>
-
-        <ul class="space-y-4 divide-y divide-stone-100">
-          {blogs.slice(0, 2).map((post) => (
-            <li class="pt-3 first:pt-0">
-              <a href={`/blogs/${post.id}`} class="group block no-underline">
-                <div class="flex items-baseline gap-2 text-stone-500 font-mono text-xs mb-1">
-                  <span>{post.data.publishedAt}</span>
-                  <span>•</span>
-                  <span class="text-blue-600 font-bold uppercase">{post.data.category}</span>
-                </div>
-                <h4 class="font-serif italic font-bold text-lg text-stone-900 group-hover:text-orange-600 transition-colors leading-snug">
-                  {post.data.title}
-                </h4>
-                <p class="text-xs text-stone-600 font-sans mt-1 line-clamp-2">
-                  {post.data.description}
-                </p>
-              </a>
-            </li>
-          ))}
-
-          {lldList.slice(0, 1).map((item) => (
-            <li class="pt-4">
-              <a href={`/lld/${item.id}`} class="group block no-underline">
-                <div class="flex items-baseline gap-2 text-stone-500 font-mono text-xs mb-1">
-                  <span>{item.data.publishedAt}</span>
-                  <span>•</span>
-                  <span class="text-pink-600 font-bold uppercase">LLD Case Study</span>
-                </div>
-                <h4 class="font-serif italic font-bold text-lg text-stone-900 group-hover:text-pink-600 transition-colors leading-snug">
-                  {item.data.title}
-                </h4>
-                <p class="text-xs text-stone-600 font-sans mt-1 line-clamp-2">
-                  {item.data.description}
-                </p>
-              </a>
-            </li>
-          ))}
-        </ul>
+  <!-- 3. LIVE SHOWROOM: INTERACTIVE LABS & BLOGS (Exact Paper Brutalist Style from Old Site) -->
+  <section class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+    <!-- Left Column: Interactive Labs (7 of 12 cols) -->
+    <div class="lg:col-span-7">
+      <div class="flex items-baseline justify-between border-b-3 border-stone-900 pb-3 mb-8">
+        <h2 class="font-serif italic font-black text-3xl sm:text-4xl text-stone-900">
+          Interactive Labs
+        </h2>
+        <a href="/labs" class="font-mono text-xs font-bold text-orange-600 hover:underline uppercase tracking-wider">
+          All Labs ({labs.length}) &rarr;
+        </a>
       </div>
 
-      <div class="mt-8 pt-4 border-t-2 border-dashed border-stone-200 flex justify-between font-mono text-xs font-bold">
-        <a href="/blogs" class="text-blue-600 hover:underline">Browse Blogs ({blogs.length}) &rarr;</a>
-        <a href="/lld" class="text-pink-600 hover:underline">Browse LLD ({lldList.length}) &rarr;</a>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        {labs.slice(0, 4).map((lab) => (
+          <div class="bg-white border-3 border-stone-900 p-6 sm:p-7 shadow-[8px_8px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[12px_12px_0px_0px_rgba(28,25,23,1)] transition-all flex flex-col justify-between">
+            <div>
+              <span
+                class="inline-block px-3 py-1 font-mono text-[11px] font-black uppercase tracking-wider border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] mb-4"
+                style={`background-color: ${lab.data.tagColor}; color: ${lab.data.tagTextColor};`}
+              >
+                {lab.data.tag}
+              </span>
+
+              <!-- Non-italic, bold sans-serif card title -->
+              <h3 class="font-sans font-black text-xl sm:text-2xl text-stone-900 mb-3 leading-snug tracking-tight not-italic">
+                {lab.data.title}
+              </h3>
+
+              <p class="text-stone-700 text-sm leading-relaxed mb-6 font-sans">
+                {lab.data.description}
+              </p>
+            </div>
+
+            <!-- Buttons: LAUNCH APP (#FF6B6B) & READ DOCS (#4ECDC4) -->
+            <div class="flex flex-wrap gap-3 pt-4 border-t-2 border-stone-100">
+              <a
+                href={`/labs/${lab.data.id}`}
+                class="px-4 py-2 bg-[#FF6B6B] text-stone-950 font-mono text-xs font-black uppercase tracking-wider border-3 border-stone-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] no-underline transition-all"
+              >
+                Launch App
+              </a>
+              <a
+                href={`/labs/${lab.data.id}`}
+                class="px-4 py-2 bg-[#4ECDC4] text-stone-950 font-mono text-xs font-black uppercase tracking-wider border-3 border-stone-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] no-underline transition-all"
+              >
+                Read Docs
+              </a>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
 
-    <!-- Right Column: Featured Interactive Labs -->
-    <div class="bg-white border-3 border-stone-900 p-6 sm:p-8 shadow-[6px_6px_0px_0px_rgba(28,25,23,1)] flex flex-col justify-between">
-      <div>
-        <div class="flex items-center justify-between pb-4 mb-6 border-b-2 border-stone-900">
-          <h3 class="font-serif italic font-black text-2xl text-stone-900">
-            Featured Interactive Labs
-          </h3>
-          <a href="/labs" class="font-mono text-xs font-bold uppercase tracking-wider text-orange-600 hover:underline">
-            All Labs ({labs.length}) &rarr;
-          </a>
-        </div>
-
-        <div class="space-y-4">
-          {featuredLabs.slice(0, 3).map((lab) => (
-            <div class="border-2 border-stone-900 p-4 shadow-[3px_3px_0px_0px_rgba(28,25,23,1)] bg-stone-50/50 hover:bg-stone-50 transition-colors">
-              <div class="flex items-center justify-between mb-1.5">
-                <span
-                  class="px-2 py-0.5 font-mono text-[10px] font-black uppercase tracking-wider border border-stone-900"
-                  style={`background-color: ${lab.data.tagColor}; color: ${lab.data.tagTextColor};`}
-                >
-                  {lab.data.tag}
-                </span>
-                <span class="font-mono text-[11px] text-emerald-700 font-bold flex items-center gap-1">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  Ready
-                </span>
-              </div>
-              <h4 class="font-serif italic font-bold text-base text-stone-900">
-                {lab.data.title}
-              </h4>
-              <p class="text-xs text-stone-600 font-sans mt-1 line-clamp-2">
-                {lab.data.description}
-              </p>
-              <div class="mt-3 flex justify-end">
-                <a
-                  href={`/labs/${lab.data.id}`}
-                  class="px-3 py-1 bg-stone-900 text-white font-mono text-xs font-bold uppercase tracking-wider hover:bg-orange-600 transition-colors border border-stone-900"
-                >
-                  Launch Simulation &rarr;
-                </a>
-              </div>
-            </div>
-          ))}
-        </div>
+    <!-- Right Column: Blogs & LLD (5 of 12 cols) -->
+    <div class="lg:col-span-5">
+      <div class="flex items-baseline justify-between border-b-3 border-stone-900 pb-3 mb-8">
+        <h2 class="font-serif italic font-black text-3xl sm:text-4xl text-stone-900">
+          Blogs &amp; LLD
+        </h2>
+        <a href="/blogs" class="font-mono text-xs font-bold text-orange-600 hover:underline uppercase tracking-wider">
+          All Writings &rarr;
+        </a>
       </div>
 
-      <div class="mt-8 pt-4 border-t-2 border-dashed border-stone-200 flex justify-end font-mono text-xs font-bold">
-        <a href="/labs" class="text-orange-600 hover:underline">Launch All {labs.length} Interactive Simulators &rarr;</a>
+      <div class="space-y-6">
+        {blogs.slice(0, 1).map((post) => (
+          <div class="bg-white border-3 border-stone-900 p-6 sm:p-7 shadow-[8px_8px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[12px_12px_0px_0px_rgba(28,25,23,1)] transition-all flex flex-col justify-between">
+            <div>
+              <span class="inline-block px-3 py-1 font-mono text-[11px] font-black uppercase tracking-wider bg-orange-500 text-white border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] mb-4">
+                {post.data.category}
+              </span>
+
+              <!-- Non-italic, bold sans-serif card title -->
+              <h3 class="font-sans font-black text-xl sm:text-2xl text-stone-900 mb-3 leading-snug tracking-tight not-italic">
+                {post.data.title}
+              </h3>
+
+              <p class="text-stone-700 text-sm leading-relaxed mb-6 font-sans">
+                {post.data.description}
+              </p>
+            </div>
+
+            <div class="pt-4 border-t-2 border-stone-100 flex items-center justify-between">
+              <a
+                href={`/blogs/${post.id}`}
+                class="px-5 py-2 bg-[#4ECDC4] text-stone-950 font-mono text-xs font-black uppercase tracking-wider border-3 border-stone-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] no-underline transition-all"
+              >
+                Read Article
+              </a>
+              <span class="font-mono text-xs text-stone-500 font-bold">
+                {post.data.publishedAt}
+              </span>
+            </div>
+          </div>
+        ))}
+
+        {lldList.slice(0, 2).map((item) => (
+          <div class="bg-white border-3 border-stone-900 p-6 sm:p-7 shadow-[8px_8px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[12px_12px_0px_0px_rgba(28,25,23,1)] transition-all flex flex-col justify-between">
+            <div>
+              <span class="inline-block px-3 py-1 font-mono text-[11px] font-black uppercase tracking-wider bg-[#ec4899] text-white border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] mb-4">
+                {item.data.language} • {item.data.difficulty}
+              </span>
+
+              <!-- Non-italic, bold sans-serif card title -->
+              <h3 class="font-sans font-black text-xl sm:text-2xl text-stone-900 mb-3 leading-snug tracking-tight not-italic">
+                {item.data.title}
+              </h3>
+
+              <p class="text-stone-700 text-sm leading-relaxed mb-6 font-sans">
+                {item.data.description}
+              </p>
+            </div>
+
+            <div class="pt-4 border-t-2 border-stone-100 flex items-center justify-between">
+              <a
+                href={`/lld/${item.id}`}
+                class="px-5 py-2 bg-[#4ECDC4] text-stone-950 font-mono text-xs font-black uppercase tracking-wider border-3 border-stone-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] no-underline transition-all"
+              >
+                Read Design
+              </a>
+              <span class="font-mono text-xs text-stone-500 font-bold">
+                {item.data.publishedAt}
+              </span>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   </section>

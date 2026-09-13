@@ -9,7 +9,7 @@ const labs = await getCollection('labs');
   title="Interactive Systems Labs • Jyotimoy Kashyap"
   description="In-browser visual simulations of distributed consensus, consistent hashing, append-only logs, and probabilistic data structures."
 >
-  <div class="max-w-6xl mx-auto">
+  <div class="w-full">
     <!-- Header -->
     <header class="pb-8 mb-12 border-b-3 border-stone-900">
       <div class="flex items-center gap-2 mb-2 font-mono text-xs font-bold uppercase tracking-wider text-orange-600">
@@ -28,11 +28,11 @@ const labs = await getCollection('labs');
     <!-- Labs Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
       {labs.map((lab) => (
-        <article class="bg-white border-3 border-stone-900 p-6 sm:p-7 shadow-[6px_6px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[10px_10px_0px_0px_rgba(28,25,23,1)] transition-all flex flex-col justify-between">
+        <article class="bg-white border-3 border-stone-900 p-6 sm:p-7 shadow-[8px_8px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[12px_12px_0px_0px_rgba(28,25,23,1)] transition-all flex flex-col justify-between">
           <div>
             <div class="flex items-center justify-between mb-4">
               <span
-                class="px-2.5 py-0.5 font-mono text-xs font-black uppercase tracking-wider border border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)]"
+                class="px-3 py-1 font-mono text-xs font-black uppercase tracking-wider border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)]"
                 style={`background-color: ${lab.data.tagColor}; color: ${lab.data.tagTextColor};`}
               >
                 {lab.data.tag}
@@ -43,28 +43,31 @@ const labs = await getCollection('labs');
               </span>
             </div>
 
-            <h2 class="font-serif italic font-black text-2xl text-stone-900 mb-2 leading-snug">
+            <!-- Non-italic, bold sans-serif card title -->
+            <h2 class="font-sans font-black text-2xl text-stone-900 mb-3 leading-snug tracking-tight not-italic">
               <a href={`/labs/${lab.data.id}`} class="hover:text-orange-600 transition-colors no-underline text-stone-900">
                 {lab.data.title}
               </a>
             </h2>
 
-            <p class="text-stone-600 text-sm leading-relaxed mb-6 font-sans">
+            <p class="text-stone-700 text-sm leading-relaxed mb-6 font-sans">
               {lab.data.description}
             </p>
           </div>
 
-          <div class="pt-4 border-t-2 border-dashed border-stone-200 flex items-center justify-between">
-            <span class="font-mono text-xs text-stone-400">
-              Browser Simulation
-            </span>
-
+          <!-- Dual Buttons: Launch App (#FF6B6B) & Read Docs (#4ECDC4) -->
+          <div class="pt-4 border-t-2 border-stone-100 flex flex-wrap gap-3">
             <a
               href={`/labs/${lab.data.id}`}
-              class="px-3.5 py-1.5 bg-stone-900 text-white font-mono text-xs font-bold uppercase tracking-wider hover:bg-orange-600 transition-colors border-2 border-stone-900 shadow-[3px_3px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 no-underline flex items-center gap-1.5"
+              class="px-4 py-2 bg-[#FF6B6B] text-stone-950 font-mono text-xs font-black uppercase tracking-wider border-3 border-stone-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] no-underline transition-all"
             >
-              <span>Launch Lab</span>
-              <span>&rarr;</span>
+              Launch App
+            </a>
+            <a
+              href={`/labs/${lab.data.id}`}
+              class="px-4 py-2 bg-[#4ECDC4] text-stone-950 font-mono text-xs font-black uppercase tracking-wider border-3 border-stone-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] no-underline transition-all"
+            >
+              Read Docs
             </a>
           </div>
         </article>
