@@ -13,7 +13,7 @@ const blogs = (await getCollection('blogs')).sort(
 >
   <div class="w-full">
     <!-- Header -->
-    <header class="pb-8 mb-10 border-b-3 border-stone-900">
+    <header class="pb-8 mb-12 border-b-3 border-stone-900">
       <div class="flex items-center gap-2 mb-2 font-mono text-xs font-bold uppercase tracking-wider text-blue-600">
         <span>ARCHITECTURAL WRITINGS</span>
         <span>•</span>
@@ -22,55 +22,61 @@ const blogs = (await getCollection('blogs')).sort(
       <h1 class="font-serif italic font-black text-4xl sm:text-5xl text-stone-900 mb-3">
         System Design Blogs
       </h1>
-      <p class="text-stone-600 text-lg font-sans leading-relaxed">
+      <p class="text-stone-600 text-lg font-sans leading-relaxed max-w-3xl">
         Deep dives into high-scale backend architectures, database replication, connection pools, and distributed systems trade-offs.
       </p>
     </header>
 
-    <!-- Blogs List -->
-    <div class="space-y-6">
+    <!-- Blogs Grid (Matching LLD and Labs Grid) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
       {blogs.map((post) => (
-        <article class="bg-white border-3 border-stone-900 p-6 sm:p-8 shadow-[8px_8px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[12px_12px_0px_0px_rgba(28,25,23,1)] transition-all">
-          <div class="flex flex-wrap items-center gap-2 mb-4">
-            <span class="px-3 py-1 font-mono text-xs font-black uppercase tracking-wider bg-blue-600 text-white border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)]">
-              {post.data.category}
-            </span>
-            {post.data.readTimeMinutes && (
-              <span class="font-mono text-xs font-bold text-stone-600 bg-stone-100 px-2 py-0.5 border border-stone-300">
-                {post.data.readTimeMinutes} min read
+        <article class="bg-white border-3 border-stone-900 p-6 sm:p-7 shadow-[8px_8px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[12px_12px_0px_0px_rgba(28,25,23,1)] transition-all flex flex-col justify-between">
+          <div>
+            <!-- Top Badges & Meta -->
+            <div class="flex items-center justify-between gap-2 mb-4">
+              <span class="px-3 py-1 font-mono text-xs font-black uppercase tracking-wider bg-blue-600 text-white border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)]">
+                {post.data.category}
               </span>
-            )}
-            <span class="font-mono text-xs text-stone-500 ml-auto font-bold">
-              {post.data.publishedAt}
-            </span>
-          </div>
+              {post.data.readTimeMinutes && (
+                <span class="font-mono text-xs font-bold text-stone-700 bg-stone-100 px-2 py-0.5 border border-stone-300">
+                  {post.data.readTimeMinutes} min read
+                </span>
+              )}
+            </div>
 
-          <!-- Non-italic, bold sans-serif card title -->
-          <h2 class="font-sans font-black text-2xl sm:text-3xl text-stone-900 mb-3 leading-snug tracking-tight not-italic">
-            <a href={`/blogs/${post.id}`} class="hover:text-blue-600 transition-colors no-underline text-stone-900">
-              {post.data.title}
-            </a>
-          </h2>
+            <!-- Card Title: Non-italic, bold sans-serif -->
+            <h2 class="font-sans font-black text-2xl text-stone-900 mb-3 leading-snug tracking-tight not-italic">
+              <a href={`/blogs/${post.id}`} class="hover:text-blue-600 transition-colors no-underline text-stone-900">
+                {post.data.title}
+              </a>
+            </h2>
 
-          <p class="text-stone-700 text-base leading-relaxed mb-6 font-sans">
-            {post.data.description}
-          </p>
+            <p class="text-stone-700 text-sm leading-relaxed mb-5 font-sans">
+              {post.data.description}
+            </p>
 
-          <div class="pt-4 border-t-2 border-dashed border-stone-200 flex flex-wrap items-center justify-between gap-4">
-            <div class="flex flex-wrap gap-1.5">
+            <!-- Tags -->
+            <div class="flex flex-wrap gap-1.5 mb-6">
               {post.data.tags.map((tag) => (
-                <span class="font-mono text-[11px] text-stone-600 bg-stone-50 px-2 py-0.5 border border-stone-200">
+                <span class="font-mono text-[11px] text-stone-700 bg-stone-50 px-2 py-0.5 border border-stone-300">
                   #{tag}
                 </span>
               ))}
             </div>
+          </div>
 
+          <!-- Bottom Actions with Signature Boxy Brutalist Button -->
+          <div class="pt-4 border-t-2 border-stone-100 flex items-center justify-between gap-3">
             <a
               href={`/blogs/${post.id}`}
-              class="px-5 py-2 bg-[#4ECDC4] text-stone-950 font-mono text-xs font-black uppercase tracking-wider border-3 border-stone-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] no-underline transition-all"
+              class="px-4 py-2 bg-[#4ECDC4] text-stone-950 font-mono text-xs font-black uppercase tracking-wider border-3 border-stone-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] no-underline transition-all"
             >
               Read Article &rarr;
             </a>
+
+            <span class="font-mono text-xs text-stone-500 font-bold">
+              {post.data.publishedAt}
+            </span>
           </div>
         </article>
       ))}
