@@ -6,8 +6,8 @@ import tailwindcss from '@tailwindcss/vite';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://jyotimoykashyap.github.io',
-  base: '/system-design-labs',
+  site: 'https://jyotimoykashyap.me',
+  base: '/',
   redirects: {
     '/blogs': '/notes',
     '/blogs/scale-architecture-0-1': '/notes/scale-architecture-0-1',
