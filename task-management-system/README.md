@@ -77,10 +77,10 @@ flowchart TD
         Cache --> Map["HashMap of UUID, Node<br/>O(1) Direct Lookup"]
     end
 
-    subgraph Notification_Subsystem ["Notification Subsystem (Observer Pattern)"]
-        Service -->|"3. Pull & Publish Events"| Publisher["EventPublisher<br/>SimpleEventPublisher"]
-        Publisher -->|"4. Broadcast Event"| Sub1["Subscriber<br/>EmailNotifier"]
-        Publisher -->|"4. Broadcast Event"| Sub2["Subscriber<br/>SlackNotifier / Logger"]
+    subgraph Notification_Subsystem ["Notification Subsystem (Observer & Pluggable Executors)"]
+        Service -->|"3. Pull & Publish Events"| Publisher["EventPublisher<br/>DefaultEventPublisher (Virtual Threads)"]
+        Publisher -->|"4. Async Broadcast (Fire-and-Forget)"| Sub1["Subscriber<br/>EmailNotifier"]
+        Publisher -->|"4. Async Broadcast (Fire-and-Forget)"| Sub2["Subscriber<br/>AuditNotifier / Webhook"]
     end
 ```
 
@@ -90,7 +90,7 @@ flowchart TD
 | **DTO Layer** | `UpdateTaskRequest` | Encapsulates optional fields submitted by client in a single atomic payload. |
 | **Service Layer** | `TaskService` | Acts as the gate. Fetches aggregates, delegates domain operations, persists, and flushes events. |
 | **Domain Layer** | `Task`, `User`, `Status` | Aggregate Root enforcing invariants and generating domain events on state change. |
-| **Notification Layer** | `Event<T>`, `EventPublisher`, `Subscriber` | Generic, domain-agnostic pub-sub notification engine. |
+| **Notification Layer** | `Event<T>`, `EventPublisher`, `DefaultEventPublisher`, `Subscriber` | Generic, domain-agnostic asynchronous pub-sub engine powered by `CopyOnWriteArrayList` and Java 21 Virtual Threads. |
 | **Repository Layer** | `TaskRepository` | Mediates between cache and database (Cache-Aside, Write-Through). |
 | **Cache Layer** | `CacheDao` / `InMemoryCache` | $O(1)$ LRU cache maintaining active hot records. |
 | **Persistence Layer** | `TaskDao` / `InMemoryTaskDao` | Thread-safe in-memory authoritative storage. |
@@ -189,6 +189,17 @@ classDiagram
         +notify(Event~T~)
     }
 
+    class DefaultEventPublisher {
+        -CopyOnWriteArrayList~Subscriber~ subscribers
+        -Executor executor
+        -Logger LOGGER$
+        +sync()$ DefaultEventPublisher
+        +async()$ DefaultEventPublisher
+        +addSubscriber(Subscriber)
+        +removeSubscriber(Subscriber)
+        +notify(Event~T~)
+    }
+
     class Subscriber {
         <<interface>>
         +consume(Event~T~)
@@ -267,8 +278,10 @@ classDiagram
     Task o-- Event : records
     Event <|.. TaskAssigneeChangeEvent : implements
     EventPublisher <|.. SimpleEventPublisher : implements
+    EventPublisher <|.. DefaultEventPublisher : implements
     Subscriber <|.. EmailNotifier : implements
     SimpleEventPublisher o-- Subscriber : notifies
+    DefaultEventPublisher o-- Subscriber : dispatches via Executor
     TaskService --> TaskRepository : persists via
     TaskService --> EventPublisher : flushes events to
     TaskService ..> UpdateTaskRequest : accepts
@@ -300,27 +313,35 @@ public void updateAssignee(User user) {
 
 ---
 
-### 2. Observer Pattern: Generic Event Publisher & Subscribers
-- **Problem:** Tying notifications directly to `Task` prevents reusing the notification infrastructure for other entities (e.g., `Story`, `Spike`, `Project`).
-- **Solution:** The notification framework is completely generic and domain-agnostic:
-  - `Event<T>` provides `getEntityId()`, `getEventName()`, `getOldValue()`, `getNewValue()`, and `getEventTime()`.
-  - `EventPublisher` maintains a list of `Subscriber`s and broadcasts events.
-  - `Subscriber` implementations (`EmailNotifier`) process any event without needing hardcoded task dependencies.
+### 2. Observer Pattern: Generic Event Publisher, Subscribers & Pluggable Executors
+- **Problem:** Synchronous notification iteration (`subscribers.forEach(...)`) blocks the caller thread during slow subscriber I/O (e.g., SMTP in `EmailNotifier`), risks `ConcurrentModificationException` if subscribers are added/removed dynamically, and allows one failing subscriber to crash the entire update transaction.
+- **Solution:** `DefaultEventPublisher` implements the Observer pattern using **Composition with a pluggable `Executor`** strategy and `CopyOnWriteArrayList`:
+  - **Pluggable Dispatch (`sync()` vs `async()`):** `DefaultEventPublisher.async()` uses **Java 21 Virtual Threads** (`Executors.newVirtualThreadPerTaskExecutor()`) for zero-overhead, fire-and-forget background delivery. `DefaultEventPublisher.sync()` passes `Runnable::run` for deterministic synchronous tests.
+  - **Thread-Safe, Lock-Free Iteration:** Backed by `CopyOnWriteArrayList<Subscriber>`, iteration operates on an immutable snapshot, ensuring thread safety without locking.
+  - **Atomic Deduplication (`addIfAbsent`):** Prevents "check-then-act" race conditions under concurrent registrations. Re-registering an existing subscriber logs a warning without throwing exceptions or halting the application.
+  - **Per-Subscriber Failure Isolation:** Each subscriber executes inside its own executor task wrapped in a `try-catch` block so unexpected errors (e.g. webhook timeouts) never cascade.
 
 ```java
-// Generic Subscriber consumes any event safely:
-public class EmailNotifier implements Subscriber {
-    @Override
-    public <T> void consume(Event<T> event) {
-        String oldVal = event.getOldValue() == null ? "None" : event.getOldValue().toString();
-        String newVal = event.getNewValue() == null ? "None" : event.getNewValue().toString();
+// Asynchronous Fire-and-Forget Publisher (Java 21 Virtual Threads):
+EventPublisher publisher = DefaultEventPublisher.async();
 
-        System.out.println("📧 [EMAIL NOTIFICATION] Event: " + event.getEventName()
-                + " | Entity ID: " + event.getEntityId()
-                + " | Old: " + oldVal
-                + " -> New: " + newVal
-                + " | At: " + event.getEventTime());
-    }
+// Atomic deduplication & non-crashing warning log:
+publisher.addSubscriber(emailNotifier);
+publisher.addSubscriber(emailNotifier); // Logs: WARNING: Subscriber is already present
+
+// In DefaultEventPublisher.java:
+@Override
+public <T> void notify(Event<T> event) {
+    Objects.requireNonNull(event, "Event cannot be null");
+    subscribers.forEach(subscriber -> {
+        executor.execute(() -> {
+            try {
+                subscriber.consume(event);
+            } catch (Exception e) {
+                System.err.println("Failed to notify subscriber: " + e.getMessage());
+            }
+        });
+    });
 }
 ```
 
@@ -453,10 +474,11 @@ sequenceDiagram
     participant Service as "TaskService (The Gate)"
     participant Repo as TaskRepository
     participant Task as "Task (Aggregate Root)"
-    participant Pub as SimpleEventPublisher
-    participant Sub as EmailNotifier
+    participant Pub as "DefaultEventPublisher"
+    participant Sub1 as "EmailNotifier (Virtual Thread 1)"
+    participant Sub2 as "AuditNotifier (Virtual Thread 2)"
 
-    Note over Client,Sub: 1. Client Submits Update Request DTO
+    Note over Client,Sub2: 1. Client Submits Update Request DTO
     Client->>Service: updateTask(UpdateTaskRequest)
     Service->>Repo: getTask(uuid)
     Repo-->>Service: Task (from Cache/DB)
@@ -470,15 +492,27 @@ sequenceDiagram
     Service->>Repo: updateTask(task)
     Repo->>Repo: Write to DB & refresh Cache
 
-    Note over Service,Sub: 4. Flush Uncommitted Events to Observers
+    Note over Service,Pub: 4. Flush Uncommitted Events to Publisher
     Service->>Task: task.pullDomainEvents()
     Task-->>Service: [TaskAssigneeChangeEvent]
     Service->>Pub: notify(event)
-    Pub->>Sub: consume(event)
-    Sub->>Sub: Print / Dispatch email notification
+    Pub-->>Service: Return immediately (Non-Blocking Fire-and-Forget)
+    Service-->>Client: Update completed
+
+    Note over Pub,Sub2: 5. Background Virtual Thread Dispatch (Parallel & Isolated)
+    par Virtual Thread 1
+        Pub-)Sub1: consume(event)
+        Sub1->>Sub1: Dispatch email notification
+    and Virtual Thread 2
+        Pub-)Sub2: consume(event)
+        Sub2->>Sub2: Record audit log
+    end
 ```
 
 ### Architectural Guarantees:
+- **Non-Blocking Fire-and-Forget:** Dispatching occurs on Java 21 Virtual Threads (`Executors.newVirtualThreadPerTaskExecutor()`), ensuring slow subscriber I/O never inflates client request latency.
+- **Per-Subscriber Failure Isolation:** Each subscriber runs in its own task shielded with `try-catch`. An unhandled exception (e.g. network failure) in one subscriber cannot prevent other subscribers from executing.
+- **Thread-Safe Atomic Deduplication:** `CopyOnWriteArrayList.addIfAbsent()` eliminates "check-then-act" race conditions under concurrent registrations; duplicates log a warning without crashing.
 - **Zero Service-Side Diffing:** The entity tracks what changed when it changed, capturing `oldValue` and `newValue` automatically.
 - **Generic & Domain-Agnostic Engine:** `Event<T>`, `EventPublisher`, and `Subscriber` do not depend on `Task`. They work for any entity (e.g., Stories, Spikes).
 - **Atomic Single-Request Updates:** Web clients submit one DTO payload; `TaskService` processes all mutations in one unit of work.
@@ -590,8 +624,9 @@ task-management-system/
                         │   ├── Event.java           # Generic event interface (entityId, eventName)
                         │   └── TaskAssigneeChangeEvent.java # Strongly-typed assignee change event
                         ├── publisher/
+                        │   ├── DefaultEventPublisher.java # Asynchronous/Synchronous publisher with Virtual Threads
                         │   ├── EventPublisher.java  # Publisher contract
-                        │   └── SimpleEventPublisher.java # Concrete broadcast publisher
+                        │   └── SimpleEventPublisher.java # Synchronous broadcast publisher
                         └── subscriber/
                             ├── Subscriber.java      # Generic subscriber consumer contract
                             └── EmailNotifier.java   # Concrete email subscriber
@@ -610,7 +645,7 @@ task-management-system/
 ```
 
 ### 3. Run the Demonstration
-The included [`Main.java`](./src/main/java/com/jyotimoykashyap/Main.java) configures a cache capacity of `2` to clearly showcase LRU eviction, cache hits, cache misses, updates, and email notifications:
+The included [`Main.java`](./src/main/java/com/jyotimoykashyap/Main.java) demonstrates LRU cache eviction (capacity = 2), atomic subscriber deduplication, non-blocking fire-and-forget Virtual Threads, and failure isolation:
 
 ```bash
 # Compile and run via java directly:
@@ -622,28 +657,37 @@ java -cp build/classes/java/main com.jyotimoykashyap.Main
 ```text
 === Starting Task Management System Demo ===
 
+--- 0. Testing Subscriber Registration & Deduplication ---
+Registered emailNotifier (First attempt: Success)
+Attempting duplicate registration of the same emailNotifier:
+WARNING: Subscriber is already present
+Registered AuditNotifier & FaultyNotifier (for failure isolation testing).
+
 --- 1. Creating and Saving Tasks ---
-Saved Task 1: 2d2d1937-d5e6-401c-b036-13083437adfa
-Saved Task 2: 8ed4ffb2-c9b6-4054-b2e8-f7e7d4ff7a69
+Saved Task 1: ffd2ba5b-49b8-49b2-a5df-eed5c18c4a1f
+Saved Task 2: 71107acb-5e83-4496-a9a8-b35e1a329bd2
 
 --- 2. Fetching Task 1 (Cache Hit & LRU Promotion) ---
-Successfully fetched Task 1: 2d2d1937-d5e6-401c-b036-13083437adfa
+Successfully fetched Task 1: ffd2ba5b-49b8-49b2-a5df-eed5c18c4a1f
 
 --- 3. Saving Task 3 (Triggers LRU Eviction of Task 2) ---
-Saved Task 3: 215231fb-db0d-494b-a836-2660ce6f4b4d
+Saved Task 3: baad6220-ad8f-4cc1-8acb-9e8473df37c7
 
 --- 4. Fetching Task 2 (Cache Miss -> DB Fetch) ---
-Successfully fetched Task 2 from DB: 8ed4ffb2-c9b6-4054-b2e8-f7e7d4ff7a69
+Successfully fetched Task 2 from DB: 71107acb-5e83-4496-a9a8-b35e1a329bd2
 
---- 5. Updating Task 1 (Assignee Change & Email Notification) ---
-📧 [EMAIL NOTIFICATION] Event: TASK_ASSIGNEE_CHANGED | Entity ID: 2d2d1937-d5e6-401c-b036-13083437adfa | Old: None -> New: alice | At: 2026-09-10T18:17:48.802015Z
-Updated Task 1 via UpdateTaskRequest successfully.
+--- 5. Updating Task 1 (Assignee Change -> Async Notification) ---
+Main thread: taskService.updateTask() completed immediately (non-blocking)!
+⚠️  [FAULTY SUBSCRIBER] [Thread: VirtualThread[#31]/runnable@ForkJoinPool-1-worker-3] Simulating network failure...
+Failed to notify subscriber: Simulated connection timeout to Slack Webhook
+🔔 [AUDIT SUBSCRIBER] [Thread: VirtualThread[#30]/runnable@ForkJoinPool-1-worker-2 | Virtual: true] Event: TASK_ASSIGNEE_CHANGED
+📧 [EMAIL NOTIFICATION] Event: TASK_ASSIGNEE_CHANGED | Entity ID: ffd2ba5b-49b8-49b2-a5df-eed5c18c4a1f | Old: None -> New: alice | At: 2026-09-14T10:11:36.790289Z
 
 --- 6. Listing All Tasks ---
 Total tasks in system: 3
- - Task ID: 2d2d1937-d5e6-401c-b036-13083437adfa
- - Task ID: 215231fb-db0d-494b-a836-2660ce6f4b4d
- - Task ID: 8ed4ffb2-c9b6-4054-b2e8-f7e7d4ff7a69
+ - Task ID: baad6220-ad8f-4cc1-8acb-9e8473df37c7
+ - Task ID: 71107acb-5e83-4496-a9a8-b35e1a329bd2
+ - Task ID: ffd2ba5b-49b8-49b2-a5df-eed5c18c4a1f
 
 --- 7. Deleting Task 3 ---
 Deleted Task 3.
@@ -657,5 +701,5 @@ Verified: Task 3 no longer exists (Task not found)
 ## 🔮 Concurrency & Future Roadmap
 While the current database DAO leverages thread-safe Singleton instantiation and maps, under heavy multi-threaded workloads the following enhancements can be incorporated:
 1. **Concurrent Data Structures:** Replacing raw `HashMap` with `ConcurrentHashMap` and wrapping doubly linked list operations in a `ReentrantReadWriteLock`.
-2. **Asynchronous Dispatching:** Backing `EventPublisher` with an `ExecutorService` (or virtual threads via Project Loom) to process subscriber delivery on background threads.
+2. **Asynchronous Dispatching:** ✅ **Completed** via `DefaultEventPublisher` utilizing Java 21 Virtual Threads (`Executors.newVirtualThreadPerTaskExecutor()`) and `CopyOnWriteArrayList` with atomic `addIfAbsent` deduplication and failure isolation.
 3. **Pluggable Eviction Strategies:** Refactoring `InMemoryCache` to support pluggable policies (LFU, FIFO, Clock-Pro) via the Strategy Pattern (similar to [`cache-lld`](../cache-lld)).
