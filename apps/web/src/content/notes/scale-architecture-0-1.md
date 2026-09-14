@@ -1,7 +1,7 @@
 ---
 title: "API Servers at Scale — The Full Picture"
 description: "From naive unpooled servers to thread pools, connection pools, and distributed server fleets."
-publishedAt: "2026-09-13"
+publishedAt: "2026-09-14"
 category: "Architecture"
 tags: ["Architecture"]
 readTimeMinutes: 8
