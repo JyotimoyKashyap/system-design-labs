@@ -4,7 +4,14 @@ import com.jyotimoykashyap.cache.CacheDao;
 import com.jyotimoykashyap.cache.InMemoryCache;
 import com.jyotimoykashyap.dao.InMemoryTaskDao;
 import com.jyotimoykashyap.dao.TaskDao;
+import com.jyotimoykashyap.dto.UpdateTaskRequest;
 import com.jyotimoykashyap.models.Task;
+import com.jyotimoykashyap.models.User;
+import com.jyotimoykashyap.notification.event.Event;
+import com.jyotimoykashyap.notification.publisher.DefaultEventPublisher;
+import com.jyotimoykashyap.notification.publisher.EventPublisher;
+import com.jyotimoykashyap.notification.subscriber.EmailNotifier;
+import com.jyotimoykashyap.notification.subscriber.Subscriber;
 import com.jyotimoykashyap.repository.TaskRepository;
 import com.jyotimoykashyap.service.TaskService;
 
@@ -23,10 +30,42 @@ public class Main {
         TaskDao taskDao = InMemoryTaskDao.getInstance();
         TaskRepository repository = new TaskRepository(cacheDao, taskDao);
 
-        // Initialize Notification System (Observer Pattern)
-        com.jyotimoykashyap.notification.publisher.EventPublisher publisher =
-                new com.jyotimoykashyap.notification.publisher.SimpleEventPublisher();
-        publisher.addSubscriber(new com.jyotimoykashyap.notification.subscriber.EmailNotifier());
+        // Initialize Notification System (Observer Pattern) with Virtual Threads
+        EventPublisher publisher = DefaultEventPublisher.async();
+
+        // -------------------------------------------------------------
+        // SCENARIO 1: Test Duplicate Subscriber Registration & Warning Log
+        // -------------------------------------------------------------
+        System.out.println("--- 0. Testing Subscriber Registration & Deduplication ---");
+        Subscriber emailNotifier = new EmailNotifier();
+        publisher.addSubscriber(emailNotifier);
+        System.out.println("Registered emailNotifier (First attempt: Success)");
+
+        System.out.println("Attempting duplicate registration of the same emailNotifier:");
+        publisher.addSubscriber(emailNotifier); // Should trigger LOGGER.warning without crashing
+
+        // -------------------------------------------------------------
+        // SCENARIO 2: Register Virtual-Thread Audit Subscriber & Faulty Subscriber
+        // -------------------------------------------------------------
+        // Audit subscriber displaying virtual thread info
+        publisher.addSubscriber(new Subscriber() {
+            @Override
+            public <T> void consume(Event<T> event) {
+                System.out.println("🔔 [AUDIT SUBSCRIBER] [Thread: " + Thread.currentThread()
+                        + " | Virtual: " + Thread.currentThread().isVirtual() + "] Event: " + event.getEventName());
+            }
+        });
+
+        // Faulty subscriber that simulates an unexpected network exception to test failure isolation
+        publisher.addSubscriber(new Subscriber() {
+            @Override
+            public <T> void consume(Event<T> event) {
+                System.out.println("⚠️  [FAULTY SUBSCRIBER] [Thread: " + Thread.currentThread()
+                        + "] Simulating network failure...");
+                throw new RuntimeException("Simulated connection timeout to Slack Webhook");
+            }
+        });
+        System.out.println("Registered AuditNotifier & FaultyNotifier (for failure isolation testing).\n");
 
         TaskService taskService = new TaskService(repository, publisher);
 
@@ -62,10 +101,10 @@ public class Main {
             Task fetchedTask2 = taskService.getTask(id2);
             System.out.println("Successfully fetched Task 2 from DB: " + fetchedTask2.getId());
 
-            // 6. Update Task (Direct update & DTO update with Assignee Notification)
-            System.out.println("\n--- 5. Updating Task 1 (Assignee Change & Email Notification) ---");
-            com.jyotimoykashyap.models.User alice = new com.jyotimoykashyap.models.User("alice");
-            com.jyotimoykashyap.dto.UpdateTaskRequest updateRequest = new com.jyotimoykashyap.dto.UpdateTaskRequest(
+            // 6. Update Task (Trigger Async Fire-and-Forget Notifications & Failure Isolation)
+            System.out.println("\n--- 5. Updating Task 1 (Assignee Change -> Async Notification) ---");
+            User alice = new User("alice");
+            UpdateTaskRequest updateRequest = new UpdateTaskRequest(
                     id1,
                     null,
                     "Updated description for PostgreSQL",
@@ -74,7 +113,10 @@ public class Main {
                     null
             );
             taskService.updateTask(updateRequest);
-            System.out.println("Updated Task 1 via UpdateTaskRequest successfully.");
+            System.out.println("Main thread: taskService.updateTask() completed immediately (non-blocking)!");
+
+            // Allow asynchronous virtual threads time to process and output before moving forward
+            Thread.sleep(200);
 
             // 7. Get All Tasks
             System.out.println("\n--- 6. Listing All Tasks ---");
