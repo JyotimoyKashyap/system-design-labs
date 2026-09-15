@@ -301,6 +301,23 @@ test("Codebase Linter: BaseLayout contains zero-FOUC theme bootstrapper", () => 
   );
 });
 
+test("Codebase Linter: Social pills define dark mode background and contrast styling", () => {
+  const indexPage = path.join(webSrcDir, "pages/index.astro");
+  const content = fs.readFileSync(indexPage, "utf8");
+
+  const socialPillMatches = [...content.matchAll(/<SocialPill\b([^>]*?)(?:\/>|>.*?<\/SocialPill>)/gs)];
+  assert.ok(socialPillMatches.length >= 5, "index.astro must have at least 5 SocialPill components");
+
+  for (const match of socialPillMatches) {
+    const pillAttrs = match[1];
+    assert.match(
+      pillAttrs,
+      /dark:bg-/,
+      "Each SocialPill on index.astro must include dark:bg- styling for dark mode visibility"
+    );
+  }
+});
+
 // ============================================================================
 // 4. AUTO-DISCOVERY & CONTENT ISOLATION SUITE
 // ============================================================================

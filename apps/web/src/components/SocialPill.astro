@@ -7,15 +7,16 @@ interface Props {
   count?: string;
   variant?: 'default' | 'highlight';
   bgClass?: string;
+  darkBgClass?: string;
 }
 
-const { href, label, count, variant = 'default', bgClass } = Astro.props;
+const { href, label, count, variant = 'default', bgClass, darkBgClass } = Astro.props;
 
 const backgroundStyle = bgClass
-  ? bgClass
+  ? `${bgClass} ${darkBgClass || ''}`.trim()
   : variant === 'highlight'
-    ? 'bg-amber-300 hover:bg-amber-400'
-    : 'bg-white hover:bg-stone-50';
+    ? 'bg-amber-300 hover:bg-amber-400 text-stone-950 dark:bg-amber-400 dark:hover:bg-amber-300 dark:text-stone-950'
+    : 'bg-white hover:bg-stone-50 text-stone-900 dark:bg-stone-800 dark:hover:bg-stone-700 dark:text-stone-100';
 ---
 
 <a
@@ -27,7 +28,7 @@ const backgroundStyle = bgClass
   <slot name="icon" />
   <span>{label}</span>
   {count && (
-    <span class="ml-0.5 px-1.5 py-0.2 bg-stone-100 border border-stone-400 text-[10px] text-stone-700">
+    <span class="ml-0.5 px-1.5 py-0.2 bg-stone-100 border border-stone-400 text-[10px] text-stone-700 dark:bg-stone-800 dark:border-stone-600 dark:text-stone-200">
       {count}
     </span>
   )}
