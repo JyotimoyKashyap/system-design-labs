@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));
 @source "../../../../packages/ui/src";
 
 @theme {
@@ -27,6 +28,14 @@
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
   }
+
+  html.dark body {
+    background-color: #0c0a09;
+    background-image: 
+      linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    color: #fdfcfb;
+  }
 }
 
 /* Custom Paper Brutalist Shadow Utilities */
@@ -48,6 +57,27 @@
 
 .brutalist-shadow-xl {
   box-shadow: 12px 12px 0px 0px rgba(28, 25, 23, 1);
+}
+
+/* Dark Mode Paper Brutalist Shadow Utilities */
+html.dark .brutalist-shadow-sm {
+  box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 1);
+}
+
+html.dark .brutalist-shadow {
+  box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 1);
+}
+
+html.dark .brutalist-shadow-md {
+  box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 1);
+}
+
+html.dark .brutalist-shadow-lg {
+  box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 1);
+}
+
+html.dark .brutalist-shadow-xl {
+  box-shadow: 12px 12px 0px 0px rgba(0, 0, 0, 1);
 }
 
 /* ==========================================================================
@@ -229,4 +259,73 @@
   border: none !important;
   border-top: 2px solid #e7e5e4 !important;
   margin: 2.5rem 0 !important;
+}
+
+/* ==========================================================================
+   Dark Mode Markdown Overrides
+   ========================================================================== */
+
+html.dark .markdown-body {
+  color: #fdfcfb;
+}
+
+html.dark .markdown-body h1,
+html.dark .markdown-body h2,
+html.dark .markdown-body h3,
+html.dark .markdown-body h4,
+html.dark .markdown-body h5,
+html.dark .markdown-body h6 {
+  color: #fdfcfb !important;
+}
+
+html.dark .markdown-body h1,
+html.dark .markdown-body h2 {
+  border-bottom-color: #292524 !important;
+}
+
+html.dark .markdown-body > p,
+html.dark .markdown-body li > p,
+html.dark .markdown-body blockquote > p,
+html.dark .markdown-body div:not(.mermaid-wrapper):not([class*="mermaid"]) > p {
+  color: #d6d3d1;
+}
+
+html.dark .markdown-body :not(pre) > code {
+  background-color: #1c1917 !important;
+  color: #fdfcfb !important;
+  border-color: #44403c !important;
+}
+
+html.dark .markdown-body pre {
+  background-color: #141210 !important;
+  border-color: #44403c !important;
+  box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 1) !important;
+}
+
+html.dark .markdown-body table {
+  border-color: #44403c !important;
+  box-shadow: 3px 3px 0px 0px rgba(0, 0, 0, 1) !important;
+}
+
+html.dark .markdown-body th {
+  background-color: #1c1917 !important;
+  color: #fdfcfb !important;
+  border-color: #44403c !important;
+}
+
+html.dark .markdown-body td {
+  border-color: #292524 !important;
+  color: #d6d3d1 !important;
+}
+
+html.dark .markdown-body tr:nth-child(even) {
+  background-color: #141210 !important;
+}
+
+html.dark .markdown-body blockquote {
+  color: #a8a29e !important;
+}
+
+html.dark .markdown-body hr {
+  border-top-color: #292524 !important;
 }

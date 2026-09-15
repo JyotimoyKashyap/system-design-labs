@@ -21,35 +21,35 @@ const { lab } = Astro.props;
   description={lab.data.description}
   fullscreen={true}
 >
-  <div class="flex flex-col h-[calc(100vh-73px)] bg-[#fdfcfb]">
+  <div class="flex flex-col h-[calc(100vh-73px)] bg-[#fdfcfb] dark:bg-[#0c0a09]">
     <!-- Top Action Toolbar -->
-    <div class="bg-white border-b-3 border-stone-900 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0 z-30">
+    <div class="bg-white dark:bg-stone-900 border-b-3 border-stone-900 dark:border-stone-800 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0 z-30">
       <div class="flex items-center gap-3">
         <a
           href={url('/labs')}
-          class={buttonVariants({ variant: 'tertiary', size: 'sm', className: 'bg-stone-100' })}
+          class={buttonVariants({ variant: 'tertiary', size: 'sm', className: 'bg-stone-100 dark:bg-stone-800 dark:text-stone-100' })}
         >
           <span>&larr;</span>
           <span>Labs Directory</span>
         </a>
 
-        <div class="h-4 w-[2px] bg-stone-300 hidden sm:block"></div>
+        <div class="h-4 w-[2px] bg-stone-300 dark:bg-stone-700 hidden sm:block"></div>
 
         <div class="flex items-center gap-2">
           <span
-            class="px-2 py-0.5 font-mono text-[10px] font-black uppercase tracking-wider border border-stone-900 shadow-[1px_1px_0px_0px_rgba(28,25,23,1)]"
+            class="px-2 py-0.5 font-mono text-[10px] font-black uppercase tracking-wider border border-stone-900 shadow-[1px_1px_0px_0px_rgba(28,25,23,1)] dark:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
             style={`background-color: ${lab.data.tagColor}; color: ${lab.data.tagTextColor};`}
           >
             {lab.data.tag}
           </span>
-          <h1 class="font-silkscreen not-italic font-bold text-sm sm:text-base text-stone-900 leading-none">
+          <h1 class="font-silkscreen not-italic font-bold text-sm sm:text-base text-stone-900 dark:text-stone-100 leading-none">
             {lab.data.title}
           </h1>
         </div>
       </div>
 
       <div class="flex items-center gap-2">
-        <span class="font-mono text-xs text-stone-500 hidden md:inline">
+        <span class="font-mono text-xs text-stone-500 dark:text-stone-400 hidden md:inline">
           Interactive Simulation
         </span>
         <a

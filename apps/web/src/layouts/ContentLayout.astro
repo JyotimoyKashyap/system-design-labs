@@ -38,7 +38,7 @@ const {
     <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
       <a
         href={url(backLink)}
-        class={buttonVariants({ variant: 'tertiary', size: 'sm', className: 'bg-stone-100' })}
+        class={buttonVariants({ variant: 'tertiary', size: 'sm', className: 'bg-stone-100 dark:bg-stone-800 dark:text-stone-100' })}
       >
         <span>&larr;</span>
         <span>{backLabel}</span>
@@ -58,34 +58,34 @@ const {
     <!-- Article Shell (Paper Brutalist Card) -->
     <article class={cardVariants({ variant: 'default', className: 'p-6 sm:p-12 lg:p-14' })}>
       <!-- Article Header -->
-      <header class="pb-8 mb-8 border-b-3 border-stone-900">
+      <header class="pb-8 mb-8 border-b-3 border-stone-900 dark:border-stone-800">
         <div class="flex flex-wrap items-center gap-2 mb-4">
-          <span class="px-2.5 py-0.5 font-mono text-xs font-black uppercase tracking-wider bg-orange-500 text-white border border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)]">
+          <span class="px-2.5 py-0.5 font-mono text-xs font-black uppercase tracking-wider bg-orange-500 text-white border border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] dark:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
             {category}
           </span>
           {readTimeMinutes && (
-            <span class="font-mono text-xs font-bold text-stone-600 bg-stone-100 px-2 py-0.5 border border-stone-300">
+            <span class="font-mono text-xs font-bold text-stone-600 dark:text-stone-300 bg-stone-100 dark:bg-stone-800 px-2 py-0.5 border border-stone-300 dark:border-stone-700">
               {readTimeMinutes} min read
             </span>
           )}
-          <span class="font-mono text-xs text-stone-500 ml-auto">
+          <span class="font-mono text-xs text-stone-500 dark:text-stone-400 ml-auto">
             {publishedAt}
           </span>
         </div>
 
-        <h1 class="font-silkscreen not-italic text-2xl sm:text-4xl text-stone-900 mb-4 leading-tight">
+        <h1 class="font-silkscreen not-italic text-2xl sm:text-4xl text-stone-900 dark:text-stone-100 mb-4 leading-tight">
           {title}
         </h1>
 
-        <p class="text-stone-600 text-lg leading-relaxed font-sans mb-6">
+        <p class="text-stone-600 dark:text-stone-400 text-lg leading-relaxed font-sans mb-6">
           {description}
         </p>
 
         <!-- Tags & Links -->
-        <div class="flex flex-wrap items-center justify-between gap-4 pt-4 border-t-2 border-dashed border-stone-200">
+        <div class="flex flex-wrap items-center justify-between gap-4 pt-4 border-t-2 border-dashed border-stone-200 dark:border-stone-800">
           <div class="flex flex-wrap gap-1.5">
             {tags.map((tag) => (
-              <span class="font-mono text-[11px] text-stone-700 bg-stone-100 px-2 py-0.5 border border-stone-300">
+              <span class="font-mono text-[11px] text-stone-700 dark:text-stone-300 bg-stone-100 dark:bg-stone-800 px-2 py-0.5 border border-stone-300 dark:border-stone-700">
                 #{tag}
               </span>
             ))}
@@ -96,7 +96,7 @@ const {
               href={githubRepo}
               target="_blank"
               rel="noopener noreferrer"
-              class="inline-flex items-center gap-1.5 font-mono text-xs font-bold text-stone-900 hover:text-amber-600 underline"
+              class="inline-flex items-center gap-1.5 font-mono text-xs font-bold text-stone-900 dark:text-stone-200 hover:text-amber-600 dark:hover:text-amber-400 underline"
             >
               <span>View Source on GitHub</span>
               <span>↗</span>
@@ -122,9 +122,10 @@ const {
 
       try {
         const { default: mermaid } = await import('mermaid');
+        const isDark = document.documentElement.classList.contains('dark');
         mermaid.initialize({
           startOnLoad: false,
-          theme: 'default',
+          theme: isDark ? 'dark' : 'default',
           securityLevel: 'loose',
         });
 

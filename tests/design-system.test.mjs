@@ -5,7 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 // Import tokens and variants from pure TypeScript source files
-import { colors, typography, shadows, borders } from "../packages/ui/src/tokens.ts";
+import { colors, darkColors, darkShadows, themeTokens, typography, shadows, borders } from "../packages/ui/src/tokens.ts";
 import { buttonVariants, cardVariants, badgeVariants } from "../packages/ui/src/variants.ts";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -56,12 +56,30 @@ test("Tokens: Typography follows Paper Brutalist hierarchy", () => {
   assert.match(typography.mono, /JetBrains Mono|Space Mono/i, "Mono font must use JetBrains or Space Mono");
 });
 
+test("Tokens: Dark mode palette defines obsidian, stone surfaces, and crisp ink", () => {
+  assert.equal(darkColors.background, "#0c0a09", "Dark canvas background must be obsidian #0c0a09");
+  assert.equal(darkColors.surface, "#1c1917", "Dark surface must be Stone 900 #1c1917");
+  assert.equal(darkColors.surfaceMuted, "#292524", "Dark muted surface must be Stone 800 #292524");
+  assert.equal(darkColors.ink, "#fdfcfb", "Dark ink must be crisp paper #fdfcfb");
+  assert.equal(darkColors.border, "#44403c", "Dark border must be Stone 700 #44403c");
+  assert.equal(darkColors.shadow, "#000000", "Dark shadow must be pure black #000000");
+  assert.equal(themeTokens.dark.colors.background, "#0c0a09");
+  assert.equal(themeTokens.light.colors.background, "#fdfcfb");
+});
+
 test("Tokens: Shadows enforce solid offset brutalist depth", () => {
   for (const [key, shadowVal] of Object.entries(shadows)) {
     assert.match(
       shadowVal,
       /rgba\(28,25,23,1\)|rgba\(28, 25, 23, 1\)|rgba\(0,0,0,1\)/,
       `Shadow token '${key}' must use solid, unblurred brutalist offset shadows (not soft blur)`
+    );
+  }
+  for (const [key, shadowVal] of Object.entries(darkShadows)) {
+    assert.match(
+      shadowVal,
+      /rgba\(0,0,0,1\)|#000000/,
+      `Dark shadow token '${key}' must use solid black offset shadows`
     );
   }
 });
@@ -116,6 +134,25 @@ test("badgeVariants: Generates sharp brutalist label tags", () => {
   assert.match(badge, /border-2 border-stone-900/, "Badges must have border-2");
   assert.match(badge, /shadow-\[2px_2px_0px_0px/, "Badges must have 2px brutalist shadow");
   assert.match(badge, /#FF6B6B/, "Primary badge must have #FF6B6B background");
+});
+
+test("Variants: Components provide dark mode class adaptations", () => {
+  const primaryBtn = buttonVariants({ variant: "primary" });
+  assert.match(primaryBtn, /dark:border-stone-100/, "Button must use bright border in dark mode");
+  assert.match(primaryBtn, /dark:shadow-\[3px_3px_0px_0px_rgba\(0,0,0,1\)\]/, "Button must use solid black shadow in dark mode");
+
+  const darkBtn = buttonVariants({ variant: "dark" });
+  assert.match(darkBtn, /dark:bg-stone-100/, "Dark button in dark mode must invert to stone-100");
+  assert.match(darkBtn, /dark:text-stone-900/, "Dark button in dark mode must invert text to stone-900");
+
+  const interactiveCard = cardVariants({ variant: "interactive" });
+  assert.match(interactiveCard, /dark:bg-stone-900/, "Card must use stone-900 surface in dark mode");
+  assert.match(interactiveCard, /dark:border-stone-700/, "Card must use stone-700 border in dark mode");
+  assert.match(interactiveCard, /dark:shadow-\[8px_8px_0px_0px_rgba\(0,0,0,1\)\]/, "Card must use pitch black brutalist shadow in dark mode");
+
+  const defaultBadge = badgeVariants({ variant: "default" });
+  assert.match(defaultBadge, /dark:bg-stone-100/, "Default badge must invert to stone-100 in dark mode");
+  assert.match(defaultBadge, /dark:text-stone-900/, "Default badge must invert text to stone-900 in dark mode");
 });
 
 
@@ -208,6 +245,60 @@ test("Codebase Linter: Global CSS defines Paper Brutalist theme variables", () =
   assert.match(content, /--color-brand-primary:\s*#FF6B6B/i, "global.css must register brand-primary as #FF6B6B");
   assert.match(content, /--color-brand-secondary:\s*#4ECDC4/i, "global.css must register brand-secondary as #4ECDC4");
   assert.match(content, /--color-brand-paper:\s*#FDFCFB/i, "global.css must register brand-paper as #FDFCFB");
+});
+
+test("Codebase Linter: Global CSS configures Tailwind v4 dark variant and canvas rules", () => {
+  const globalCss = path.join(webSrcDir, "styles/global.css");
+  const content = fs.readFileSync(globalCss, "utf8");
+
+  assert.match(
+    content,
+    /@variant\s+dark\s+\(&:where\(\.dark,\s*\.dark\s+\*\)\);/,
+    "global.css must register Tailwind v4 dark class selector variant"
+  );
+  assert.match(
+    content,
+    /html\.dark\s+body\s*\{[^}]*background-color:\s*#0c0a09/s,
+    "global.css must define dark canvas background #0c0a09"
+  );
+});
+
+test("Codebase Linter: ThemeToggle component is mounted on right side of Navbar", () => {
+  const navbarFile = path.join(webSrcDir, "components/Navbar.astro");
+  assert.ok(fs.existsSync(navbarFile), "Navbar.astro must exist");
+
+  const content = fs.readFileSync(navbarFile, "utf8");
+  assert.match(content, /import\s+ThemeToggle\s+from\s+["']\.\/ThemeToggle\.astro["']/, "Navbar.astro must import ThemeToggle");
+  assert.match(content, /<ThemeToggle\s*\/>/, "Navbar.astro must mount ThemeToggle component");
+
+  const themeToggleFile = path.join(webSrcDir, "components/ThemeToggle.astro");
+  assert.ok(fs.existsSync(themeToggleFile), "ThemeToggle.astro component must exist");
+
+  const toggleContent = fs.readFileSync(themeToggleFile, "utf8");
+  assert.match(toggleContent, /theme-toggle/, "ThemeToggle must include trigger button");
+  assert.match(toggleContent, /localStorage\.setItem\(['"]theme['"]/, "ThemeToggle must persist preference to localStorage");
+  assert.match(toggleContent, /prefers-color-scheme:\s*dark/, "ThemeToggle must support OS system preference listener");
+});
+
+test("Codebase Linter: BaseLayout contains zero-FOUC theme bootstrapper", () => {
+  const baseLayoutFile = path.join(webSrcDir, "layouts/BaseLayout.astro");
+  const content = fs.readFileSync(baseLayoutFile, "utf8");
+
+  assert.match(
+    content,
+    /localStorage\.getItem\(['"]theme['"]\)/,
+    "BaseLayout must check localStorage theme before render to eliminate FOUC"
+  );
+  assert.match(
+    content,
+    /prefers-color-scheme:\s*dark/,
+    "BaseLayout must inspect OS prefers-color-scheme in early head script"
+  );
+  assert.match(
+    content,
+    /classList\.(?:add|toggle)\(['"]dark['"]/,
+    "BaseLayout early script must apply .dark class synchronously"
+  );
 });
 
 // ============================================================================

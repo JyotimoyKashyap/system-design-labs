@@ -1,0 +1,94 @@
+---
+/**
+ * Paper Brutalist Dark Mode Toggle Button
+ * Square icon button positioned on the top-left to toggle between Light and Dark mode.
+ * Defaults to system preference; persists manual user override in localStorage.
+ */
+---
+
+<button
+  id="theme-toggle"
+  type="button"
+  aria-label="Toggle dark mode"
+  class="w-9 h-9 flex items-center justify-center rounded-none border-2 border-stone-900 dark:border-stone-100 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 shadow-[3px_3px_0px_0px_rgba(28,25,23,1)] dark:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_rgba(28,25,23,1)] dark:hover:shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_rgba(28,25,23,1)] dark:active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer select-none shrink-0"
+>
+  <!-- Sun Icon (Active in Dark Mode) -->
+  <svg
+    class="w-4 h-4 hidden dark:block stroke-current fill-none"
+    viewBox="0 0 24 24"
+    stroke-width="2.2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <circle cx="12" cy="12" r="4"></circle>
+    <path d="M12 2v2"></path>
+    <path d="M12 20v2"></path>
+    <path d="m4.93 4.93 1.41 1.41"></path>
+    <path d="m17.66 17.66 1.41 1.41"></path>
+    <path d="M2 12h2"></path>
+    <path d="M20 12h2"></path>
+    <path d="m6.34 17.66-1.41 1.41"></path>
+    <path d="m19.07 4.93-1.41 1.41"></path>
+  </svg>
+
+  <!-- Moon Icon (Active in Light Mode) -->
+  <svg
+    class="w-4 h-4 block dark:hidden stroke-current fill-none"
+    viewBox="0 0 24 24"
+    stroke-width="2.2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+  </svg>
+</button>
+
+<script>
+  function setupThemeToggle() {
+    const toggle = document.getElementById('theme-toggle');
+    if (!toggle) return;
+
+    // Prevent attaching multiple event listeners on the same element
+    if (toggle.dataset.listenerAttached === 'true') return;
+    toggle.dataset.listenerAttached = 'true';
+
+    toggle.addEventListener('click', () => {
+      const isDark = document.documentElement.classList.contains('dark');
+      if (isDark) {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      } else {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      }
+    });
+
+    // Listen for live system theme changes if user has not set an explicit override
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemChange = (e: MediaQueryListEvent) => {
+      if (!localStorage.getItem('theme')) {
+        if (e.matches) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+    };
+
+    try {
+      mediaQuery.removeEventListener('change', handleSystemChange);
+      mediaQuery.addEventListener('change', handleSystemChange);
+    } catch {
+      // Fallback for older browsers
+      mediaQuery.addListener(handleSystemChange);
+    }
+  }
+
+  // Bind on DOM ready and on Astro view transition / page-load events
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupThemeToggle);
+  } else {
+    setupThemeToggle();
+  }
+  document.addEventListener('astro:page-load', setupThemeToggle);
+</script>

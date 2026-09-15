@@ -15,16 +15,16 @@ const notes = (await getCollection('notes')).sort(
 >
   <div class="w-full">
     <!-- Header -->
-    <header class="pb-8 mb-12 border-b-3 border-stone-900">
-      <div class="flex items-center gap-2 mb-2 font-mono text-xs font-bold uppercase tracking-wider text-blue-600">
+    <header class="pb-8 mb-12 border-b-3 border-stone-900 dark:border-stone-800">
+      <div class="flex items-center gap-2 mb-2 font-mono text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
         <span>ENGINEERING NOTES</span>
         <span>•</span>
         <span>{notes.length} {notes.length === 1 ? 'NOTE' : 'NOTES'}</span>
       </div>
-      <h1 class="font-silkscreen not-italic text-3xl sm:text-4xl text-stone-900 mb-3">
+      <h1 class="font-silkscreen not-italic text-3xl sm:text-4xl text-stone-900 dark:text-stone-100 mb-3">
         System Design Notes
       </h1>
-      <p class="text-stone-600 text-lg font-sans leading-relaxed max-w-3xl">
+      <p class="text-stone-600 dark:text-stone-400 text-lg font-sans leading-relaxed max-w-3xl">
         Technical notes, architectural explorations, and deep dives into high-scale systems trade-offs and backend design.
       </p>
     </header>
@@ -36,31 +36,31 @@ const notes = (await getCollection('notes')).sort(
           <div>
             <!-- Top Badges & Meta -->
             <div class="flex items-center justify-between gap-2 mb-4">
-              <span class="px-3 py-1 font-mono text-xs font-black uppercase tracking-wider bg-blue-600 text-white border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)]">
+              <span class="px-3 py-1 font-mono text-xs font-black uppercase tracking-wider bg-blue-600 text-white border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] dark:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                 {note.data.category}
               </span>
               {note.data.readTimeMinutes && (
-                <span class="font-mono text-xs font-bold text-stone-700 bg-stone-100 px-2 py-0.5 border border-stone-300">
+                <span class="font-mono text-xs font-bold text-stone-700 dark:text-stone-300 bg-stone-100 dark:bg-stone-800 px-2 py-0.5 border border-stone-300 dark:border-stone-700">
                   {note.data.readTimeMinutes} min read
                 </span>
               )}
             </div>
 
             <!-- Card Title: Non-italic, bold sans-serif -->
-            <h2 class="font-sans font-black text-2xl text-stone-900 mb-3 leading-snug tracking-tight not-italic">
-              <a href={url(`/notes/${note.id}`)} class="hover:text-blue-600 transition-colors no-underline text-stone-900">
+            <h2 class="font-sans font-black text-2xl text-stone-900 dark:text-stone-100 mb-3 leading-snug tracking-tight not-italic">
+              <a href={url(`/notes/${note.id}`)} class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors no-underline text-stone-900 dark:text-stone-100">
                 {note.data.title}
               </a>
             </h2>
 
-            <p class="text-stone-700 text-sm leading-relaxed mb-5 font-sans">
+            <p class="text-stone-700 dark:text-stone-300 text-sm leading-relaxed mb-5 font-sans">
               {note.data.description}
             </p>
 
             <!-- Tags -->
             <div class="flex flex-wrap gap-1.5 mb-6">
               {note.data.tags.map((tag) => (
-                <span class="font-mono text-[11px] text-stone-700 bg-stone-50 px-2 py-0.5 border border-stone-300">
+                <span class="font-mono text-[11px] text-stone-700 dark:text-stone-300 bg-stone-50 dark:bg-stone-800 px-2 py-0.5 border border-stone-300 dark:border-stone-700">
                   #{tag}
                 </span>
               ))}
@@ -68,7 +68,7 @@ const notes = (await getCollection('notes')).sort(
           </div>
 
           <!-- Bottom Actions with Signature Boxy Brutalist Button -->
-          <div class="pt-4 border-t-2 border-stone-100 flex items-center justify-between gap-3">
+          <div class="pt-4 border-t-2 border-stone-100 dark:border-stone-800 flex items-center justify-between gap-3">
             <a
               href={url(`/notes/${note.id}`)}
               class={buttonVariants({ variant: 'secondary', size: 'sm' })}
@@ -76,12 +76,13 @@ const notes = (await getCollection('notes')).sort(
               Read Note &rarr;
             </a>
 
-            <span class="font-mono text-xs text-stone-500 font-bold">
+            <span class="font-mono text-xs text-stone-500 dark:text-stone-400 font-bold">
               {note.data.publishedAt}
             </span>
           </div>
         </article>
       ))}
     </div>
+
   </div>
 </BaseLayout>
