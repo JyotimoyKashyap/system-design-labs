@@ -171,6 +171,11 @@ const HTML_TEMPLATE = (content, backLink = '../') => `<!DOCTYPE html>
     border: 3px solid #1c1917;
     box-shadow: 8px 8px 0px 0px rgba(28,25,23,1);
   }
+  .markdown-body img {
+    display: inline-block;
+    vertical-align: middle;
+    max-width: 100%;
+  }
   .back-btn {
     display: inline-block;
     padding: 8px 16px;

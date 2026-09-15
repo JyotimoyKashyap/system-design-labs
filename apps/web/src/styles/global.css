@@ -114,6 +114,13 @@
   color: #292524;
 }
 
+/* Markdown Images & Badges (prevent Tailwind Preflight from forcing display: block) */
+.markdown-body img {
+  display: inline-block;
+  vertical-align: middle;
+  max-width: 100%;
+}
+
 /* Mermaid SVG Isolation: Crucial for preserving SVG internal labels & colors */
 .markdown-body svg {
   max-width: 100%;
