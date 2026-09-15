@@ -31,7 +31,7 @@ export function buttonVariants({
   className,
 }: ButtonVariantsOptions = {}): string {
   const baseClasses = 
-    "inline-flex items-center justify-center gap-2 rounded-none font-mono font-bold uppercase tracking-wider transition-all duration-150 border-2 border-stone-900 shadow-[3px_3px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_rgba(28,25,23,1)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_rgba(28,25,23,1)] disabled:pointer-events-none disabled:opacity-50 select-none cursor-pointer no-underline";
+    "inline-flex items-center justify-center gap-2 rounded-none font-mono font-bold uppercase tracking-wider transition-all duration-150 border-2 border-stone-900 shadow-[3px_3px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_rgba(28,25,23,1)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_0px_rgba(28,25,23,1)] disabled:pointer-events-none disabled:opacity-50 select-none cursor-pointer no-underline dark:border-stone-100 dark:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] dark:active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]";
 
   const sizes: Record<ButtonSize, string> = {
     default: "px-6 py-2.5 text-xs",
@@ -41,15 +41,15 @@ export function buttonVariants({
   };
 
   const variants: Record<ButtonVariant, string> = {
-    default: "bg-white text-stone-900 hover:bg-stone-50",
-    primary: "bg-[#FF6B6B] text-stone-950 hover:bg-[#fa5252]",
-    secondary: "bg-[#4ECDC4] text-stone-950 hover:bg-[#3dbdb4]",
-    tertiary: "bg-white text-stone-900 hover:bg-stone-50",
-    dark: "bg-stone-900 text-white hover:bg-stone-800",
-    accent: "bg-amber-400 text-stone-950 hover:bg-amber-300",
-    orange: "bg-orange-500 text-white hover:bg-orange-600",
-    outline: "bg-transparent text-stone-900 hover:bg-stone-100",
-    ghost: "border-transparent shadow-none hover:bg-stone-100 hover:shadow-none hover:translate-x-0 hover:translate-y-0 active:translate-x-0 active:translate-y-0",
+    default: "bg-white text-stone-900 hover:bg-stone-50 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-stone-700",
+    primary: "bg-[#FF6B6B] text-stone-950 hover:bg-[#fa5252] dark:bg-[#FF6B6B] dark:text-stone-950 dark:hover:bg-[#ff8585]",
+    secondary: "bg-[#4ECDC4] text-stone-950 hover:bg-[#3dbdb4] dark:bg-[#4ECDC4] dark:text-stone-950 dark:hover:bg-[#6ee7de]",
+    tertiary: "bg-white text-stone-900 hover:bg-stone-50 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-stone-700",
+    dark: "bg-stone-900 text-white hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-white",
+    accent: "bg-amber-400 text-stone-950 hover:bg-amber-300 dark:bg-amber-400 dark:text-stone-950 dark:hover:bg-amber-300",
+    orange: "bg-orange-500 text-white hover:bg-orange-600 dark:bg-orange-500 dark:text-white dark:hover:bg-orange-600",
+    outline: "bg-transparent text-stone-900 hover:bg-stone-100 dark:text-stone-100 dark:hover:bg-stone-800 dark:border-stone-100",
+    ghost: "border-transparent shadow-none hover:bg-stone-100 hover:shadow-none hover:translate-x-0 hover:translate-y-0 active:translate-x-0 active:translate-y-0 dark:hover:bg-stone-800 dark:text-stone-100",
   };
 
   return cn(baseClasses, sizes[size], variants[variant], className);
@@ -70,10 +70,10 @@ export function cardVariants({
   className,
 }: CardVariantsOptions = {}): string {
   const variants: Record<CardVariant, string> = {
-    default: "rounded-none border-3 border-stone-900 bg-white text-stone-900 shadow-[8px_8px_0px_0px_rgba(28,25,23,1)]",
-    interactive: "rounded-none border-3 border-stone-900 bg-white text-stone-900 shadow-[8px_8px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[12px_12px_0px_0px_rgba(28,25,23,1)] transition-all flex flex-col justify-between",
-    panel: "rounded-none border-2 border-stone-900 bg-white text-stone-900 shadow-[4px_4px_0px_0px_rgba(28,25,23,1)]",
-    subtle: "rounded-none border-2 border-stone-900 bg-stone-50 text-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)]",
+    default: "rounded-none border-3 border-stone-900 bg-white text-stone-900 shadow-[8px_8px_0px_0px_rgba(28,25,23,1)] dark:bg-stone-900 dark:text-stone-100 dark:border-stone-700 dark:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]",
+    interactive: "rounded-none border-3 border-stone-900 bg-white text-stone-900 shadow-[8px_8px_0px_0px_rgba(28,25,23,1)] hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[12px_12px_0px_0px_rgba(28,25,23,1)] transition-all flex flex-col justify-between dark:bg-stone-900 dark:text-stone-100 dark:border-stone-700 dark:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]",
+    panel: "rounded-none border-2 border-stone-900 bg-white text-stone-900 shadow-[4px_4px_0px_0px_rgba(28,25,23,1)] dark:bg-stone-900 dark:text-stone-100 dark:border-stone-700 dark:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",
+    subtle: "rounded-none border-2 border-stone-900 bg-stone-50 text-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] dark:bg-stone-800 dark:text-stone-100 dark:border-stone-700 dark:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
   };
 
   return cn(variants[variant], className);
@@ -103,15 +103,15 @@ export function badgeVariants({
   className,
 }: BadgeVariantsOptions = {}): string {
   const baseClasses = 
-    "inline-flex items-center rounded-none border-2 border-stone-900 px-3 py-1 font-mono text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] select-none";
+    "inline-flex items-center rounded-none border-2 border-stone-900 px-3 py-1 font-mono text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] select-none dark:border-stone-100 dark:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]";
 
   const variants: Record<BadgeVariant, string> = {
-    default: "bg-stone-900 text-white",
+    default: "bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900",
     primary: "bg-[#FF6B6B] text-stone-950",
     secondary: "bg-[#4ECDC4] text-stone-950",
     accent: "bg-amber-400 text-stone-950",
-    dark: "bg-stone-900 text-white",
-    outline: "bg-white text-stone-900",
+    dark: "bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900",
+    outline: "bg-white text-stone-900 dark:bg-stone-800 dark:text-stone-100",
     destructive: "bg-rose-500 text-white",
     success: "bg-emerald-400 text-stone-950",
     warning: "bg-orange-500 text-stone-950",
@@ -119,3 +119,4 @@ export function badgeVariants({
 
   return cn(baseClasses, variants[variant], className);
 }
+

@@ -62,3 +62,67 @@ export const borders = {
   default: "2px solid #1c1917",
   thick: "3px solid #1c1917",
 } as const;
+
+/**
+ * Dark Theme Tokens (Dark Blueprint / Obsidian Paper Brutalism)
+ * Complementary high-contrast dark palette for dark mode.
+ */
+export const darkColors = {
+  background: "#0c0a09",   // Deep obsidian paper background (Stone 950)
+  surface: "#1c1917",      // Card & container surface (Stone 900)
+  surfaceMuted: "#292524", // Stone 800 inset panels
+  ink: "#fdfcfb",          // High-contrast warm paper-white primary text
+  inkMuted: "#a8a29e",     // Stone 400 secondary text
+  border: "#44403c",       // Stone 700 brutalist border (or #e7e5e4 for high contrast)
+  borderContrast: "#d6d3d1", // Stone 300 high contrast border
+  shadow: "#000000",       // Black offset shadow
+
+  // Preserved brand accents with high luminosity in dark mode
+  primary: {
+    bg: "#FF6B6B",
+    hover: "#ff8585",
+    text: "#0c0a09",
+  },
+  secondary: {
+    bg: "#4ECDC4",
+    hover: "#6ee7de",
+    text: "#0c0a09",
+  },
+  tertiary: {
+    bg: "#292524",
+    hover: "#3d3835",
+    text: "#fdfcfb",
+  },
+  dark: {
+    bg: "#fdfcfb",
+    hover: "#e7e5e4",
+    text: "#0c0a09",
+  },
+  accent: {
+    amber: "#fbbf24",
+    orange: "#f97316",
+    emerald: "#34d399",
+    rose: "#fb7185",
+    purple: "#a78bfa",
+    blue: "#60a5fa",
+  },
+} as const;
+
+export const darkShadows = {
+  sm: "2px 2px 0px 0px rgba(0,0,0,1)",
+  default: "4px 4px 0px 0px rgba(0,0,0,1)",
+  md: "6px 6px 0px 0px rgba(0,0,0,1)",
+  lg: "8px 8px 0px 0px rgba(0,0,0,1)",
+  xl: "12px 12px 0px 0px rgba(0,0,0,1)",
+} as const;
+
+export const themeTokens = {
+  light: {
+    colors,
+    shadows,
+  },
+  dark: {
+    colors: darkColors,
+    shadows: darkShadows,
+  },
+} as const;

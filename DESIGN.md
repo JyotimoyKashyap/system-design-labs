@@ -34,6 +34,29 @@ All design tokens, component variants, and theme variables are centralized:
 
 ---
 
+## 🌙 Dark Mode Palette & Architecture ("Obsidian Paper")
+
+Dark mode preserves the physical paper brutalist aesthetic in high-contrast "Obsidian Paper" night mode:
+
+| Token | Name | HEX | Purpose / Usage |
+|---|---|---|---|
+| `darkColors.background` | Obsidian Canvas | `#0C0A09` | Dark mode page canvas background |
+| `darkColors.surface` | Stone 900 Surface | `#1C1917` | Card backgrounds, drawer panels, navbar |
+| `darkColors.surfaceMuted` | Stone 800 Surface | `#292524` | Secondary code panels, table zebra stripes |
+| `darkColors.ink` | Crisp White Ink | `#FDFCFB` | Primary headings, body prose, high-contrast labels |
+| `darkColors.border` | Stone 700 Border | `#44403C` | Sharp brutalist borders in dark mode (`border-stone-700`) |
+| `darkColors.shadow` | Pitch Black Shadow | `#000000` | Solid unblurred offset drop shadows |
+| Accent Retainers | Coral / Mint / Amber | `#FF6B6B` / `#4ECDC4` / `#FBBF24` | Uncompromised vibrant brand accents |
+
+### ⚙️ Dark Mode Mechanics:
+1. **Zero-FOUC Bootstrapper**: An inline script executes in the `<head>` of [`BaseLayout.astro`](file:///Users/jyotimoykashyap/Developer/personal-lab/apps/web/src/layouts/BaseLayout.astro) before DOM rendering, preventing flash of unstyled content.
+2. **System Preference First**: Defaults to `window.matchMedia('(prefers-color-scheme: dark)')`. If the user's OS is in dark mode, the site opens in dark mode; otherwise light.
+3. **Manual Override & Persistence**: The toggle button on the right side of [`Navbar.astro`](file:///Users/jyotimoykashyap/Developer/personal-lab/apps/web/src/components/Navbar.astro) toggles modes and persists the user preference in `localStorage.getItem('theme')`.
+4. **Tailwind v4 Variant**: Declared via `@variant dark (&:where(.dark, .dark *));` in [`apps/web/src/styles/global.css`](file:///Users/jyotimoykashyap/Developer/personal-lab/apps/web/src/styles/global.css).
+5. **Dynamic Mermaid Theme**: Code diagram blocks dynamically adapt between `neutral` and `dark` themes when toggled or loaded.
+
+---
+
 ## 🔲 Geometry & Shadows
 
 - **NO ROUNDED CORNERS**: Unconditionally enforce `rounded-none` across all UI elements, buttons, badges, modals, and cards (graphs/nodes are exceptions and can be circular).

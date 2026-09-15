@@ -58,8 +58,25 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site || 'https://jyotimoy
 
     <!-- Umami Analytics -->
     <script defer src="https://cloud.umami.is/script.js" data-website-id="b899ac21-eb80-40aa-b083-ccc95a14d980"></script>
+
+    <!-- Zero-FOUC Paper Brutalist Theme Bootstrapper -->
+    <script is:inline>
+      (function () {
+        try {
+          const storedTheme = localStorage.getItem('theme');
+          const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (storedTheme === 'dark' || (!storedTheme && systemDark)) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {
+          // Fallback if localStorage or matchMedia is restricted
+        }
+      })();
+    </script>
   </head>
-  <body class="flex flex-col min-h-screen">
+  <body class="flex flex-col min-h-screen text-stone-900 dark:text-stone-100">
     <Navbar />
 
     <main class:list={['flex-1', fullscreen ? 'w-full' : 'max-w-7xl mx-auto px-4 sm:px-8 w-full py-10 sm:py-16']}>
