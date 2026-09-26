@@ -1,14 +1,17 @@
 package search.auto.complete.service;
 
 import search.auto.complete.autocompleteengine.AutoCompleteIndex;
+import search.auto.complete.queryingestionengine.QueryIngestionBuffer;
 
 import java.util.List;
 
 public class SearchAutoCompleteService {
     final private AutoCompleteIndex autoCompleteIndex;
+    final private QueryIngestionBuffer ingestionBuffer;
 
-    public SearchAutoCompleteService(AutoCompleteIndex autoCompleteIndex) {
+    public SearchAutoCompleteService(AutoCompleteIndex autoCompleteIndex, QueryIngestionBuffer ingestionBuffer) {
         this.autoCompleteIndex = autoCompleteIndex;
+        this.ingestionBuffer = ingestionBuffer;
     }
     
     public List<String> getSuggestions(String prefix) {
@@ -19,7 +22,7 @@ public class SearchAutoCompleteService {
 
     public void recordQuery(String query) {
         validateQuery(query);
-        autoCompleteIndex.insert(query);
+        ingestionBuffer.queue(query);
     }
 
     private void validateQuery(String query) {

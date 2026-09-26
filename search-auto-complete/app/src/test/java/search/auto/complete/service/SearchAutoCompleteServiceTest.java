@@ -4,6 +4,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import search.auto.complete.autocompleteengine.trieautocomplete.TrieAutoCompleteIndex;
+import search.auto.complete.queryingestionengine.FlushPolicy;
+import search.auto.complete.queryingestionengine.QueryIngestionBuffer;
 
 import java.util.List;
 
@@ -12,12 +14,17 @@ import static org.junit.jupiter.api.Assertions.*;
 class SearchAutoCompleteServiceTest {
 
     private SearchAutoCompleteService service;
+    private QueryIngestionBuffer buffer;
 
     @BeforeEach
     void setUp() {
         TrieAutoCompleteIndex.resetForTesting();
         TrieAutoCompleteIndex index = TrieAutoCompleteIndex.init(5);
-        service = new SearchAutoCompleteService(index);
+        buffer = new QueryIngestionBuffer(index, new FlushPolicy() {
+            @Override public void start(Runnable flushAction) {}
+            @Override public void stop() {}
+        });
+        service = new SearchAutoCompleteService(index, buffer);
     }
 
     @Test
@@ -32,6 +39,7 @@ class SearchAutoCompleteServiceTest {
     @DisplayName("Should return single matching query for valid prefix")
     void testSingleWordSuggestion() {
         service.recordQuery("apple");
+        buffer.flush();
 
         List<String> suggestions = service.getSuggestions("app");
         assertEquals(List.of("apple"), suggestions);
@@ -43,6 +51,7 @@ class SearchAutoCompleteServiceTest {
         service.recordQuery("app");
         service.recordQuery("apple");
         service.recordQuery("application");
+        buffer.flush();
 
         List<String> suggestions = service.getSuggestions("app");
         assertEquals(3, suggestions.size());
@@ -65,6 +74,7 @@ class SearchAutoCompleteServiceTest {
         // "app" searched 2 times
         service.recordQuery("app");
         service.recordQuery("app");
+        buffer.flush();
 
         List<String> suggestions = service.getSuggestions("ap");
         assertEquals(List.of("application", "app", "apple"), suggestions);
@@ -76,11 +86,16 @@ class SearchAutoCompleteServiceTest {
         // Re-initialize with K = 2
         TrieAutoCompleteIndex.resetForTesting();
         TrieAutoCompleteIndex index = TrieAutoCompleteIndex.init(2);
-        SearchAutoCompleteService boundedService = new SearchAutoCompleteService(index);
+        QueryIngestionBuffer boundedBuffer = new QueryIngestionBuffer(index, new FlushPolicy() {
+            @Override public void start(Runnable flushAction) {}
+            @Override public void stop() {}
+        });
+        SearchAutoCompleteService boundedService = new SearchAutoCompleteService(index, boundedBuffer);
 
         boundedService.recordQuery("car");
         boundedService.recordQuery("cart");
         boundedService.recordQuery("card");
+        boundedBuffer.flush();
 
         List<String> suggestions = boundedService.getSuggestions("ca");
         assertEquals(2, suggestions.size(), "Should only return top-K=2 results");
@@ -92,6 +107,7 @@ class SearchAutoCompleteServiceTest {
         // Both have frequency 1
         service.recordQuery("apply");
         service.recordQuery("apple");
+        buffer.flush();
 
         List<String> suggestions = service.getSuggestions("app");
         assertEquals(List.of("apple", "apply"), suggestions, "'apple' must precede 'apply' lexicographically");
@@ -103,6 +119,7 @@ class SearchAutoCompleteServiceTest {
         service.recordQuery("system design");
         service.recordQuery("system architecture");
         service.recordQuery("system design"); // 2 searches
+        buffer.flush();
 
         List<String> suggestions = service.getSuggestions("system ");
         assertEquals(List.of("system design", "system architecture"), suggestions);
@@ -114,6 +131,7 @@ class SearchAutoCompleteServiceTest {
         service.recordQuery("banana"); // 1 search
         service.recordQuery("band");   // 2 searches
         service.recordQuery("band");
+        buffer.flush();
 
         List<String> initial = service.getSuggestions("ban");
         assertEquals(List.of("band", "banana"), initial);
@@ -121,6 +139,7 @@ class SearchAutoCompleteServiceTest {
         // Record "banana" twice more -> now 3 searches
         service.recordQuery("banana");
         service.recordQuery("banana");
+        buffer.flush();
 
         List<String> updated = service.getSuggestions("ban");
         assertEquals(List.of("banana", "band"), updated, "banana should now rank #1");

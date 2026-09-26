@@ -1,6 +1,9 @@
 package search.auto.complete;
 
 import search.auto.complete.autocompleteengine.trieautocomplete.TrieAutoCompleteIndex;
+import search.auto.complete.queryingestionengine.FlushPolicy;
+import search.auto.complete.queryingestionengine.QueryIngestionBuffer;
+import search.auto.complete.queryingestionengine.TimeIntervalFlushPolicy;
 import search.auto.complete.service.SearchAutoCompleteService;
 
 import java.io.FileInputStream;
@@ -9,6 +12,7 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class App {
 
@@ -20,10 +24,21 @@ public class App {
         // 1. Initialize Engine Singleton with K = 5
         TrieAutoCompleteIndex.resetForTesting();
         TrieAutoCompleteIndex index = TrieAutoCompleteIndex.init(5);
-        SearchAutoCompleteService service = new SearchAutoCompleteService(index);
 
-        // 2. Pre-seed initial corpus with historical search frequencies
+        // 2. Initialize Asynchronous Ingestion Buffer with 5-second interval
+        FlushPolicy flushPolicy = new TimeIntervalFlushPolicy(5, TimeUnit.SECONDS);
+        QueryIngestionBuffer ingestionBuffer = new QueryIngestionBuffer(index, flushPolicy);
+        ingestionBuffer.start();
+
+        // 3. Initialize Gateway Service
+        SearchAutoCompleteService service = new SearchAutoCompleteService(index, ingestionBuffer);
+
+        // 4. Pre-seed initial corpus and flush immediately into the Trie
         seedData(service);
+        ingestionBuffer.flush();
+
+        // 5. Clean shutdown hook to stop policy and flush buffer on exit
+        Runtime.getRuntime().addShutdownHook(new Thread(ingestionBuffer::stop));
 
         // 3. Launch Real-time Interactive Console UI
         try {
@@ -98,7 +113,7 @@ public class App {
         StringBuilder currentQuery = new StringBuilder();
         String statusMessage = "Engine initialized with sample queries. Start typing!";
 
-        render(out, currentQuery.toString(), Collections.emptyList(), statusMessage);
+        render(out, currentQuery.toString(), Collections.emptyList(), statusMessage, -1);
 
         try {
             while (true) {
@@ -150,14 +165,17 @@ public class App {
                 }
 
                 List<String> suggestions = Collections.emptyList();
+                long latencyNanos = -1;
                 if (currentQuery.length() > 0) {
                     try {
+                        long start = System.nanoTime();
                         suggestions = service.getSuggestions(currentQuery.toString());
+                        latencyNanos = System.nanoTime() - start;
                     } catch (IllegalArgumentException ignored) {
                     }
                 }
 
-                render(out, currentQuery.toString(), suggestions, statusMessage);
+                render(out, currentQuery.toString(), suggestions, statusMessage, latencyNanos);
             }
         } catch (Exception e) {
             // Handled gracefully on exit
@@ -179,7 +197,7 @@ public class App {
     private static final String COLOR_TITLE = "\033[38;5;39m";     // Vivid Sky Blue for Title
     private static final String BG_INPUT = "\033[48;5;237m";       // Sleek Dark Charcoal Grey for Input Box
 
-    private static void render(PrintStream out, String query, List<String> suggestions, String statusMessage) {
+    private static void render(PrintStream out, String query, List<String> suggestions, String statusMessage, long latencyNanos) {
         StringBuilder sb = new StringBuilder();
         // Clear screen and position cursor at row 1, col 1
         sb.append("\033[H\033[2J");
@@ -203,7 +221,20 @@ public class App {
           .append(COLOR_BORDER).append("│").append(RESET).append("\n");
         sb.append("  ").append(COLOR_BORDER).append("└").append("─".repeat(boxInnerWidth)).append("┘").append(RESET).append("\n\n");
 
-        sb.append(BOLD).append(COLOR_WHITE).append("  TOP SUGGESTIONS:").append(RESET).append("\n");
+        if (latencyNanos >= 0) {
+            double ms = latencyNanos / 1_000_000.0;
+            long micros = latencyNanos / 1_000;
+            String latencyText = String.format("%.3f ms (%d µs)", ms, micros);
+            String latencyColor = (ms < 1.0) ? COLOR_SUCCESS : (ms < 5.0 ? "\033[38;5;220m" : "\033[38;5;203m");
+
+            sb.append(BOLD).append(COLOR_WHITE).append("  TOP SUGGESTIONS ").append(RESET)
+              .append(COLOR_MUTED).append("[")
+              .append(BOLD).append(latencyColor).append("⚡ ").append(latencyText).append(RESET)
+              .append(COLOR_MUTED).append(" | ").append(suggestions.size()).append(" results]")
+              .append(RESET).append(":\n");
+        } else {
+            sb.append(BOLD).append(COLOR_WHITE).append("  TOP SUGGESTIONS:").append(RESET).append("\n");
+        }
 
         if (query.isEmpty()) {
             sb.append(COLOR_MUTED).append("    (Start typing a prefix to see suggestions...)").append(RESET).append("\n");

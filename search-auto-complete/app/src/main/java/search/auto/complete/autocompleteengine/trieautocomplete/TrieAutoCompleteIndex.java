@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.PriorityQueue;
 
 import search.auto.complete.autocompleteengine.AutoCompleteIndex;
+import search.auto.complete.queryingestionengine.QueryIngestionBuffer;
 
 public class TrieAutoCompleteIndex implements AutoCompleteIndex {
     
@@ -44,7 +45,7 @@ public class TrieAutoCompleteIndex implements AutoCompleteIndex {
     }
 
     @Override
-    public void insert(String query) {
+    public void insert(String query, int count) {
         validateQuery(query);
 
         TrieNode node = root;
@@ -56,7 +57,7 @@ public class TrieAutoCompleteIndex implements AutoCompleteIndex {
         }
 
         // at the end of the loop, I'll be at the end
-        node.updateRankBy(1);
+        node.updateRankBy(count);
         node.setEnd();
     }
 

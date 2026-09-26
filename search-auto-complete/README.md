@@ -185,7 +185,106 @@ flowchart TD
 
 ---
 
-## 6. Future Scope (Prioritized Roadmap)
+## 6. Asynchronous & Periodic Batch Updates (Ingestion Pipeline)
+
+To achieve high concurrency and protect the read path from write latency spikes, query recording is completely decoupled from the in-memory Trie using an **In-Memory Combiner Buffer** and a pluggable **Flush Policy Strategy**:
+
+* **Non-Blocking Write Path:** Client threads calling `recordQuery()` simply increment a counter inside a `ConcurrentHashMap<String, LongAdder>` via an `AtomicReference`. This runs in sub-microsecond time with zero lock contention.
+* **Map-Reduce Ingestion Combiner:** Thousands of identical search spikes (e.g., 50,000 queries for `"iphone"`) collapse into a single map entry before touching the Trie, eliminating redundant tree traversals.
+* **Pluggable Flush Strategy:** The `FlushPolicy` interface governs *when* to drain the buffer (e.g. periodically every $N$ seconds, on batch size, or manually during tests) without coupling scheduling logic to data structures.
+
+### 6.1 Class Diagram
+
+```mermaid
+classDiagram
+    direction TB
+
+    %% Level 0: Gateway Facade
+    class SearchAutoCompleteService {
+        -autoCompleteIndex: AutoCompleteIndex
+        -ingestionBuffer: QueryIngestionBuffer
+        +getSuggestions(String): List~String~
+        +recordQuery(String): void
+    }
+
+    %% Level 1: Split Read & Write Pipelines
+    class AutoCompleteIndex {
+        <<Interface>>
+        +search(prefix: String): List~String~
+        +insert(query: String): void
+    }
+
+    class QueryIngestionBuffer {
+        -activeBuffer: AtomicReference
+        -index: AutoCompleteIndex
+        -flushPolicy: FlushPolicy
+        +queue(query: String): void
+        +flush(): void
+    }
+
+    %% Level 2: Concrete Engines & Policies
+    class TrieAutoCompleteIndex {
+        <<Singleton>>
+        -root: TrieNode
+        -k: int
+        +search(query: String): List~String~
+        +insert(query: String): void
+    }
+
+    class FlushPolicy {
+        <<Interface>>
+        +start(flushAction: Runnable): void
+        +stop(): void
+    }
+
+    %% Level 3: Concrete Flush Strategies
+    class TimeIntervalFlushPolicy {
+        -intervalSeconds: long
+        -scheduler: ScheduledExecutorService
+        +start(flushAction: Runnable): void
+        +stop(): void
+    }
+
+    %% Top-to-Bottom Hierarchical Links (No Backtracking or Occlusion)
+    SearchAutoCompleteService --> AutoCompleteIndex : queries (Read Path)
+    SearchAutoCompleteService --> QueryIngestionBuffer : queues (Write Path)
+
+    QueryIngestionBuffer ..> AutoCompleteIndex : batch flushes to
+
+    AutoCompleteIndex <|.. TrieAutoCompleteIndex : implements
+    QueryIngestionBuffer --> FlushPolicy : triggers via
+    FlushPolicy <|.. TimeIntervalFlushPolicy : implements
+```
+
+### 6.2 Asynchronous Ingestion & Flush Lifecycle
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Client
+    participant Service as SearchAutoCompleteService
+    participant Buffer as QueryIngestionBuffer
+    participant Policy as TimeIntervalFlushPolicy
+    participant Index as TrieAutoCompleteIndex
+
+    Note over User,Service: Fast-Path Write (Non-Blocking)
+    User->>Service: recordQuery("apple")
+    Service->>Buffer: queue("apple")
+    Note over Buffer: Atomic increment in ConcurrentHashMap (LongAdder)
+    Buffer-->>Service: return (sub-microsecond)
+    Service-->>User: return 200 OK
+
+    Note over Policy,Index: Asynchronous Batch Flush (Background Thread)
+    Policy->>Buffer: timer fires -> trigger flush()
+    Note over Buffer: AtomicReference.getAndSet(new ConcurrentHashMap())
+    loop For each (query, count) in swapped snapshot
+        Buffer->>Index: insert(query) [batched]
+    end
+```
+
+---
+
+## 7. Future Scope (Prioritized Roadmap)
 
 While these items are deliberately deferred to keep the initial MVP clean and focused, the core architecture will be designed with enough durability and abstraction so they can be introduced without major refactoring.
 
