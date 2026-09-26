@@ -45,44 +45,40 @@ public class TrieAutoCompleteIndex implements AutoCompleteIndex {
     private void insert(TrieNode targetRoot, String query, int count) {
         validateQuery(query);
 
+        List<TrieNode> path = new ArrayList<>();
         TrieNode node = targetRoot;
+        path.add(node);
         for (char k : query.toCharArray()) {
             if (!node.contains(k)) {
                 node.put(k);
             }
             node = node.get(k);
+            path.add(node);
         }
 
         // at the end of the loop, I'll be at the end
         node.updateRankBy(count);
         node.setEnd();
+
+        Suggestion updatedSuggestion = new Suggestion(node.getRank(), query);
+        for (TrieNode ancestor : path) {
+            ancestor.updateTopK(updatedSuggestion, K);
+        }
     }
 
     @Override
     public List<String> search(String prefix) {
         validateQuery(prefix);
 
-        List<String> suggestions = new ArrayList<>();
         TrieNode node = rootRef.get();
         for (char k : prefix.toCharArray()) {
             if (!node.contains(k)) {
-                return suggestions;
+                return Collections.emptyList();
             }
             node = node.get(k);
         }
 
-        // now at the end I'll have links nodes with refs and I'll have to do DFS on all those valid refs
-        // after getting the suggestions part, I'll append it to the prefix to complete it
-        PriorityQueue<Suggestion> minHeap = new PriorityQueue<>();
-
-        dfs(node, prefix, minHeap);
-
-        LinkedList<String> res = new LinkedList<>();
-        while (!minHeap.isEmpty()) {
-            res.addFirst(minHeap.poll().getAutoSuggest());
-        }
-
-        return res;
+        return node.getTopK();
     }
 
     @Override

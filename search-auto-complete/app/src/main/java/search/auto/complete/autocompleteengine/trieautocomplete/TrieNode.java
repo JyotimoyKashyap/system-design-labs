@@ -1,15 +1,21 @@
 package search.auto.complete.autocompleteengine.trieautocomplete;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 public class TrieNode {
     private TrieNode[] links;
     private int rank;
     private boolean isEnd;
-    private static final char EMPTY = ' '; // baked into memory address space immutable 
+    private static final char EMPTY = ' '; // baked into memory address space immutable
+    List<Suggestion> topK;
 
     public TrieNode() {
         links = new TrieNode[27]; // a-z and " " (whitespace)
         rank = 0;
         isEnd = false;
+        topK = new ArrayList<>();
     }
 
     public TrieNode get(char key) {
@@ -51,11 +57,25 @@ public class TrieNode {
         TrieNode copy = new TrieNode();
         copy.rank = this.rank;
         copy.isEnd = this.isEnd;
+        copy.topK = new ArrayList<>(this.topK);
         for (int i=0; i<27; i++) {
             if (this.links[i] != null) {
                 copy.links[i] = this.links[i].deepCopy();
             }
         }
         return copy;
+    }
+
+    public void updateTopK(Suggestion candidate, int K) {
+        topK.removeIf(s -> s.getAutoSuggest().equals(candidate.getAutoSuggest()));
+        topK.add(candidate);
+        topK.sort(Collections.reverseOrder());
+        if (topK.size() > K) {
+            topK.removeLast();
+        }
+    }
+
+    public List<String> getTopK() {
+        return topK.stream().map(Suggestion::getAutoSuggest).toList();
     }
 }
