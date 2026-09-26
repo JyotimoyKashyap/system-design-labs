@@ -31,12 +31,7 @@ public class QueryIngestionBuffer {
             return;
         }
 
-        for (Map.Entry<String, LongAdder> entry : snapshot.entrySet()) {
-            String query = entry.getKey();
-            int count = entry.getValue().intValue();
-
-            index.insert(query, count);
-        }
+        index.insertBatch(snapshot);
     }
 
     public void queue(String query) {

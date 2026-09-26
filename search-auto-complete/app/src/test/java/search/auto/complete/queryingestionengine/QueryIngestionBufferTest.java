@@ -116,4 +116,57 @@ class QueryIngestionBufferTest {
         List<String> results = index.search("shut");
         assertEquals(List.of("shutdown"), results);
     }
+
+    @Test
+    @DisplayName("Should allow high-frequency concurrent lock-free reads while active flushes write shadow trees")
+    void testConcurrentLockFreeReadsDuringActiveWrites() throws InterruptedException {
+        QueryIngestionBuffer buffer = new QueryIngestionBuffer(index, new FlushPolicy() {
+            @Override public void start(Runnable flushAction) {}
+            @Override public void stop() {}
+        });
+
+        // Pre-seed baseline data
+        buffer.queue("apple");
+        buffer.queue("application");
+        buffer.flush();
+
+        int readerThreads = 10;
+        int readIterations = 300;
+        ExecutorService readerPool = Executors.newFixedThreadPool(readerThreads);
+        CountDownLatch latch = new CountDownLatch(readerThreads);
+        java.util.concurrent.atomic.AtomicInteger successfulReads = new java.util.concurrent.atomic.AtomicInteger(0);
+        java.util.concurrent.atomic.AtomicReference<Throwable> readerException = new java.util.concurrent.atomic.AtomicReference<>();
+
+        // Start 10 reader threads hammering search("app")
+        for (int r = 0; r < readerThreads; r++) {
+            readerPool.submit(() -> {
+                try {
+                    for (int i = 0; i < readIterations; i++) {
+                        List<String> suggestions = index.search("app");
+                        assertNotNull(suggestions);
+                        assertFalse(suggestions.isEmpty(), "Should always find valid completions");
+                        successfulReads.incrementAndGet();
+                    }
+                } catch (Throwable t) {
+                    readerException.compareAndSet(null, t);
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        // Simultaneously, main thread writes and flushes 20 batches of updates
+        for (int b = 0; b < 20; b++) {
+            buffer.queue("apple watch");
+            buffer.queue("applicant");
+            buffer.flush(); // triggers deepCopy, batch apply, and atomic swap!
+            Thread.sleep(5);
+        }
+
+        assertTrue(latch.await(10, TimeUnit.SECONDS), "Readers should complete without deadlocks");
+        readerPool.shutdown();
+
+        assertNull(readerException.get(), "No reader thread should encounter any exception or partial state");
+        assertEquals(readerThreads * readIterations, successfulReads.get(), "All reader queries must complete cleanly");
+    }
 }

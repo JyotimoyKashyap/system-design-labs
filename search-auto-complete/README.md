@@ -193,7 +193,34 @@ To achieve high concurrency and protect the read path from write latency spikes,
 * **Map-Reduce Ingestion Combiner:** Thousands of identical search spikes (e.g., 50,000 queries for `"iphone"`) collapse into a single map entry before touching the Trie, eliminating redundant tree traversals.
 * **Pluggable Flush Strategy:** The `FlushPolicy` interface governs *when* to drain the buffer (e.g. periodically every $N$ seconds, on batch size, or manually during tests) without coupling scheduling logic to data structures.
 
-### 6.1 Class Diagram
+---
+
+### 6.1 Architectural Design Decisions & Trade-Offs (ADR)
+
+| Decision | Selected Choice | Rejected Alternative | Core Rationale |
+| :--- | :--- | :--- | :--- |
+| **Consistency Model** | **Eventual Consistency & Statistical Loss Tolerance** | Strong / Immediate ACID Consistency | Autocomplete is not a banking transaction. Search frequencies are aggregate statistical signals. Prioritizing sub-microsecond non-blocking writes heavily outweighs immediate consistency. If a rare process termination drops a few buffered queries, the Top-K rankings and business analytics remain statistically unaffected. |
+| **Worker Thread Type** | **Daemon Thread (`setDaemon(true)`)** | Non-Daemon User Thread | Default non-daemon threads prevent the JVM from shutting down, leaving zombie background threads hanging on exit. Daemon threads execute background maintenance and allow clean JVM termination when foreground work finishes. |
+| **Ingestion Topology** | **In-Memory Combiner (`ConcurrentHashMap`)** | Raw Queue (`ConcurrentLinkedQueue`) | Raw queues store $N$ distinct events, requiring $N$ separate Trie traversals on flush. A combiner pre-aggregates duplicates in $O(1)$ memory, collapsing 50,000 identical searches into a single entry. |
+| **Thread-Safe Draining** | **Double Buffering (`AtomicReference.getAndSet`)** | `map.clear()` or `synchronized(map)` | Draining with `clear()` creates a race condition where writes between iteration and clear are lost forever. Locking blocks client write threads. `AtomicReference.getAndSet(new ConcurrentHashMap<>())` performs a hardware-level atomic bucket swap in $O(1)$ time with zero locks. |
+| **Counter Primitive** | **`LongAdder`** | `AtomicInteger` / `AtomicLong` | Under high concurrent write spikes (e.g., thousands of threads querying `"apple"`), `AtomicInteger` causes intense CPU cache line bouncing from CAS spinning. `LongAdder` dynamically stripes counts across thread-local cells, maximizing throughput. |
+| **Flush Architecture** | **Strategy Pattern (`FlushPolicy` Interface)** | Hardcoded `Timer` inside Buffer | Decoupling the flush trigger from buffer storage allows swapping between time-based intervals, batch sizes, or manual execution in unit tests without changing buffer logic. |
+| **Lifecycle Management** | **Composition Root (Single Instance in `App.java`)** | Hard Class Singleton (`getInstance()`) | Hard singletons destroy test velocity (forcing tests to sleep 30 seconds) and prevent multi-tenancy. Instantiable classes injected at the composition root give single-instance production behavior with fast test isolation. |
+| **Scheduler Cadence** | **`scheduleWithFixedDelay`** | `scheduleAtFixedRate` | `scheduleAtFixedRate` calculates from start times; if a flush is delayed by GC pauses, it triggers "catch-up bursts" back-to-back. `scheduleWithFixedDelay` guarantees a fixed breathing pause after each flush completes. |
+| **Scheduler Fault Tolerance** | **`try-catch(Throwable)` Exception Shield** | Naked `Runnable` | In Java `ScheduledExecutorService`, any unhandled `RuntimeException` or `Error` permanently and silently suppresses all future periodic ticks. Catching `Throwable` guarantees scheduler survival. |
+| **Trie Ingestion** | **Single-Pass Batched Updates (`insert(query, count)`)** | Loop calling `insert(query)` $N$ times | Traversing a 20-character Trie 5,000 times for a query wastes CPU. Overloading `insert(query, count)` traverses the branch once and increments `rank` by the aggregated count. |
+| **Data Loss Prevention** | **Graceful Shutdown Hook** | Unguarded process termination | Registering a JVM shutdown hook (`Runtime.getRuntime().addShutdownHook`) ensures that `buffer.stop()` stops the scheduler and executes one final synchronous flush of all remaining buffered queries. |
+
+#### Why Eventual Consistency & Statistical Loss Tolerance?
+
+In a high-scale Search Autocomplete engine serving tens of thousands of concurrent users:
+* **Availability & Latency Trump Immediate Consistency:** Autocomplete is not a financial ledger. Forcing synchronous disk writes or distributed consensus on keystroke hot paths would introduce unacceptable latency jitter.
+* **Statistical Invariance:** Search rankings are driven by aggregate query volume. If 50,000 users search for `"iphone"` over an hour, dropping a tiny fraction of queries during an unexpected process crash will not change the relative frequencies or alter Top-$K$ ranking reports.
+* **Bounded Staggered Updates:** Accepting a 5-second eventual consistency window enables asynchronous batching, map-reduce combiner deduplication, and 100% lock-free reads.
+
+---
+
+### 6.2 Class Diagram
 
 ```mermaid
 classDiagram
@@ -211,7 +238,7 @@ classDiagram
     class AutoCompleteIndex {
         <<Interface>>
         +search(prefix: String): List~String~
-        +insert(query: String): void
+        +insertBatch(batch: Map): void
     }
 
     class QueryIngestionBuffer {
@@ -220,15 +247,16 @@ classDiagram
         -flushPolicy: FlushPolicy
         +queue(query: String): void
         +flush(): void
+        +stop(): void
     }
 
     %% Level 2: Concrete Engines & Policies
     class TrieAutoCompleteIndex {
         <<Singleton>>
-        -root: TrieNode
+        -rootRef: AtomicReference~TrieNode~
         -k: int
-        +search(query: String): List~String~
-        +insert(query: String): void
+        +search(prefix: String): List~String~
+        +insertBatch(batch: Map): void
     }
 
     class FlushPolicy {
@@ -239,7 +267,8 @@ classDiagram
 
     %% Level 3: Concrete Flush Strategies
     class TimeIntervalFlushPolicy {
-        -intervalSeconds: long
+        -interval: long
+        -timeUnit: TimeUnit
         -scheduler: ScheduledExecutorService
         +start(flushAction: Runnable): void
         +stop(): void
@@ -256,7 +285,7 @@ classDiagram
     FlushPolicy <|.. TimeIntervalFlushPolicy : implements
 ```
 
-### 6.2 Asynchronous Ingestion & Flush Lifecycle
+### 6.3 Asynchronous Ingestion & Flush Lifecycle
 
 ```mermaid
 sequenceDiagram
@@ -277,25 +306,75 @@ sequenceDiagram
     Note over Policy,Index: Asynchronous Batch Flush (Background Thread)
     Policy->>Buffer: timer fires -> trigger flush()
     Note over Buffer: AtomicReference.getAndSet(new ConcurrentHashMap())
-    loop For each (query, count) in swapped snapshot
-        Buffer->>Index: insert(query) [batched]
-    end
+    Buffer->>Index: insertBatch(snapshot) [single clone, batch applied, atomic swap]
 ```
 
 ---
 
-## 7. Future Scope (Prioritized Roadmap)
+## 7. Lock-Free Concurrent Reads via Double-Buffered Trie (Snapshot Isolation)
 
-While these items are deliberately deferred to keep the initial MVP clean and focused, the core architecture will be designed with enough durability and abstraction so they can be introduced without major refactoring.
+While multiple readers never conflict with one another (each allocates its own local `PriorityQueue` on its own call stack), executing concurrent reads while a background thread updates the Trie introduces severe concurrency hazards.
 
-The items are ordered strictly by implementation priority (**P1 > P2 > P3 > P4 > P5**):
+### 7.1 Hazards of In-Place Concurrent Mutations
+1. **Unsafe Publication & `NullPointerException`:** Array elements in `TrieNode[] links` are not volatile in Java. Without memory barriers, instruction reordering can publish a child node's address before its own internal `links` array is initialized, causing reader threads to crash with `NullPointerException`.
+2. **Partial Word & Intermediate State Visibility:** During a multi-character insertion (e.g. `"application"`), a reader executing DFS could traverse half-created nodes where `isEnd` is still `false` or before `updateRankBy()` is applied, returning corrupted completions.
+3. **CPU Cache Lag / Stale Ranks:** Primitive rank updates on one CPU core's L1/L2 cache remain invisible to reader threads on other cores without a synchronization barrier.
 
-1. **P1 — Concurrent Clients & Thread Safety:**
-   * Transition from single-threaded execution to lock-free, concurrent multi-client serving (e.g., using `AtomicReference` double buffering or read-write locks) to guarantee thread safety and high read throughput.
-2. **P2 — Pluggable Ranking Strategies (`rank` Abstraction):**
+### 7.2 Why Copy-On-Write Beats `ReentrantReadWriteLock`
+* **`ReentrantReadWriteLock` (Rejected):** While read locks allow unlimited concurrent readers, whenever the background flush worker acquires the exclusive write lock, **all readers are paused**. In high-throughput autocomplete serving thousands of queries per second, this creates severe **tail latency (p99) spikes**.
+* **Double-Buffered Trie with `AtomicReference<TrieNode>` (Selected):** Readers execute **100% lock-free** with zero synchronization, zero thread contention, and zero blocking. Readers simply read from `rootRef.get()`.
+
+### 7.3 Trie Double-Buffering & Memory Lifecycle
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Reader as Client Reader Thread
+    participant RootRef as AtomicReference~TrieNode~
+    participant ActiveRoot as Active Trie (v1)
+    participant Worker as Background Flush Worker
+    participant ShadowRoot as Shadow Trie (v2)
+
+    Note over Reader,ActiveRoot: Reader Queries Active Root (100% Lock-Free)
+    Reader->>RootRef: rootRef.get()
+    RootRef-->>Reader: returns ActiveRoot (v1)
+    Reader->>ActiveRoot: traverse prefix & DFS (0 locks, 0ns wait)
+
+    Note over Worker,ShadowRoot: Worker Builds Updates in Shadows
+    Worker->>RootRef: rootRef.get()
+    RootRef-->>Worker: returns ActiveRoot (v1)
+    Worker->>ActiveRoot: deepCopy()
+    ActiveRoot-->>Worker: new isolated ShadowRoot (v2)
+    Worker->>ShadowRoot: apply all entries in batch [in-place on shadow]
+
+    Note over Worker,RootRef: Atomic Swap (O(1) CPU Instruction)
+    Worker->>RootRef: rootRef.set(ShadowRoot v2)
+
+    Note over Reader,ShadowRoot: Seamless Zero-Flicker Transition
+    Note over Reader: Active readers finish search on v1 safely
+    Note over Reader: Next reader calling rootRef.get() immediately sees v2
+    Note over ActiveRoot: v1 garbage collected once in-flight readers finish
+```
+
+### 7.4 Architectural Invariants & Guarantees
+
+1. **Zero Lock Contention for Readers:** Readers execute in pure read-only memory space. No locks or CAS loops exist on the read path.
+2. **Strict Single Clone per Batch:** Regardless of whether the batch contains 1 query or 10,000 queries, the Trie is cloned **exactly once** per flush interval.
+3. **Zero Intermediate Map Allocations:** Because `AutoCompleteIndex.insertBatch` accepts `Map<String, ? extends Number>`, `QueryIngestionBuffer` passes its internal `snapshot` directly to the index without allocating temporary conversion maps.
+4. **Architectural Guardrail (Decommissioned `insert`):** Unbatched single `insert()` methods are removed from the public index interface, making unbatched mutations physically impossible at compile time.
+
+---
+
+## 8. Future Scope (Prioritized Roadmap)
+
+While these items were deliberately staged to keep the engine modular and robust, the completed foundational layers (P1 and P3) enable advanced features without refactoring the core:
+
+1. **[COMPLETED] P1 — Concurrent Clients & Thread Safety:**
+   * Fully implemented via lock-free `AtomicReference<TrieNode>` Double-Buffered Trie (Snapshot Isolation) and non-blocking ConcurrentHashMap counters.
+2. **[COMPLETED] P3 — Asynchronous & Periodic Batch Updates:**
+   * Fully implemented via `QueryIngestionBuffer` with atomic swap pre-aggregation and pluggable `TimeIntervalFlushPolicy`.
+3. **P2 — Pluggable Ranking Strategies (`rank` Abstraction):**
    * While the MVP computes `rank` purely via raw frequency, the design will treat this as a generic `rank` score. Future iterations will introduce the Strategy Pattern and a Context Object to dynamically swap between Recency-based decay, Personalization, and ML-based ranking.
-3. **P3 — Asynchronous & Periodic Batch Updates:**
-   * Decouple the write path using an in-memory Event Queue and background worker threads to periodically flush and recompute top-$K$ rankings in batches, avoiding hot-path latency hits.
 4. **P4 — Character Set Expansion & Memory Optimization:**
    * Expand beyond the 27-character lowercase alphabet to full alphanumeric and Unicode support, evaluating memory trade-offs (e.g., migrating from fixed-size arrays to HashMaps or Radix/Patricia Tries) to manage heap growth.
 5. **P5 — Alternative Search Algorithms (Fuzzy & Typo Tolerance):**

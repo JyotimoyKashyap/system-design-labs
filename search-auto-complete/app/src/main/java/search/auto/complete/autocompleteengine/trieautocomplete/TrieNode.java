@@ -46,4 +46,16 @@ public class TrieNode {
     public TrieNode[] getLinks() {
     return links;
     }
+
+    public TrieNode deepCopy() {
+        TrieNode copy = new TrieNode();
+        copy.rank = this.rank;
+        copy.isEnd = this.isEnd;
+        for (int i=0; i<27; i++) {
+            if (this.links[i] != null) {
+                copy.links[i] = this.links[i].deepCopy();
+            }
+        }
+        return copy;
+    }
 }

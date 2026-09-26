@@ -1,22 +1,20 @@
 package search.auto.complete.autocompleteengine.trieautocomplete;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.PriorityQueue;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import search.auto.complete.autocompleteengine.AutoCompleteIndex;
 import search.auto.complete.queryingestionengine.QueryIngestionBuffer;
 
 public class TrieAutoCompleteIndex implements AutoCompleteIndex {
     
-    private TrieNode root;
+    private final AtomicReference<TrieNode> rootRef;
     private int K;
 
     private static volatile TrieAutoCompleteIndex instance;
 
     private TrieAutoCompleteIndex(int K) {
-        root = new TrieNode();
+        rootRef = new AtomicReference<>(new TrieNode());
         this.K = K;
     }
 
@@ -44,11 +42,10 @@ public class TrieAutoCompleteIndex implements AutoCompleteIndex {
         }
     }
 
-    @Override
-    public void insert(String query, int count) {
+    private void insert(TrieNode targetRoot, String query, int count) {
         validateQuery(query);
 
-        TrieNode node = root;
+        TrieNode node = targetRoot;
         for (char k : query.toCharArray()) {
             if (!node.contains(k)) {
                 node.put(k);
@@ -66,7 +63,7 @@ public class TrieAutoCompleteIndex implements AutoCompleteIndex {
         validateQuery(prefix);
 
         List<String> suggestions = new ArrayList<>();
-        TrieNode node = root;
+        TrieNode node = rootRef.get();
         for (char k : prefix.toCharArray()) {
             if (!node.contains(k)) {
                 return suggestions;
@@ -86,6 +83,21 @@ public class TrieAutoCompleteIndex implements AutoCompleteIndex {
         }
 
         return res;
+    }
+
+    @Override
+    public synchronized void insertBatch(Map<String, ? extends Number> batch) {
+        if (batch == null || batch.isEmpty()) {
+            return;
+        }
+
+        TrieNode newRoot = rootRef.get().deepCopy();
+
+        for (Map.Entry<String, ? extends Number> entry : batch.entrySet()) {
+            insert(newRoot, entry.getKey(), entry.getValue().intValue());
+        }
+
+        rootRef.set(newRoot);
     }
 
     private void dfs(TrieNode node, String autoSuggest, PriorityQueue<Suggestion> minHeap) {

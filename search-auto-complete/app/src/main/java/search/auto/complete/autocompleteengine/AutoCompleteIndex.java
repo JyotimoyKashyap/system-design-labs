@@ -1,11 +1,9 @@
 package search.auto.complete.autocompleteengine;
 
 import java.util.List;
+import java.util.Map;
 
 public interface AutoCompleteIndex {
-    void insert(String query, int count);
-    default void insert(String query) {
-        insert(query, 1);
-    }
     List<String> search(String prefix);
+    void insertBatch(Map<String, ? extends Number> batch);
 }
