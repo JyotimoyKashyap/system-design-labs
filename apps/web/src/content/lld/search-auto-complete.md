@@ -82,14 +82,22 @@ Design and implement a highly scalable, low-latency, in-memory **Search Autocomp
 * It will be a singleton class. Its responsibility would be to store the manage the prefixes
 
 ### TrieNode
-* This class will contain the reference of other Nodes. 
-* Basically for each alphabetical character and space it will have reference Nodes and their rank for now which will just be frequency.
-* This is expose 3 APIs
-  * `get(key: char): Node`
-  * `put(key: char): Node`
-  * `contains(key: char): boolean`
+* This class represents an individual character node in the 27-way Trie (26 letters + space).
+* Holds references to child nodes (`links`), terminal query flag (`isEnd`), and frequency score (`rank`).
+* Exposes core mutation and navigation APIs:
+  * `get(char): TrieNode`
+  * `put(char): void`
+  * `contains(char): boolean`
+  * `isEnd(): boolean`
+  * `setEnd(): void`
+  * `updateRankBy(int): void`
+  * `getRank(): int`
+  * `getLinks(): TrieNode[]`
 
-
+### `Suggestion`
+* A value object implementing `Comparable<Suggestion>`.
+* Encapsulates candidate completions (`autoSuggest: String`) along with their popularity score (`rank: int`).
+* Implements the Min-Heap eviction comparator: lower rank is prioritized for eviction, with ties broken by evicting lexicographically larger queries (`o.autoSuggest.compareTo(this.autoSuggest)`).
 
 ## 5. Low-Level Design : MVP
 
@@ -114,7 +122,7 @@ classDiagram
         -k: int
         -instance$: volatile TrieAutoCompleteIndex
         -TrieAutoCompleteIndex(k: int)
-        +init(k: int)$ void
+        +init(k: int)$ TrieAutoCompleteIndex
         +getInstance()$ TrieAutoCompleteIndex
         +search(query: String) List~String~
         +insert(query: String) void
@@ -128,13 +136,24 @@ classDiagram
         +put(char): void
         +contains(char): boolean
         +isEnd(): boolean
-        +updateRank(int): void
         +setEnd(): void
+        +updateRankBy(int): void
+        +getRank(): int
+        +getLinks(): TrieNode[]
+    }
+
+    class Suggestion {
+        -rank: int
+        -autoSuggest: String
+        +Suggestion(rank: int, autoSuggest: String)
+        +getAutoSuggest(): String
+        +compareTo(Suggestion): int
     }
 
     SearchAutoCompleteService --> AutoCompleteIndex : has-a
     TrieAutoCompleteIndex ..|> AutoCompleteIndex : Implements
     TrieAutoCompleteIndex *-- TrieNode : Composition
+    TrieAutoCompleteIndex ..> Suggestion : uses in Min-Heap
 ```
 
 ### 5.1 Trie Traversal & DFS Execution Trace (Zero-Duplicate Guarantee)

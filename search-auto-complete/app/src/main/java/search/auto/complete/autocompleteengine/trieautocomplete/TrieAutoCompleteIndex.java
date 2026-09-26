@@ -37,6 +37,12 @@ public class TrieAutoCompleteIndex implements AutoCompleteIndex {
         return instance;
     }
 
+    public static void resetForTesting() {
+        synchronized (TrieAutoCompleteIndex.class) {
+            instance = null;
+        }
+    }
+
     @Override
     public void insert(String query) {
         validateQuery(query);
