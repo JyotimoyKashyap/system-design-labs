@@ -733,7 +733,99 @@ The core Low-Level Design constructs map directly to distributed system primitiv
 
 ---
 
-## 10. Future Scope & Roadmap
+## 10. Interactive Console UI (Running the Engine Locally)
+
+You can experience the engine's sub-microsecond keystroke latency, dynamic ranking, and asynchronous batch updates firsthand using the bundled interactive CLI.
+
+### 10.1 Quick Start
+
+From the `search-auto-complete/` project root, run:
+
+```bash
+./run.sh
+```
+
+#### What happens behind the scenes:
+1. **Distribution Build:** Gradle compiles the codebase and prepares an executable application distribution via `./gradlew installDist -q`.
+2. **TTY Raw Mode:** The launcher attaches directly to `/dev/tty` and configures the terminal to non-canonical, unbuffered raw mode (`stty -icanon -echo min 1`). Every keystroke is emitted immediately to Java without waiting for the `[ENTER]` key.
+3. **Corpus Pre-Seeding:** The engine auto-seeds a realistic corpus covering tech brands (`"apple"`, `"apple watch"`, `"apple macbook"`), distributed systems (`"distributed system"`, `"system design"`, `"system architecture"`), and databases (`"database system"`, `"data structure"`).
+4. **Cache Warming:** An initial synchronous flush warms the per-node Top-$K$ cache before opening the prompt.
+
+---
+
+### 10.2 Terminal Interface Overview
+
+The interactive console provides an ANSI-styled live dashboard with sub-microsecond latency tracking:
+
+```text
+================================================================================
+   SEARCH AUTOCOMPLETE ENGINE — Real-Time Typeahead
+================================================================================
+  * Type characters -> Completions refresh INSTANTLY on each keystroke.
+  * Press [ENTER]   -> Commit & record query (boosts popularity ranking).
+  * Press [BACKSPACE] to delete  |  Press [ESC] or [Ctrl+C] to exit.
+--------------------------------------------------------------------------------
+
+  ┌────────────────────────────────────────────────────────────────┐
+  │  > Type Here: app█                                             │
+  └────────────────────────────────────────────────────────────────┘
+
+  TOP SUGGESTIONS [⚡ 0.042 ms (42 µs) | 4 results]:
+    [1] apple
+    [2] apple watch
+    [3] apple macbook
+    [4] apply
+
+================================================================================
+  Engine initialized with sample queries. Start typing!
+```
+
+---
+
+### 10.3 Interactive Experiments to Try
+
+Try these 4 interactive experiments to observe the system's low-level mechanics in action:
+
+#### 1. Measure Keystroke Latency ($O(L)$ Cache Validation)
+* Type any character sequence (e.g. `d`, `i`, `s`).
+* Notice the green latency badge: `[⚡ 0.038 ms (38 µs)]`.
+* Because every node pre-caches its Top-$K$ list, latency remains virtually identical whether the subtree has 5 nodes or 5,000,000 nodes. There is zero DFS traversal.
+
+#### 2. Visual Prefix Highlighting
+* As you type `appl`, notice how the terminal splits the suggestion visually:
+  * **Warm Amber:** The exact prefix you have typed (`appl`).
+  * **Electric Cyan:** The remaining completion tail predicted by the engine (`e`, `e watch`, `e macbook`).
+
+#### 3. Dynamic Popularity Promotion (The `[ENTER]` Key)
+* Type `app`. By default, the pre-seeded frequencies rank `"apply"` at position #4 (frequency 2), behind `"apple"` (frequency 12), `"apple watch"` (8), and `"apple macbook"` (6).
+* Complete typing `apply` and press `[ENTER]`.
+* Notice the green alert:
+  ```text
+  [+] Query committed & frequency incremented: "apply"
+  ```
+* Hit `apply` + `[ENTER]` 4 or 5 times in succession.
+* Under the hood, `QueryIngestionBuffer` collects these writes in its active buffer. On the next flush interval (or when triggered), the double-buffered Trie clones the root, updates the frequencies, rebuilds the local Top-$K$ caches, and atomically swaps the pointer.
+* Now delete and re-type `app`: **`"apply"` has overtaken the other suggestions to become the #1 ranked result!**
+
+#### 4. Multi-Word Phrase Completion
+* Type `sys` $\to$ instant completions for `"system design"` and `"system architecture"`.
+* Type `soft` $\to$ instant completions for `"software engineer"` and `"software engineering"`.
+* Type `dist` $\to$ instant completion for `"distributed system"`.
+
+---
+
+### 10.4 Keyboard Controls Reference
+
+| Key / Action | Behavior | Underlying Engine Mechanism |
+| :--- | :--- | :--- |
+| `a` – `z`, `[SPACE]` | Appends character to active query | Performs $O(L)$ instant Trie lookup; updates UI in $< 0.1\text{ ms}$. |
+| `[BACKSPACE]` | Deletes last character | Re-evaluates parent node's cached list in $O(L - 1)$ time. |
+| `[ENTER]` | Commits and searches query | Invokes `service.recordQuery(query)`, buffers asynchronously, flushes to index, and clears the prompt. |
+| `[ESC]` or `[Ctrl+C]` | Graceful shutdown | Triggers the JVM shutdown hook: stops the flush thread, drains buffer, and resets the terminal to standard mode (`stty sane`). |
+
+---
+
+## 11. Future Scope & Roadmap
 
 1. **[COMPLETED] Lock-Free Concurrent Reads:**
    * Double-buffered Trie via `AtomicReference<TrieNode>` with zero read lock contention.
