@@ -674,7 +674,77 @@ $$\text{Score} = \log_{10}(\text{Frequency}) + \frac{\text{Timestamp} - t_0}{\te
 
 ---
 
-## 10. Future Scope & Roadmap
+## 10. From LLD to HLD — Production Distributed Microservices
+
+While the in-process implementation runs safely and concurrently on a single JVM, scaling to hundreds of millions of daily active users requires decoupling the single-process engine into a distributed architecture based on **CQRS (Command Query Responsibility Segregation)**:
+* **The Command (Write Path):** Submitting a committed search query via `recordQuery()`.
+* **The Query (Read Path):** Fetching instant prefix completions via `getSuggestions()`.
+
+By splitting Commands and Queries into completely independent microservices, each path scales according to its own traffic profile without resource contention.
+
+The core Low-Level Design constructs map directly to distributed system primitives:
+
+```
+                      [ CLIENT (Web / Mobile) ]
+                               │      │
+     ┌─────────────────────────┘      └─────────────────────────┐
+     │ 1. Keystroke: "app"                                      │ 2. Enter Pressed: "apple"
+     │ (Sync, <5ms budget)                                      │ (Async, Fire-and-Forget)
+     ▼                                                          ▼
+┌──────────────────────────────┐              ┌──────────────────────────────┐
+│   SearchSuggestionService    │              │    QueryIngestionService     │
+│  (Pure Read Microservice)    │              │   (Pure Write Microservice)  │
+│                              │              │                              │
+│ • Holds Read-Only Trie       │              │ • Validates input            │
+│ • Serves getSuggestions()    │              │ • Returns 202 Accepted       │
+│ • Sub-microsecond O(L)       │              │   immediately                │
+│ • Scaled to 100s of replicas │              │ • Pushes event to Kafka      │
+└──────────────▲───────────────┘              └──────────────┬───────────────┘
+               │                                             │
+               │ New Snapshot Swapped                        │ Stream Events
+               │                                             ▼
+┌──────────────┴───────────────┐              ┌──────────────────────────────┐
+│    IndexAutoUpdateService    │              │      Apache Kafka Topic      │
+│   (Offline Builder Worker)   │              │       ("search-events")      │
+│                              │              │                              │
+│ • Aggregates counts          │◄─────────────┤ • Durable log buffer         │
+│ • Builds new Trie in shadow  │   Drains     │ • Absorbs traffic spikes     │
+│ • Evaluates RankingStrategy  │   batches    │ • Zero data loss             │
+│ • Uploads snapshot to S3     │              └──────────────────────────────┘
+└──────────────────────────────┘
+```
+
+---
+
+### 10.1 Microservice Responsibilities & CQRS Separation
+
+| Component | Responsibility | Scaling Characteristics | Fault Domain |
+| :--- | :--- | :--- | :--- |
+| **`SearchSuggestionService` (Read Path)** | Serves user keystrokes from in-memory Trie snapshots. Completely stateless. | **Heavily Scaled:** 50–100+ pods behind CDN and Load Balancer. High RAM for in-memory indices. | If the write path crashes, reads continue serving at full speed with **zero degradation**. |
+| **`QueryIngestionService` (Write Gateway)** | Accepts committed user searches via an asynchronous fire-and-forget API (`POST /query/record`). Returns `202 Accepted` immediately. | **Lightweight:** Few stateless pods publishing directly to Kafka. Low CPU and low RAM. | If Kafka is temporarily degraded, queries can buffer locally before retry. |
+| **`IndexAutoUpdateService` (Offline Builder)** | Consumes aggregated search counts from Kafka/Flink, builds a shadow Trie, evaluates `RankingStrategy`, and serializes the tree into a versioned snapshot (e.g., S3). | **Batch Worker:** Runs periodically (e.g. every 5–15 minutes). High CPU for batch sorting. | If the builder crashes, read nodes simply continue serving the current valid snapshot. |
+
+---
+
+### 10.2 Architectural Guarantees at Cloud Scale
+
+1. **Fire-and-Forget Client Writes:**
+   * When a user searches for `"apple"`, the client fires an asynchronous, non-blocking request to `QueryIngestionService`.
+   * The response returns in $< 1\text{ ms}$ (`202 Accepted`). The user's search results page loads with **zero latency penalty**.
+2. **Distributed Double-Buffering (Blue/Green Pointer Swap):**
+   * Instead of Java's in-process `AtomicReference`, `SearchSuggestionService` nodes poll object storage (AWS S3 / GCS) for new snapshot versions.
+   * A background thread on the read node downloads the snapshot and performs an atomic in-memory pointer swap (`rootRef.set(newRoot)`).
+   * Active user searches never block, never lock, and never see partially built trees.
+3. **No Network Hops on the Hot Path:**
+   * **Why Ranking is NOT a Separate Microservice:** An in-memory Trie lookup takes $\sim 50\text{ ns}$, whereas an RPC to a separate ranking service takes $1.5–5.0\text{ ms}$ ($30,000\times$ slower!).
+   * All global ranking scores are computed **offline** by `IndexAutoUpdateService` during snapshot generation.
+   * If personalized ranking is required, it runs **in-process** on the read node using lightweight embedded models (e.g., ONNX / TensorFlow Lite).
+4. **Where Redis Belongs (L1 Gateway Cache):**
+   * While Redis cannot replace the $\sim 50\text{ ns}$ in-memory Trie (network round-trips take $\sim 1\text{ ms}$), Redis is ideal at the API gateway layer to cache the top 1,000 single-character prefixes (`"a"`, `"s"`, `"t"`), absorbing massive traffic spikes before requests reach the `SearchSuggestionService`.
+
+---
+
+## 11. Future Scope & Roadmap
 
 1. **[COMPLETED] Lock-Free Concurrent Reads:**
    * Double-buffered Trie via `AtomicReference<TrieNode>` with zero read lock contention.
@@ -684,8 +754,11 @@ $$\text{Score} = \log_{10}(\text{Frequency}) + \frac{\text{Timestamp} - t_0}{\te
    * Path tracing with $O(L)$ instant prefix lookups and zero DFS.
 4. **[COMPLETED] Pluggable Ranking Strategies:**
    * `AbstractAutoCompleteIndex` base class with Template Method pattern, `RankingStrategy` interface, and `HotRankingStrategy` (Reddit/HackerNews algorithm).
-5. **P1 — Character Set Expansion & Memory Tuning:**
+5. **[COMPLETED] Production Distributed Architecture (HLD Blueprint):**
+   * CQRS separation of Read and Write paths, Kafka stream ingestion, offline snapshot builder, and S3 blue/green double-buffering.
+6. **P1 — Character Set Expansion & Memory Tuning:**
    * Expand from the 27-character alphabet to full alphanumeric and Unicode, evaluating Radix/Patricia Tries to optimize memory.
-6. **P2 — Fuzzy Matching & Typo Tolerance:**
+7. **P2 — Fuzzy Matching & Typo Tolerance:**
    * Introduce Levenshtein distance or BK-Trees behind the `AutoCompleteIndex` interface to tolerate typing mistakes.
+
 
