@@ -365,7 +365,88 @@ sequenceDiagram
 
 ---
 
-## 8. Future Scope (Prioritized Roadmap)
+## 8. Per-Node Top-K Prefix Caching (Sub-Microsecond Reads)
+
+In the initial MVP, prefix search required walking down to the prefix node and then executing a full subtree Depth-First Search (DFS) with a Min-Heap. While correct, hot single-character prefixes (like `"a"`) forced the engine to traverse thousands of child nodes on every keystroke.
+
+By **denormalizing and pre-computing the Top-$K$ completions directly inside each `TrieNode`**, the read hot path drops from $O(L + N \log K)$ down to strictly **$O(L)$** ($L \le 20$), eliminating DFS entirely.
+
+### 8.1 Path Tracing & Invariant Guarantee
+
+When a query (e.g. `"apple"` with count 5) is inserted into the shadow tree during a background batch flush:
+1. The engine walks the query character-by-character from the root:
+   $$\text{root} \longrightarrow \text{node}_1 (\text{'a'}) \longrightarrow \text{node}_2 (\text{'p'}) \longrightarrow \text{node}_3 (\text{'p'}) \longrightarrow \text{node}_4 (\text{'l'}) \longrightarrow \text{node}_5 (\text{'e'})$$
+2. All traversed nodes are recorded in a sequential `path` list: `[root, node_1, node_2, node_3, node_4, node_5]`.
+3. **The Invariant Guarantee:** By definition of a Trie, **every node along this path is a prefix of `"apple"`**. Therefore, `"apple"` is guaranteed to be a valid completion candidate for every ancestor in that list. No lateral branch exploration is ever required.
+
+---
+
+### 8.2 The 3-Case Cache Update Decision Flow
+
+Once the terminal leaf node's cumulative rank is updated, the engine iterates through each ancestor in `path` and updates its internal `topK: List<Suggestion>` cache:
+
+```mermaid
+flowchart TD
+    Start["New Suggestion: (query, finalRank)"] --> AncestorLoop["For each ancestor node in path (root -> leaf)"]
+    AncestorLoop --> CheckExisting{"Is query already<br/>in node's topK cache?"}
+
+    CheckExisting -- "YES (Case 1)" --> UpdateExisting["Update existing Suggestion's rank<br/>to finalRank and re-sort topK"]
+    CheckExisting -- "NO" --> CheckRoom{"Does topK cache have<br/>room? (size < K)"}
+
+    CheckRoom -- "YES (Case 2)" --> AddItem["Add candidate directly to topK<br/>and re-sort descending"]
+    CheckRoom -- "NO (Case 3)" --> CompareLowest{"Does candidate beat the<br/>K-th item? (Rank > lowest,<br/>or ties with lexicographical win)"}
+
+    CompareLowest -- "YES" --> EvictLowest["Replace K-th lowest item with candidate<br/>and re-sort topK"]
+    CompareLowest -- "NO" --> Discard["Discard candidate<br/>(Cache remains unchanged)"]
+
+    UpdateExisting --> NextAncestor["Proceed to next ancestor"]
+    AddItem --> NextAncestor
+    EvictLowest --> NextAncestor
+    Discard --> NextAncestor
+    NextAncestor --> Done["All ancestors updated in O(L * K log K)"]
+```
+
+---
+
+### 8.3 Cache Decision Rules at Each Ancestor
+
+* **Case 1 (Existing Entry):** If the query is already cached in the node, its rank has increased. We update its rank and re-sort the list.
+* **Case 2 (Capacity Available):** If the cache contains fewer than $K$ items (`size < K`), the candidate qualifies automatically. It is appended and the list is re-sorted.
+* **Case 3 (Full Cache Competition & Eviction):** When the cache is full (`size == K`), the candidate competes strictly against the $K$-th (worst) item:
+  - If `candidate.rank > lowest.rank`, or if ranks are equal and `candidate` comes first lexicographically (`a-z`), the lowest item is evicted and the candidate takes its place.
+  - Otherwise, the candidate is discarded for this ancestor.
+
+---
+
+### 8.4 The Resulting Read Path: Zero DFS
+
+With pre-computed caches, `search(prefix)` transforms into a simple pointer walk followed by an $O(1)$ list retrieval:
+
+```java
+@Override
+public List<String> search(String prefix) {
+    validateQuery(prefix);
+
+    TrieNode node = rootRef.get();
+    for (char k : prefix.toCharArray()) {
+        if (!node.contains(k)) {
+            return Collections.emptyList();
+        }
+        node = node.get(k);
+    }
+
+    // O(1) Instantaneous Return — Zero DFS, Zero PriorityQueue, Zero Locks!
+    return node.getTopK();
+}
+```
+
+* **Read Complexity:** $O(L)$ where $L \le 20$.
+* **Heap Allocations on Read:** Zero. Returns the pre-computed list directly.
+* **Cache Integrity:** Because of Double-Buffering (`AtomicReference`), readers only ever observe complete, fully-sorted caches from the active tree.
+
+---
+
+## 9. Future Scope (Prioritized Roadmap)
 
 While these items were deliberately staged to keep the engine modular and robust, the completed foundational layers (P1 and P3) enable advanced features without refactoring the core:
 
