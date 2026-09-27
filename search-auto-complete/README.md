@@ -99,9 +99,11 @@ Before looking at data structures, here is how the system components fit togethe
 * **`QueryIngestionBuffer` (Write Buffer):** Collects search queries in memory so we do not mutate the Trie on every individual search.
 * **`FlushPolicy` (Scheduler):** Governs when the buffer drains its accumulated counts into the Trie (e.g., every 5 seconds).
 * **`AutoCompleteIndex` (Interface):** The clean contract (`search`, `insertBatch`) shielding storage details from callers.
+* **`AbstractAutoCompleteIndex` (Skeletal Base Class):** Centralizes query validation, $K$ limits, clock injection, and the Template Method pattern for all search engines.
+* **`RankingStrategy` (Scoring Strategy):** Pluggable strategy interface computing relevance scores (`Frequency`, `TimeDecay`, `HotRanking`).
 * **`TrieAutoCompleteIndex` (Engine Implementation):** The in-memory 27-way Trie managing the active and shadow trees with atomic pointer swapping.
-* **`TrieNode` (Building Block):** Represents a single character. Holds child pointers (`links[27]`), word frequency (`rank`), and a precomputed `topK` cache.
-* **`Suggestion` (Value Object):** A pair of `(query, rank)` that implements `Comparable` with frequency-first, alphabetical tie-breaking.
+* **`TrieNode` (Building Block):** Represents a single character. Holds child pointers (`links[27]`), word frequency (`rank`), last search timestamp, and a precomputed `topK` cache.
+* **`Suggestion` (Value Object):** A pair of `(score, query)` that implements `Comparable` with score-first, alphabetical tie-breaking.
 
 ---
 
@@ -539,9 +541,140 @@ Let's trace how the cache looks when the following 5 queries are inserted into t
 
 ---
 
-## 9. Future Scope & Roadmap
+## 9. Pluggable Ranking Strategies (Strategy & Template Method Patterns)
 
-The current architecture provides a robust foundation for future enhancements:
+Raw search count is rarely enough in production systems. To support trending spikes, breaking news, or domain-specific scoring, the engine decouples ranking logic from storage using the **Strategy Pattern** and a **Skeletal Implementation** (`AbstractAutoCompleteIndex`).
+
+### 9.1 The Skeletal Base Class (`AbstractAutoCompleteIndex`)
+
+Following **Effective Java (Item 20: *Prefer interfaces to abstract classes, but provide skeletal implementations*)**, `AbstractAutoCompleteIndex` centralizes cross-cutting concerns:
+* **Template Method Pattern:** Enforces query validation (`validateQuery(prefix)`) before delegating to concrete index implementations (`doSearch()`, `doInsertBatch()`). Subclasses cannot bypass input constraints.
+* **Clock Injection:** Accepts a `Supplier<Long> clock` (defaulting to `System::currentTimeMillis`), enabling 100% deterministic time-travel testing without `Thread.sleep()`.
+* **Centralized Candidate Factory:** Provides `createScoredSuggestion(query, frequency, timestampMs)` to compute scores uniformly.
+
+```mermaid
+classDiagram
+    direction TB
+    class AutoCompleteIndex {
+        <<Interface>>
+        +search(prefix: String): List~String~
+        +insertBatch(batch: Map): void
+    }
+
+    class AbstractAutoCompleteIndex {
+        <<Abstract>>
+        #K: int
+        #rankingStrategy: RankingStrategy
+        #clock: Supplier~Long~
+        +search(prefix: String): List~String~
+        +insertBatch(batch: Map): void
+        #doSearch(prefix: String)* List~String~
+        #doInsertBatch(batch: Map)* void
+        #createScoredSuggestion(query, freq, ts): Suggestion
+    }
+
+    class RankingStrategy {
+        <<Interface>>
+        +calculateScore(QueryMetadata): double
+    }
+
+    class FrequencyRankingStrategy {
+        +calculateScore(QueryMetadata): double
+    }
+
+    class TimeDecayRankingStrategy {
+        +calculateScore(QueryMetadata): double
+    }
+
+    class HotRankingStrategy {
+        +calculateScore(QueryMetadata): double
+    }
+
+    AutoCompleteIndex <|.. AbstractAutoCompleteIndex : implements
+    AbstractAutoCompleteIndex --> RankingStrategy : delegates scoring to
+    RankingStrategy <|.. FrequencyRankingStrategy : implements
+    RankingStrategy <|.. TimeDecayRankingStrategy : implements
+    RankingStrategy <|.. HotRankingStrategy : implements
+    AbstractAutoCompleteIndex <|-- TrieAutoCompleteIndex : extends
+```
+
+---
+
+### 9.2 First-Class Ranking Strategies
+
+#### 1. `FrequencyRankingStrategy` (Default Baseline)
+Scores queries directly by search volume:
+$$\text{Score} = \text{frequency}$$
+* *Guarantees 100% backwards compatibility and zero time overhead.*
+
+#### 2. `TimeDecayRankingStrategy` (Exponential Half-Life)
+Applies radioactive-style half-life decay:
+$$\text{Score} = \text{frequency} \times e^{-\lambda \cdot \Delta t}, \quad \text{where } \lambda = \frac{\ln(2)}{\text{halfLifeMs}}$$
+* *Calculates smooth decay for active batches where items are continuously refreshed.*
+
+#### 3. `HotRankingStrategy` (Reddit / Hacker News Monotonic Time-Boost)
+Solves the **dormant cache invalidation challenge** in pre-computed prefix trees:
+
+$$\text{Score} = \log_{10}(\text{Frequency}) + \frac{\text{Timestamp} - t_0}{\text{TimeWindowMs}}$$
+
+### 9.3 Architectural Deep Dive: Why HotRankingStrategy is Essential for Pre-Computed Caches
+
+The decision to introduce `HotRankingStrategy` was not just a mathematical preference; it resolved a **fundamental architectural tension** between two core system requirements:
+
+```
+[ Requirement A: Sub-microsecond O(L) Reads ]        [ Requirement B: Temporal Search Trends ]
+         │                                                        │
+         ▼                                                        ▼
+Per-Node Precomputed Top-K Caching                   Scores Must Change Over Time
+         │                                                        │
+         └─────────────────────────┬──────────────────────────────┘
+                                   │
+                                   ▼
+              THE ARCHITECTURAL CONFLICT:
+              If scores decay continuously with moving clock (now),
+              every cached score in the entire Trie becomes STALE instantly!
+```
+
+#### 1. The Dormant Cache Invalidation Problem
+In Section 8, we established **Per-Node Top-$K$ Prefix Caching**: when a batch flushes, we walk the path of the query and cache candidate suggestions directly inside each ancestor node.
+
+If we use classical exponential decay:
+$$\text{Score} = \text{frequency} \times e^{-\lambda (t_{\text{now}} - t_{\text{last}})}$$
+
+The score depends on the **current moving clock ($t_{\text{now}}$)**.
+* Suppose `"olympics twenty"` had 100,000 searches years ago. Its score was stored as `100,000` in `root.topK`.
+* Today, someone searches `"olympics twenty four"` 50 times.
+* When `"olympics twenty four"` arrives at `root.topK`, it compares its score against the cached score of `"olympics twenty"` (`100,000`).
+* **Because `"olympics twenty"` was NOT in today's batch, no worker was triggered to re-evaluate its score!** It remains frozen at $100,000$, blocking fresh trending searches indefinitely.
+
+#### 2. The Flawed Alternatives
+To fix this with traditional decay, you would have to choose between two bad engineering compromises:
+* **Alternative 1: Background Tree Sweepers (Periodic Full Crawl)**  
+  A background thread periodically crawls all millions of nodes in the Trie, recalculates decay for every word, and updates caches.
+  * *Why it fails:* Extreme CPU burn, massive GC churn, and destroys the scalability of the background worker.
+* **Alternative 2: Decay on Read**  
+  Re-calculate scores dynamically during user searches.
+  * *Why it fails:* Destroys sub-microsecond read latency, requires keeping full subtrees or metadata arrays, and fails if an un-decayed dormant query prevented a newer candidate from entering the Top-$K$ cache at insertion time.
+
+#### 3. The Elegance of HotRanking: Duality of Time
+`HotRankingStrategy` (modeled after Reddit and Hacker News) mathematically circumvents the problem by shifting the time coordinate:
+
+Instead of decaying older items downward against a moving clock ($t_{\text{now}}$):
+$$\ln(\text{Score}) = \ln(\text{frequency}) - \lambda t_{\text{now}} + \lambda t_{\text{last}}$$
+
+Because $-\lambda t_{\text{now}}$ is identical for all candidates at any given instant, we can factor it out as a global baseline. This yields:
+
+$$\text{Score} = \log_{10}(\text{Frequency}) + \frac{\text{Timestamp} - t_0}{\text{TimeWindow}}$$
+
+#### 4. The Resulting System Guarantees
+* **Absolute Immutability:** A query's score depends **only on its own search timestamp** at the moment it is committed. It is $100\%$ independent of a moving `now`.
+* **Zero Cache Sweeps:** Once written to an ancestor's `topK` cache, a suggestion's score never needs to be recalculated.
+* **Natural Generational Turnover:** As time marches forward, newly submitted queries receive higher baseline scores simply because their `timestamp` is larger. A query searched 5 times today naturally leaps over a query searched 500 times months ago.
+* **Preserves $O(L)$ Read Latency:** Reads stay completely untouched—pure $O(L)$ pointer navigation returning pre-sorted lists with zero math, zero locks, and zero allocations.
+
+---
+
+## 10. Future Scope & Roadmap
 
 1. **[COMPLETED] Lock-Free Concurrent Reads:**
    * Double-buffered Trie via `AtomicReference<TrieNode>` with zero read lock contention.
@@ -549,9 +682,10 @@ The current architecture provides a robust foundation for future enhancements:
    * Non-blocking `QueryIngestionBuffer` with atomic bucket swapping and fixed-delay flushing.
 3. **[COMPLETED] Sub-Microsecond Per-Node Caching:**
    * Path tracing with $O(L)$ instant prefix lookups and zero DFS.
-4. **P1 — Pluggable Ranking Strategies:**
-   * Abstract `rank` into a score computed by pluggable strategies (e.g., time-decay recency, personalization, or machine learning models).
-5. **P2 — Character Set Expansion & Memory Tuning:**
+4. **[COMPLETED] Pluggable Ranking Strategies:**
+   * `AbstractAutoCompleteIndex` base class with Template Method pattern, `RankingStrategy` interface, and `HotRankingStrategy` (Reddit/HackerNews algorithm).
+5. **P1 — Character Set Expansion & Memory Tuning:**
    * Expand from the 27-character alphabet to full alphanumeric and Unicode, evaluating Radix/Patricia Tries to optimize memory.
-6. **P3 — Fuzzy Matching & Typo Tolerance:**
+6. **P2 — Fuzzy Matching & Typo Tolerance:**
    * Introduce Levenshtein distance or BK-Trees behind the `AutoCompleteIndex` interface to tolerate typing mistakes.
+

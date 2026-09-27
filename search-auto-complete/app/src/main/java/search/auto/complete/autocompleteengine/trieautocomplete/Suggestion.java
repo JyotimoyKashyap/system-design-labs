@@ -1,10 +1,10 @@
 package search.auto.complete.autocompleteengine.trieautocomplete;
 
 public class Suggestion implements Comparable<Suggestion>{
-    private int rank;
+    private double rank;
     private String autoSuggest;
 
-    public Suggestion(int rank, String autoSuggest) {
+    public Suggestion(double rank, String autoSuggest) {
         this.rank = rank;
         this.autoSuggest = autoSuggest;
     }
@@ -15,7 +15,7 @@ public class Suggestion implements Comparable<Suggestion>{
 
     @Override
     public int compareTo(Suggestion o) {
-        int compare = Integer.compare(rank, o.rank);
+        int compare = Double.compare(rank, o.rank);
         if (compare == 0) {
             return o.autoSuggest.compareTo(autoSuggest);
         }

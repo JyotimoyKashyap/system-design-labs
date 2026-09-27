@@ -2,27 +2,35 @@ package search.auto.complete.autocompleteengine.trieautocomplete;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
-import search.auto.complete.autocompleteengine.AutoCompleteIndex;
-import search.auto.complete.queryingestionengine.QueryIngestionBuffer;
+import search.auto.complete.autocompleteengine.AbstractAutoCompleteIndex;
+import search.auto.complete.ranking.FrequencyRankingStrategy;
+import search.auto.complete.ranking.RankingStrategy;
 
-public class TrieAutoCompleteIndex implements AutoCompleteIndex {
+public class TrieAutoCompleteIndex extends AbstractAutoCompleteIndex {
     
     private final AtomicReference<TrieNode> rootRef;
-    private int K;
-
     private static volatile TrieAutoCompleteIndex instance;
 
-    private TrieAutoCompleteIndex(int K) {
-        rootRef = new AtomicReference<>(new TrieNode());
-        this.K = K;
+    private TrieAutoCompleteIndex(int K, RankingStrategy rankingStrategy, Supplier<Long> clock) {
+        super(K, rankingStrategy, clock);
+        this.rootRef = new AtomicReference<>(new TrieNode());
     }
 
-    public  static TrieAutoCompleteIndex init(int K) {
+    public static TrieAutoCompleteIndex init(int K) {
+        return init(K, new FrequencyRankingStrategy(), System::currentTimeMillis);
+    }
+
+    public static TrieAutoCompleteIndex init(int K, RankingStrategy rankingStrategy) {
+        return init(K, rankingStrategy, System::currentTimeMillis);
+    }
+
+    public static TrieAutoCompleteIndex init(int K, RankingStrategy rankingStrategy, Supplier<Long> clock) {
         if (instance == null) {
             synchronized(TrieAutoCompleteIndex.class) {
                 if (instance == null) {
-                    instance = new TrieAutoCompleteIndex(K);
+                    instance = new TrieAutoCompleteIndex(K, rankingStrategy, clock);
                 }
             }
         } else {
@@ -42,9 +50,7 @@ public class TrieAutoCompleteIndex implements AutoCompleteIndex {
         }
     }
 
-    private void insert(TrieNode targetRoot, String query, int count) {
-        validateQuery(query);
-
+    private void insert(TrieNode targetRoot, String query, int count, long timestampMs) {
         List<TrieNode> path = new ArrayList<>();
         TrieNode node = targetRoot;
         path.add(node);
@@ -58,18 +64,22 @@ public class TrieAutoCompleteIndex implements AutoCompleteIndex {
 
         // at the end of the loop, I'll be at the end
         node.updateRankBy(count);
+        node.setLastSearchedTimestampMs(timestampMs);
         node.setEnd();
 
-        Suggestion updatedSuggestion = new Suggestion(node.getRank(), query);
+        Suggestion updatedSuggestion = createScoredSuggestion(
+                query,
+                node.getRank(),
+                node.getLastSearchedTimestampMs()
+        );
+
         for (TrieNode ancestor : path) {
             ancestor.updateTopK(updatedSuggestion, K);
         }
     }
 
     @Override
-    public List<String> search(String prefix) {
-        validateQuery(prefix);
-
+    protected List<String> doSearch(String prefix) {
         TrieNode node = rootRef.get();
         for (char k : prefix.toCharArray()) {
             if (!node.contains(k)) {
@@ -82,29 +92,15 @@ public class TrieAutoCompleteIndex implements AutoCompleteIndex {
     }
 
     @Override
-    public synchronized void insertBatch(Map<String, ? extends Number> batch) {
-        if (batch == null || batch.isEmpty()) {
-            return;
-        }
-
+    protected synchronized void doInsertBatch(Map<String, ? extends Number> batch) {
+        long batchTimeStamp = clock.get();
         TrieNode newRoot = rootRef.get().deepCopy();
 
         for (Map.Entry<String, ? extends Number> entry : batch.entrySet()) {
-            insert(newRoot, entry.getKey(), entry.getValue().intValue());
+            insert(newRoot, entry.getKey(), entry.getValue().intValue(), batchTimeStamp);
         }
 
         rootRef.set(newRoot);
-    }
-
-    private void validateQuery(String query) {
-        if (query == null || query.isBlank()) throw new IllegalArgumentException("Query cannot be Blank or empty");
-        if (query.length() > 20) throw new IllegalArgumentException("Suggestions unavailable for query length > 20 characters");
-
-        for (char k : query.toCharArray()) {
-            if (k != ' ' && (k < 'a' || k > 'z')) {
-                throw new IllegalArgumentException("Query contains invalid characters");
-            }
-        }
     }
 
 }

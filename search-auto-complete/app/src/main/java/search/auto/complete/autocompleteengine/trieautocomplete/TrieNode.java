@@ -10,6 +10,7 @@ public class TrieNode {
     private boolean isEnd;
     private static final char EMPTY = ' '; // baked into memory address space immutable
     private List<Suggestion> topK;
+    private long lastSearchedTimestampMs;
 
     public TrieNode() {
         links = new TrieNode[27]; // a-z and " " (whitespace)
@@ -57,6 +58,7 @@ public class TrieNode {
         TrieNode copy = new TrieNode();
         copy.rank = this.rank;
         copy.isEnd = this.isEnd;
+        copy.lastSearchedTimestampMs = this.lastSearchedTimestampMs;
         copy.topK = new ArrayList<>(this.topK);
         for (int i=0; i<27; i++) {
             if (this.links[i] != null) {
@@ -77,5 +79,13 @@ public class TrieNode {
 
     public List<String> getTopK() {
         return topK.stream().map(Suggestion::getAutoSuggest).toList();
+    }
+
+    public long getLastSearchedTimestampMs() {
+        return lastSearchedTimestampMs;
+    }
+
+    public void setLastSearchedTimestampMs(long lastSearchedTimestampMs) {
+        this.lastSearchedTimestampMs = lastSearchedTimestampMs;
     }
 }
