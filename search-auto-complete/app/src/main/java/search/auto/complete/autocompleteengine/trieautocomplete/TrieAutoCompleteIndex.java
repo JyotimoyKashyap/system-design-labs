@@ -96,24 +96,6 @@ public class TrieAutoCompleteIndex implements AutoCompleteIndex {
         rootRef.set(newRoot);
     }
 
-    private void dfs(TrieNode node, String autoSuggest, PriorityQueue<Suggestion> minHeap) {
-        if (node.isEnd()) {
-            minHeap.offer(new Suggestion(node.getRank(), autoSuggest));
-            if (minHeap.size() > K) {
-                minHeap.poll();
-            }
-        }
-
-        TrieNode[] links = node.getLinks();
-        for (int i=0; i<links.length; i++) {
-            char key = i == 26 ? ' ' : (char) (i + 'a');
-            // if links[i] != null then add that character to the copy of the String and then do a dfs
-            if (links[i] != null) {
-                dfs(node.get(key), autoSuggest + key, minHeap);
-            }
-        }
-    }
-
     private void validateQuery(String query) {
         if (query == null || query.isBlank()) throw new IllegalArgumentException("Query cannot be Blank or empty");
         if (query.length() > 20) throw new IllegalArgumentException("Suggestions unavailable for query length > 20 characters");

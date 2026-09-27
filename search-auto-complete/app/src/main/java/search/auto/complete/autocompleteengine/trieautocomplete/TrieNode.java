@@ -9,7 +9,7 @@ public class TrieNode {
     private int rank;
     private boolean isEnd;
     private static final char EMPTY = ' '; // baked into memory address space immutable
-    List<Suggestion> topK;
+    private List<Suggestion> topK;
 
     public TrieNode() {
         links = new TrieNode[27]; // a-z and " " (whitespace)
