@@ -176,20 +176,24 @@ A common anti-pattern in naive rate limiters is running a background daemon time
 #### The Lazy Refill Solution
 Instead of proactively pushing tokens, we calculate replenished tokens **on-demand** when a client request arrives:
 
-$$\Delta t = t_{\text{now}} - t_{\text{lastRefill}}$$
-$$W_{\text{ms}} = \text{timeWindowSeconds} \times 1000$$
-$$\text{newTokens} = \frac{\Delta t \times \text{limit}}{W_{\text{ms}}}$$
-$$\text{tokens} = \min(\text{capacity}, \text{tokens} + \text{newTokens})$$
+$$
+\begin{aligned}
+\Delta t &= t_{\text{now}} - t_{\text{lastRefill}} \\
+W_{\text{ms}} &= \text{timeWindowSeconds} \times 1000 \\
+\text{newTokens} &= \frac{\Delta t \times \text{limit}}{W_{\text{ms}}} \\
+\text{tokens} &= \min(\text{capacity}, \text{tokens} + \text{newTokens})
+\end{aligned}
+$$
 
 ---
 
 ### 4.4 The Integer Remainder Retention Trick 🧮
 
 When calculating token replenishment using integer math, standard division drops remainders:
-* Suppose `limit = 5` per `timeWindowSeconds = 1` ($1\text{ token every } 200\text{ ms}$).
-* If requests arrive every $100\text{ ms}$:
-  * $\text{tokensToAdd} = (100 \times 5) / 1000 = 0$.
-  * If `lastRefillTimestamp` is unconditionally updated to $t_{\text{now}}$, those $100\text{ ms}$ are **discarded forever**. The client would never receive tokens despite waiting patiently!
+* Suppose `limit = 5` per `timeWindowSeconds = 1` (1 token every 200 ms).
+* If requests arrive every 100 ms:
+  * `tokensToAdd = (100 * 5) / 1000 = 0`.
+  * If `lastRefillTimestamp` is unconditionally updated to $t_{\text{now}}$, those 100 ms are **discarded forever**. The client would never receive tokens despite waiting patiently!
 
 #### Preserving Sub-Token Time
 To achieve 100% precision using pure `long` integers without floating-point drift, we only advance `lastRefillTimestamp` by the time **actually converted into whole tokens**:
@@ -223,14 +227,14 @@ private void refill() {
 ```
 
 #### Numerical Trace Example
-* **Configuration:** `capacity = 10`, `limit = 5`, `timeWindowSeconds = 1` (1 token per $200\text{ ms}$).
+* **Configuration:** `capacity = 10`, `limit = 5`, `timeWindowSeconds = 1` (1 token per 200 ms).
 
 | Time ($T$) | Event | Elapsed ($\Delta t$) | `tokensToAdd` | Action | Resulting `tokens` | `lastRefillTimestamp` |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **$0\text{ ms}$** | Bucket created & Req #1 arrives | $0\text{ ms}$ | $0$ | Consume 1 token | $9$ | $0\text{ ms}$ |
-| **$100\text{ ms}$** | Req #2 arrives | $100\text{ ms}$ | $(100 \times 5)/1000 = 0$ | No tokens added; timestamp **not moved** | $8$ (consumed) | $0\text{ ms}$ (preserved!) |
-| **$200\text{ ms}$** | Req #3 arrives | $200 - 0 = 200\text{ ms}$ | $(200 \times 5)/1000 = 1$ | 1 token added; timestamp moves by $200\text{ ms}$ | $8$ ($8 + 1 - 1$) | $200\text{ ms}$ |
-| **$100,000\text{ ms}$** | User returns after long idle | $99,800\text{ ms}$ | $(99,800 \times 5)/1000 = 499$ | Tokens cap at 10; timestamp resets to $now$ | $9$ (consumed) | $100,000\text{ ms}$ |
+| **0 ms** | Bucket created & Req #1 arrives | 0 ms | 0 | Consume 1 token | 9 | 0 ms |
+| **100 ms** | Req #2 arrives | 100 ms | $(100 \times 5) / 1000 = 0$ | No tokens added; timestamp **not moved** | 8 (consumed) | 0 ms (preserved!) |
+| **200 ms** | Req #3 arrives | 200 - 0 = 200 ms | $(200 \times 5) / 1000 = 1$ | 1 token added; timestamp moves by 200 ms | 8 ($8 + 1 - 1$) | 200 ms |
+| **100,000 ms** | User returns after long idle | 99,800 ms | $(99,800 \times 5) / 1000 = 499$ | Tokens cap at 10; timestamp resets to $t_{\text{now}}$ | 9 (consumed) | 100,000 ms |
 
 ---
 
@@ -330,19 +334,19 @@ classDiagram
 
 ### 5.2 How the Components Connect
 
-1. **`RequestContext` $\longrightarrow$ `Tier` (Association):**
+1. **`RequestContext` &rarr; `Tier` (Association):**
    * Encapsulates caller identity (`clientId`), subscription plan (`tier`), and target path (`endpoint`).
    * Created at the gateway/filter level before rate limiting is evaluated.
 
-2. **`ApiRateLimiterService` $\longrightarrow$ `PolicyResolver` (Association):**
+2. **`ApiRateLimiterService` &rarr; `PolicyResolver` (Association):**
    * The service holds a reference to a `PolicyResolver`.
    * When `allowRequest(requestContext)` is invoked, the service asks the resolver: *"What is the quota for this user tier and endpoint?"*
 
-3. **`PolicyResolver` $-\;-\;\longrightarrow$ `Policy` (Dependency):**
+3. **`PolicyResolver` &#8674; `Policy` (Dependency):**
    * Inspects `RequestContext` and returns an immutable `Policy` containing `(limit, timeWindowSeconds, burstCapacity)`.
    * Encapsulates precedence rules (e.g., endpoint-specific rules taking priority over global tier rules via `DefaultPolicyResolver`).
 
-4. **`ApiRateLimiterService` $\longrightarrow$ `ApiRateLimiter` (Association):**
+4. **`ApiRateLimiterService` &rarr; `ApiRateLimiter` (Association):**
    * The service holds the algorithm engine (injected at startup).
    * It delegates enforcement passing both the resolved policy and context:
      ```java
@@ -350,7 +354,7 @@ classDiagram
      return apiRateLimiter.allowRequest(policy, requestContext);
      ```
 
-5. **`ApiRateLimiterFactory` $-\;-\;\longrightarrow$ `ApiRateLimiter` (Creational Dependency):**
+5. **`ApiRateLimiterFactory` &#8674; `ApiRateLimiter` (Creational Dependency):**
    * Encapsulates algorithm instantiation (`createTokenBucketLimiter()`), shielding `ApiRateLimiterService` from concrete constructor details.
 
 ---
