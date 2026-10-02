@@ -49,19 +49,21 @@ This document outlines the evolutionary engineering design—beginning with the 
 
 ```java
 public interface ApiRateLimiter {
-    boolean allowRequest(String clientId);
+    boolean allowRequest(Policy policy, RequestContext requestContext);
 }
 ```
 
 * **Contract Simplicity:** Returns a primitive `boolean` (`true` if allowed, `false` if rejected).
+* **Context & Policy Driven:** Decouples caller identity (`RequestContext`) and dynamic rate quotas (`Policy`) from algorithm execution.
 * **Zero Allocation on Hot Path:** Avoids wrapping results in wrapper objects or `Optional` to eliminate JVM garbage collection overhead on high-throughput paths.
 
 ---
 
-### FR-2: Algorithm Parameters (Token Bucket)
+### FR-2: Algorithm Parameters (Token Bucket & Policy)
 
-* **Capacity ($C$):** The maximum number of tokens a bucket can hold at any instant. This defines the **maximum allowable burst**.
-* **Refill Rate ($R$):** The number of tokens replenished per second. This defines the **sustained throughput limit**.
+* **Burst Capacity ($C$):** The maximum number of tokens a bucket can hold at any instant. This defines the **maximum allowable burst**.
+* **Limit ($L$):** The number of tokens replenished within a defined time frame.
+* **Time Window ($W$):** The duration (in seconds) over which the limit is earned. Together, $\frac{L}{W}$ defines the **sustained throughput limit**.
 
 ---
 
@@ -97,10 +99,10 @@ The MVP focuses on an elegant, extensible object-oriented structure implementing
               [ TokenBucket ]
 ```
 
-1. **`ApiRateLimiterService` (Gateway Facade):** The single entry point for applications. Holds a reference to an `ApiRateLimiter` and delegates request admission checks.
-2. **`ApiRateLimiter` (Strategy Interface):** The core contract defining `allowRequest(String clientId)`. Adheres to the **Open/Closed Principle**, enabling transparent strategy switching.
+1. **`ApiRateLimiterService` (Gateway Facade):** The single entry point for applications. Holds references to an `ApiRateLimiter` and a `PolicyResolver`, coordinating request admission checks.
+2. **`ApiRateLimiter` (Strategy Interface):** The core contract defining `allowRequest(Policy policy, RequestContext requestContext)`. Adheres to the **Open/Closed Principle**, enabling transparent strategy switching.
 3. **`ApiRateLimiterFactory` (Creational Factory):** Encapsulates the instantiation of concrete rate limiters (`createTokenBucketLimiter()`, `createSlidingWindowLogLimiter()`, `createLeakyBucketLimiter()`), shielding callers from constructor complexity.
-4. **`TokenBucketRateLimiter` (Algorithm Coordinator):** Manages a thread-safe registry of client buckets (`Map<String, TokenBucket>`) along with default capacity and refill settings.
+4. **`TokenBucketRateLimiter` (Algorithm Coordinator):** Manages a thread-safe registry of client buckets (`Map<String, TokenBucket>`), lazily instantiating buckets based on incoming policies.
 5. **`TokenBucket` (Client State Engine):** Represents an individual client's bucket. Holds current tokens and timestamps, and evaluates lazy replenishment math atomically upon each request.
 6. **`LeakyBucketRateLimiter` & `SlidingWindowLogRateLimiter`:** Concrete implementation placeholders ready for upcoming milestones.
 
@@ -114,13 +116,14 @@ classDiagram
 
     class ApiRateLimiterService {
         - apiRateLimiter: ApiRateLimiter
-        + ApiRateLimiterService(apiRateLimiter: ApiRateLimiter)
-        + allowRequest(clientId: String): Boolean
+        - policyResolver: PolicyResolver
+        + ApiRateLimiterService(apiRateLimiter: ApiRateLimiter, policyResolver: PolicyResolver)
+        + allowRequest(requestContext: RequestContext): Boolean
     }
 
     class ApiRateLimiter {
         <<interface>>
-        + allowRequest(clientId: String): Boolean
+        + allowRequest(policy: Policy, requestContext: RequestContext): Boolean
     }
 
     class ApiRateLimiterFactory {
@@ -131,22 +134,21 @@ classDiagram
 
     class TokenBucketRateLimiter {
         - map: Map~String, TokenBucket~
-        - capacity: long
-        - refillTokensPerSecond: long
-        + allowRequest(clientId: String): Boolean
+        + allowRequest(policy: Policy, requestContext: RequestContext): Boolean
     }
 
     class LeakyBucketRateLimiter {
-        + allowRequest(clientId: String): Boolean
+        + allowRequest(policy: Policy, requestContext: RequestContext): Boolean
     }
 
     class SlidingWindowLogRateLimiter {
-        + allowRequest(clientId: String): Boolean
+        + allowRequest(policy: Policy, requestContext: RequestContext): Boolean
     }
 
     class TokenBucket {
         - capacity: long
-        - refillTokensPerSecond: long
+        - limit: long
+        - timeWindowSeconds: long
         - tokens: long
         - lastRefillTimestamp: long
         + tryConsume(tokensRequested: int): boolean
@@ -175,7 +177,8 @@ A common anti-pattern in naive rate limiters is running a background daemon time
 Instead of proactively pushing tokens, we calculate replenished tokens **on-demand** when a client request arrives:
 
 $$\Delta t = t_{\text{now}} - t_{\text{lastRefill}}$$
-$$\text{newTokens} = \frac{\Delta t \times \text{refillTokensPerSecond}}{1000}$$
+$$W_{\text{ms}} = \text{timeWindowSeconds} \times 1000$$
+$$\text{newTokens} = \frac{\Delta t \times \text{limit}}{W_{\text{ms}}}$$
 $$\text{tokens} = \min(\text{capacity}, \text{tokens} + \text{newTokens})$$
 
 ---
@@ -183,7 +186,7 @@ $$\text{tokens} = \min(\text{capacity}, \text{tokens} + \text{newTokens})$$
 ### 4.4 The Integer Remainder Retention Trick 🧮
 
 When calculating token replenishment using integer math, standard division drops remainders:
-* Suppose `refillTokensPerSecond = 5` ($1\text{ token every } 200\text{ ms}$).
+* Suppose `limit = 5` per `timeWindowSeconds = 1` ($1\text{ token every } 200\text{ ms}$).
 * If requests arrive every $100\text{ ms}$:
   * $\text{tokensToAdd} = (100 \times 5) / 1000 = 0$.
   * If `lastRefillTimestamp` is unconditionally updated to $t_{\text{now}}$, those $100\text{ ms}$ are **discarded forever**. The client would never receive tokens despite waiting patiently!
@@ -196,7 +199,14 @@ private void refill() {
     long now = System.currentTimeMillis();
     long elapsedMs = now - lastRefillTimestamp;
 
-    long tokensToAdd = (elapsedMs * refillTokensPerSecond) / 1000;
+    if (elapsedMs <= 0) {
+        return;
+    }
+
+    long timeWindowMs = timeWindowSeconds * 1000;
+
+    // Calculate whole tokens earned in elapsed time
+    long tokensToAdd = (elapsedMs * limit) / timeWindowMs;
 
     if (tokensToAdd > 0) {
         long newTokens = tokens + tokensToAdd;
@@ -205,15 +215,15 @@ private void refill() {
             lastRefillTimestamp = now; // Bucket full; discard overflow time
         } else {
             tokens = newTokens;
-            long timeUsedMs = (tokensToAdd * 1000) / refillTokensPerSecond;
-            lastRefillTimestamp += timeUsedMs; // Preserve unused fractional time
+            long timeUsedMs = (tokensToAdd * timeWindowMs) / limit;
+            lastRefillTimestamp += timeUsedMs; // Preserve unused fractional time!
         }
     }
 }
 ```
 
 #### Numerical Trace Example
-* **Configuration:** `capacity = 10`, `refillRate = 5 tokens/sec` (1 token per $200\text{ ms}$).
+* **Configuration:** `capacity = 10`, `limit = 5`, `timeWindowSeconds = 1` (1 token per $200\text{ ms}$).
 
 | Time ($T$) | Event | Elapsed ($\Delta t$) | `tokensToAdd` | Action | Resulting `tokens` | `lastRefillTimestamp` |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -233,8 +243,13 @@ High-throughput systems require strict concurrency guarantees without coarse-gra
    * Newly seen clients instantiate their bucket via `computeIfAbsent()`:
      ```java
      TokenBucket bucket = map.computeIfAbsent(
-         clientId, 
-         k -> new TokenBucket(capacity, refillTokensPerSecond)
+         requestContext.clientId(), 
+         k -> new TokenBucket(
+             policy.burstCapacity(),
+             policy.limit(),
+             policy.timeWindowSeconds(),
+             System.currentTimeMillis()
+         )
      );
      ```
 2. **Fine-Grained Bucket Locking (`synchronized` on Bucket):**
@@ -243,8 +258,6 @@ High-throughput systems require strict concurrency guarantees without coarse-gra
      public synchronized boolean tryConsume(int tokensRequested) { ... }
      ```
    * **Why this scales:** 10,000 concurrent threads making requests for different clients execute in parallel without waiting on each other. Only concurrent requests for the **same client** serialize momentarily for a few CPU instructions.
-
----
 
 ---
 
@@ -274,24 +287,29 @@ classDiagram
     class Policy {
         <<record>>
         + limit: long
-        + timeWindow: long
+        + timeWindowSeconds: long
         + burstCapacity: long
     }
 
     class PolicyResolver {
         <<interface>>
-        + getPolicy(request: RequestContext): Policy
+        + getPolicy(requestContext: RequestContext): Policy
+    }
+
+    class DefaultPolicyResolver {
+        - tierPolicies: Map~Tier, Policy~
+        + getPolicy(requestContext: RequestContext): Policy
     }
 
     class ApiRateLimiterService {
         - apiRateLimiter: ApiRateLimiter
         - policyResolver: PolicyResolver
-        + allowRequest(request: RequestContext): Boolean
+        + allowRequest(requestContext: RequestContext): Boolean
     }
 
     class ApiRateLimiter {
         <<interface>>
-        + allowRequest(key: String, policy: Policy): Boolean
+        + allowRequest(policy: Policy, requestContext: RequestContext): Boolean
     }
 
     class ApiRateLimiterFactory {
@@ -301,6 +319,7 @@ classDiagram
     }
 
     RequestContext --> Tier : has-a
+    DefaultPolicyResolver ..|> PolicyResolver : implements
     PolicyResolver ..> RequestContext : inspects
     PolicyResolver ..> Policy : resolves & returns
     ApiRateLimiterService --> PolicyResolver : has-a (resolves rule)
@@ -320,16 +339,15 @@ classDiagram
    * When `allowRequest(requestContext)` is invoked, the service asks the resolver: *"What is the quota for this user tier and endpoint?"*
 
 3. **`PolicyResolver` $-\;-\;\longrightarrow$ `Policy` (Dependency):**
-   * Inspects `RequestContext` and returns an immutable `Policy` containing `(limit, timeWindow, burstCapacity)`.
-   * Encapsulates precedence rules (e.g., endpoint-specific rules taking priority over global tier rules).
+   * Inspects `RequestContext` and returns an immutable `Policy` containing `(limit, timeWindowSeconds, burstCapacity)`.
+   * Encapsulates precedence rules (e.g., endpoint-specific rules taking priority over global tier rules via `DefaultPolicyResolver`).
 
 4. **`ApiRateLimiterService` $\longrightarrow$ `ApiRateLimiter` (Association):**
    * The service holds the algorithm engine (injected at startup).
-   * It builds a composite rate-limit key (e.g. `clientId + ":" + endpoint`) and delegates enforcement:
+   * It delegates enforcement passing both the resolved policy and context:
      ```java
      Policy policy = policyResolver.getPolicy(requestContext);
-     String key = requestContext.clientId() + ":" + requestContext.endpoint();
-     return apiRateLimiter.allowRequest(key, policy);
+     return apiRateLimiter.allowRequest(policy, requestContext);
      ```
 
 5. **`ApiRateLimiterFactory` $-\;-\;\longrightarrow$ `ApiRateLimiter` (Creational Dependency):**
@@ -349,16 +367,192 @@ sequenceDiagram
 
     Client->>Service: allowRequest(RequestContext)
     Service->>Resolver: getPolicy(RequestContext)
-    Resolver-->>Service: return Policy(limit, timeWindow, burstCapacity)
-    Note over Service: Construct key = clientId + ":" + endpoint
-    Service->>Limiter: allowRequest(key, Policy)
+    Resolver-->>Service: return Policy(limit, timeWindowSeconds, burstCapacity)
+    Service->>Limiter: allowRequest(Policy, RequestContext)
     Limiter-->>Service: return true (Allowed) or false (429)
     Service-->>Client: return boolean decision
 ```
 
 ---
 
-## 6. Evolutionary Roadmap (Scaling Beyond)
+## 6. Step 3: Memory Hygiene & Eviction Layer (Background Sweeper)
+
+In an in-memory rate limiter, every unique `clientId` (such as one-off mobile sessions or bot IP scans) instantiates an entry in the bucket registry (`Map<String, TokenBucket>`). Over months of uptime with millions of transient clients, an unbounded `ConcurrentHashMap` guarantees an eventual `OutOfMemoryError: Java heap space`.
+
+To prevent memory leaks, we introduce a decoupled **Background Sweeper** that safely evicts idle buckets.
+
+### 6.1 Safe Eviction Criteria & Race Condition Prevention
+
+> **When is a bucket safe to evict?**  
+> A bucket is safe to delete if and only if:
+> 1. It has **refilled to full `capacity`** (`tokens == capacity`).
+> 2. It has remained **idle past its TTL** (`(now - lastRefillTimestamp) > ttlMillis`).
+>
+> *Why?* If the client returns in the future, the rate limiter instantiates a brand-new bucket that starts full anyway. Deleting an idle, full bucket has **zero side effects** on quota enforcement.
+
+#### Preventing the Eviction Race Condition
+If the cleaner decides to remove a client while that exact client simultaneously sends a request:
+1. **Synchronized Inspection:** `TokenBucket.isStale(ttlMillis)` is evaluated under the bucket's monitor lock (`synchronized`). If a request is actively consuming a token, the cleaner waits.
+2. **Conditional Atomic Removal:** The cleaner uses `map.remove(clientId, bucket)`, ensuring the entry is deleted only if the map's current value is still that exact, unmodified `bucket` instance.
+
+---
+
+### 6.2 Architecture & Class Connections
+
+Following the **Interface Segregation Principle (ISP)** and the **Command Pattern**, we decouple the eviction contract (`Cleanable`) from both the rate-limiting contract (`ApiRateLimiter`) and the execution mechanism:
+
+1. **`Cleanable` (Interface):** Implemented by any in-memory rate limiter that maintains ephemeral state. It declares `cleanUpStaleEntries(long ttlMillis)`. Distributed limiters (e.g. Redis) do not implement `Cleanable` because they rely on native key expiration (`EXPIRE`).
+2. **`RateLimiterCleaner` (`implements Runnable`):** A lightweight Command object whose sole responsibility is to trigger `cleanable.cleanUpStaleEntries(ttlMillis)` when executed. It eliminates boilerplate thread lifecycles, executor pools, and manual `start()`/`close()` management from the domain layer.
+3. **Execution Environment (Host Application / Schedulers):** The cleaner is a plain `Runnable`, allowing the host application total freedom to execute it via standard `ScheduledExecutorService`, Spring `@Scheduled`, or Quartz jobs.
+
+```mermaid
+classDiagram
+    direction TB
+
+    class Runnable {
+        <<interface>>
+        + run(): void
+    }
+
+    class Cleanable {
+        <<interface>>
+        + cleanUpStaleEntries(ttlMillis: long): void
+    }
+
+    class RateLimiterCleaner {
+        - cleanable: Cleanable
+        - ttlMillis: long
+        + RateLimiterCleaner(cleanable: Cleanable, ttlMillis: long)
+        + run(): void
+    }
+
+    class ApiRateLimiter {
+        <<interface>>
+        + allowRequest(policy: Policy, requestContext: RequestContext): Boolean
+    }
+
+    class TokenBucketRateLimiter {
+        - map: Map~String, TokenBucket~
+        + allowRequest(policy: Policy, requestContext: RequestContext): Boolean
+        + cleanUpStaleEntries(ttlMillis: long): void
+    }
+
+    class TokenBucket {
+        - capacity: long
+        - limit: long
+        - timeWindowSeconds: long
+        - tokens: long
+        - lastRefillTimestamp: long
+        + tryConsume(tokensRequested: int): boolean
+        + isStale(ttlMillis: long): boolean
+        - refill(): void
+    }
+
+    RateLimiterCleaner ..|> Runnable : implements
+    RateLimiterCleaner --> Cleanable : has-a (delegates to)
+    TokenBucketRateLimiter ..|> ApiRateLimiter : implements
+    TokenBucketRateLimiter ..|> Cleanable : implements
+    TokenBucketRateLimiter *-- TokenBucket : composition
+```
+
+### 6.3 How the Eviction Components Connect
+
+1. **`Cleanable` (Interface):** Defines the single responsibility of purging expired entries:
+   ```java
+   public interface Cleanable {
+       void cleanUpStaleEntries(long ttlMillis);
+   }
+   ```
+2. **`RateLimiterCleaner` (Command / Runnable Task):**
+   * Implements standard Java `java.lang.Runnable`.
+   * Accepts any `Cleanable` implementation and a `ttlMillis` threshold:
+   ```java
+   public class RateLimiterCleaner implements Runnable {
+       private final Cleanable cleanable;
+       private final long ttlMillis;
+
+       public RateLimiterCleaner(Cleanable cleanable, long ttlMillis) {
+           this.cleanable = cleanable;
+           this.ttlMillis = ttlMillis;
+       }
+
+       @Override
+       public void run() {
+           cleanable.cleanUpStaleEntries(ttlMillis);
+       }
+   }
+   ```
+   * Adheres strictly to the Single Responsibility Principle (SRP): it encapsulates the eviction command without coupling to thread pool lifecycle management.
+3. **`TokenBucket.isStale(ttlMillis)`:** Inspects internal state atomically under the bucket's monitor lock:
+   ```java
+   public synchronized boolean isStale(long ttlMillis) {
+       refill();
+       long now = System.currentTimeMillis();
+       return tokens == capacity && (now - lastRefillTimestamp) > ttlMillis;
+   }
+   ```
+4. **Conditional Map Eviction:** In `TokenBucketRateLimiter`, removal uses `map.remove(clientId, bucket)` to prevent race conditions with incoming client requests:
+   ```java
+   @Override
+   public void cleanUpStaleEntries(long ttlMillis) {
+       for (Map.Entry<String, TokenBucket> entry : map.entrySet()) {
+           if (entry.getValue().isStale(ttlMillis)) {
+               map.remove(entry.getKey(), entry.getValue());
+           }
+       }
+   }
+   ```
+5. **Wiring & Scheduling (Host Application):**
+   The host application executes `RateLimiterCleaner` periodically using whatever scheduler fits its runtime:
+   * **Standard Java (`ScheduledExecutorService`):**
+     ```java
+     ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+         Thread t = new Thread(r, "rate-limiter-cleaner");
+         t.setDaemon(true); // Daemon thread ensures JVM shutdown is never blocked
+         return t;
+     });
+     
+     RateLimiterCleaner cleaner = new RateLimiterCleaner(limiter, Duration.ofMinutes(10).toMillis());
+     scheduler.scheduleWithFixedDelay(cleaner, 0, 5, TimeUnit.MINUTES);
+     ```
+   * **Spring Framework:**
+     ```java
+     @Scheduled(fixedDelay = 300_000)
+     public void cleanRateLimiter() {
+         cleaner.run();
+     }
+     ```
+
+---
+
+### 6.4 Eviction Execution Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Host as Host Scheduler (e.g. ScheduledExecutorService / Spring)
+    participant Cleaner as RateLimiterCleaner (Runnable)
+    participant Limiter as TokenBucketRateLimiter (Cleanable)
+    participant Bucket as TokenBucket
+
+    Host->>Cleaner: run() (periodic trigger, e.g. every 5 min)
+    Cleaner->>Limiter: cleanUpStaleEntries(ttlMillis)
+    loop For each entry in Map
+        Limiter->>Bucket: isStale(ttlMillis)
+        alt Bucket is full AND idle > ttlMillis
+            Bucket-->>Limiter: true
+            Limiter->>Limiter: map.remove(clientId, bucket) [Conditionally Evicted]
+        else Bucket actively in use or tokens < capacity
+            Bucket-->>Limiter: false [Retained in RAM]
+        end
+    end
+    Limiter-->>Cleaner: cleanup complete
+    Cleaner-->>Host: return
+```
+
+---
+
+## 7. Evolutionary Roadmap (Scaling Beyond)
 
 The following milestones outline the evolutionary path from the single-process engine to an enterprise-grade distributed system:
 
@@ -369,15 +563,14 @@ Step 1: MVP (Token Bucket + In-Memory Map)
 Step 2: Policy & Request Context Layer (User Tiers & Endpoint Routing)
     │
     ▼
-Step 3: Alternative Algorithm Engines (Leaky Bucket, Sliding Window Log, Sliding Window Counter)
+Step 3: Memory Hygiene & Eviction Layer (Background Sweeper)
     │
     ▼
-Step 4: Memory Hygiene & Cleanup (Eviction of Stale/Idle Buckets via TTL & Weak References)
+Step 4: Alternative Algorithm Engines (Leaky Bucket, Sliding Window Log, Sliding Window Counter)
     │
     ▼
 Step 5: Distributed Multi-Node Enforcement (Redis Cluster, Consistent Hash Ring, Atomic Lua Scripts)
 ```
 
-1. **Milestone 3 (Alternative Algorithms):** Implement `LeakyBucketRateLimiter` (FIFO queue for smooth egress) and `SlidingWindowLogRateLimiter` (rolling timestamp log).
-2. **Milestone 4 (Memory Hygiene):** Add automated eviction for idle client buckets to prevent heap exhaustion over months of continuous uptime.
-3. **Milestone 5 (Distributed Architecture):** Migrate bucket counters to a distributed cache (Redis) using atomic Lua scripts or consistent hashing across multi-node API gateways.
+1. **Milestone 4 (Alternative Algorithms):** Implement `LeakyBucketRateLimiter` (FIFO queue for smooth egress) and `SlidingWindowLogRateLimiter` (rolling timestamp log).
+2. **Milestone 5 (Distributed Architecture):** Migrate bucket counters to a distributed cache (Redis) using atomic Lua scripts or consistent hashing across multi-node API gateways.

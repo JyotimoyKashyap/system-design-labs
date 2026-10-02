@@ -36,6 +36,9 @@ public class TokenBucket {
         refill();
 
         if (tokens >= tokensRequested) {
+            if (tokens == capacity) {
+                lastRefillTimestamp = System.currentTimeMillis();
+            }
             tokens -= tokensRequested;
             return true;
         }
@@ -50,6 +53,10 @@ public class TokenBucket {
             return;
         }
 
+        if (tokens >= capacity) {
+            return;
+        }
+
         long timeWindowMs = timeWindowSeconds * 1000;
 
         // Calculate whole tokens earned in elapsed time
@@ -58,14 +65,22 @@ public class TokenBucket {
         if (tokensToAdd > 0) {
             long newTokens = tokens + tokensToAdd;
             if (newTokens >= capacity) {
+                long tokensNeeded = capacity - tokens;
+                long timeToReachCapacityMs = ((tokensNeeded * timeWindowMs) + limit - 1) / limit;
                 tokens = capacity;
-                lastRefillTimestamp = now; // Bucket full; discard overflow time
+                lastRefillTimestamp += timeToReachCapacityMs;
             } else {
                 tokens = newTokens;
                 long timeUsedMs = (tokensToAdd * timeWindowMs) / limit;
                 lastRefillTimestamp += timeUsedMs; // Preserve unused fractional time
             }
         }
+    }
+
+    public synchronized boolean isStale(long ttlMillis) {
+        refill();
+        long now = System.currentTimeMillis();
+        return tokens == capacity && (now - lastRefillTimestamp) > ttlMillis;
     }
 
     public synchronized long getTokens() {

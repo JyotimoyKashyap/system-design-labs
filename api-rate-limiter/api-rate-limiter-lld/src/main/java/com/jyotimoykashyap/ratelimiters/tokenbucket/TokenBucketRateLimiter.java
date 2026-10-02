@@ -1,5 +1,6 @@
 package com.jyotimoykashyap.ratelimiters.tokenbucket;
 
+import com.jyotimoykashyap.cleanup.Cleanable;
 import com.jyotimoykashyap.dto.RequestContext;
 import com.jyotimoykashyap.policy.Policy;
 import com.jyotimoykashyap.ratelimiters.ApiRateLimiter;
@@ -7,7 +8,7 @@ import com.jyotimoykashyap.ratelimiters.ApiRateLimiter;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class TokenBucketRateLimiter implements ApiRateLimiter {
+public class TokenBucketRateLimiter implements ApiRateLimiter, Cleanable {
 
     private final Map<String, TokenBucket> map;
     private final long capacity;
@@ -50,5 +51,25 @@ public class TokenBucketRateLimiter implements ApiRateLimiter {
 
     public long getRefillTokensPerSecond() {
         return refillTokensPerSecond;
+    }
+
+    public int getActiveClientCount() {
+        return map.size();
+    }
+
+    public boolean containsClient(String clientId) {
+        return map.containsKey(clientId);
+    }
+
+    @Override
+    public void cleanUpStaleEntries(long ttlMillis) {
+        if (ttlMillis <= 0) {
+            throw new IllegalArgumentException("ttlMillis must be > 0");
+        }
+        for (Map.Entry<String, TokenBucket> entry : map.entrySet()) {
+            if (entry.getValue().isStale(ttlMillis)) {
+                map.remove(entry.getKey(), entry.getValue());
+            }
+        }
     }
 }
