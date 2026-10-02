@@ -44,6 +44,49 @@
 </button>
 
 <script>
+  function syncThemePictures() {
+    const isDark = document.documentElement.classList.contains('dark');
+    document.querySelectorAll('picture').forEach((pic) => {
+      const sources = pic.querySelectorAll('source');
+      sources.forEach((source) => {
+        const media = source.getAttribute('media') || '';
+        const srcset = source.getAttribute('srcset') || '';
+
+        const isDarkSource =
+          media.includes('prefers-color-scheme: dark') ||
+          srcset.includes('-dark') ||
+          srcset.includes('dark-mode') ||
+          srcset.includes('dark');
+        const isLightSource =
+          media.includes('prefers-color-scheme: light') ||
+          srcset.includes('-light') ||
+          srcset.includes('light-mode') ||
+          srcset.includes('light');
+
+        if (isDark) {
+          if (isDarkSource) source.media = 'all';
+          if (isLightSource) source.media = 'not all';
+        } else {
+          if (isDarkSource) source.media = 'not all';
+          if (isLightSource) source.media = 'all';
+        }
+      });
+
+      const img = pic.querySelector('img');
+      if (img) {
+        const activeSource = isDark
+          ? pic.querySelector('source[srcset*="-dark"], source[srcset*="dark-mode"], source[srcset*="dark"]')
+          : pic.querySelector('source[srcset*="-light"], source[srcset*="light-mode"], source[srcset*="light"]');
+        if (activeSource) {
+          const newSrc = activeSource.getAttribute('srcset');
+          if (newSrc && img.getAttribute('src') !== newSrc) {
+            img.setAttribute('src', newSrc);
+          }
+        }
+      }
+    });
+  }
+
   function setupThemeToggle() {
     const toggle = document.getElementById('theme-toggle');
     if (!toggle) return;
@@ -61,6 +104,7 @@
         document.documentElement.classList.add('dark');
         localStorage.setItem('theme', 'dark');
       }
+      syncThemePictures();
     });
 
     // Listen for live system theme changes if user has not set an explicit override
@@ -72,6 +116,7 @@
         } else {
           document.documentElement.classList.remove('dark');
         }
+        syncThemePictures();
       }
     };
 
@@ -82,13 +127,36 @@
       // Fallback for older browsers
       mediaQuery.addListener(handleSystemChange);
     }
+
+    // Synchronize pictures on setup
+    syncThemePictures();
+  }
+
+  // Observe class changes on <html> to ensure immediate sync if theme changes anywhere
+  if (typeof MutationObserver !== 'undefined') {
+    const observer = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        if (m.attributeName === 'class') {
+          syncThemePictures();
+          break;
+        }
+      }
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
   }
 
   // Bind on DOM ready and on Astro view transition / page-load events
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupThemeToggle);
+    document.addEventListener('DOMContentLoaded', () => {
+      setupThemeToggle();
+      syncThemePictures();
+    });
   } else {
     setupThemeToggle();
+    syncThemePictures();
   }
-  document.addEventListener('astro:page-load', setupThemeToggle);
+  document.addEventListener('astro:page-load', () => {
+    setupThemeToggle();
+    syncThemePictures();
+  });
 </script>

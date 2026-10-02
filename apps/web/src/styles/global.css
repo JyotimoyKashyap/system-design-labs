@@ -329,3 +329,17 @@ html.dark .markdown-body blockquote {
 html.dark .markdown-body hr {
   border-top-color: #292524 !important;
 }
+
+/* ==========================================================================
+   Website Theme-Aware Markdown Images (#gh-dark-mode-only / #gh-light-mode-only)
+   ========================================================================== */
+
+html:not(.dark) img[src*="#gh-dark-mode-only"],
+html:not(.dark) img[srcset*="#gh-dark-mode-only"] {
+  display: none !important;
+}
+
+html.dark img[src*="#gh-light-mode-only"],
+html.dark img[srcset*="#gh-light-mode-only"] {
+  display: none !important;
+}
