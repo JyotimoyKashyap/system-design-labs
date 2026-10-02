@@ -192,10 +192,18 @@ function detectDesignPatterns(content) {
   return found.length > 0 ? found.slice(0, 4) : ['Object-Oriented Design', 'High-Performance'];
 }
 
-function rewriteRelativeImages(text, dirName) {
-  return text.replace(/!\[(.*?)\]\(\.?\/?(?:assets|animations)\/(.*?)\)/g, (match, alt, assetPath) => {
-    return `![${alt}](https://raw.githubusercontent.com/JyotimoyKashyap/system-design-labs/main/${dirName}/assets/${assetPath})`;
-  });
+function rewriteRelativeImages(text, dirPath) {
+  return text
+    .replace(/!\[(.*?)\]\(\.?\/?(?:assets|animations)\/(.*?)\)/g, (match, alt, assetPath) => {
+      return `![${alt}](https://raw.githubusercontent.com/JyotimoyKashyap/system-design-labs/main/${dirPath}/assets/${assetPath})`;
+    })
+    .replace(/(srcset=["'])\.?\/?(?:assets|animations)\/(.*?)(["'])/g, (match, prefix, assetPath, suffix) => {
+      return `${prefix}https://raw.githubusercontent.com/JyotimoyKashyap/system-design-labs/main/${dirPath}/assets/${assetPath}${suffix}`;
+    })
+    .replace(/(<img\s+[^>]*?src=["'])\.?\/?(?:assets|animations)\/(.*?)(["'][^>]*>)/g, (match, prefix, assetPath, suffix) => {
+      if (assetPath.startsWith('http://') || assetPath.startsWith('https://')) return match;
+      return `${prefix}https://raw.githubusercontent.com/JyotimoyKashyap/system-design-labs/main/${dirPath}/assets/${assetPath}${suffix}`;
+    });
 }
 
 function detectLanguage(dirPath) {
@@ -504,7 +512,8 @@ function discoverContentInDir(
     } else {
       docBody = `# ${labTitle}\n\n${labDesc}\n\nInteractive simulation is ready for exploration.`;
     }
-    docBody = rewriteRelativeImages(docBody, dirName);
+    const relLabDir = fs.existsSync(readmeFile) ? (path.relative(ROOT_DIR, path.dirname(readmeFile)) || dirName) : dirName;
+    docBody = rewriteRelativeImages(docBody, relLabDir);
 
     const labFrontmatter = `---
 id: "${labSlug}"
@@ -605,7 +614,7 @@ readTimeMinutes: ${readTimeMinutes}
 featured: ${Boolean(parsedMeta.featured)}
 ---
 
-${rewriteRelativeImages(cleanContent, dirName)}
+${rewriteRelativeImages(cleanContent, path.relative(ROOT_DIR, path.dirname(f)) || dirName)}
 `;
         const targetNotePath = path.join(CONTENT_NOTES_DIR, `${noteSlug}.md`);
         const legacyMdx = path.join(CONTENT_NOTES_DIR, `${noteSlug}.mdx`);
@@ -682,7 +691,7 @@ githubRepo: "${githubRepo}"
 difficulty: "${difficulty}"
 ---
 
-${rewriteRelativeImages(cleanContent, dirName)}
+${rewriteRelativeImages(cleanContent, path.relative(ROOT_DIR, path.dirname(f)) || dirName)}
 `;
         const targetLldPath = path.join(CONTENT_LLD_DIR, `${lldSlug}.md`);
         const legacyMdx = path.join(CONTENT_LLD_DIR, `${lldSlug}.mdx`);
