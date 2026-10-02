@@ -46,6 +46,7 @@
 <script>
   function syncThemePictures() {
     const isDark = document.documentElement.classList.contains('dark');
+    window.dispatchEvent(new CustomEvent('theme-changed', { detail: { isDark } }));
     document.querySelectorAll('picture').forEach((pic) => {
       const sources = pic.querySelectorAll('source');
       sources.forEach((source) => {
