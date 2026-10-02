@@ -1,6 +1,5 @@
-package com.jyotimoykashyap;
+package com.jyotimoykashyap.ratelimiters;
 
-import com.jyotimoykashyap.ratelimiters.LeakyBucketRateLimiter;
 import com.jyotimoykashyap.ratelimiters.tokenbucket.TokenBucketRateLimiter;
 
 public class ApiRateLimiterFactory {

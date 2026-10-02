@@ -1,5 +1,12 @@
 package com.jyotimoykashyap;
 
+import com.jyotimoykashyap.dto.RequestContext;
+import com.jyotimoykashyap.dto.Tier;
+import com.jyotimoykashyap.policy.DefaultPolicyResolver;
+import com.jyotimoykashyap.policy.Policy;
+import com.jyotimoykashyap.policy.PolicyResolver;
+import com.jyotimoykashyap.ratelimiters.ApiRateLimiter;
+import com.jyotimoykashyap.ratelimiters.ApiRateLimiterFactory;
 import com.jyotimoykashyap.ratelimiters.tokenbucket.TokenBucket;
 import com.jyotimoykashyap.ratelimiters.tokenbucket.TokenBucketRateLimiter;
 import org.junit.jupiter.api.DisplayName;
@@ -17,55 +24,61 @@ class TokenBucketRateLimiterTest {
     @Test
     @DisplayName("Should allow requests up to capacity and reject when tokens are exhausted")
     void shouldAllowRequestsUpToCapacity() {
-        // Capacity: 3, Refill: 1 token/sec
         TokenBucketRateLimiter limiter = new TokenBucketRateLimiter(3, 1);
+        Policy policy = new Policy(1, 1, 3); // limit: 1/sec, burstCapacity: 3
+        RequestContext context = new RequestContext("client-1", Tier.FREE, "/api/test");
 
-        assertTrue(limiter.allowRequest("client-1"), "Request 1 should be allowed");
-        assertTrue(limiter.allowRequest("client-1"), "Request 2 should be allowed");
-        assertTrue(limiter.allowRequest("client-1"), "Request 3 should be allowed");
+        assertTrue(limiter.allowRequest(policy, context), "Request 1 should be allowed");
+        assertTrue(limiter.allowRequest(policy, context), "Request 2 should be allowed");
+        assertTrue(limiter.allowRequest(policy, context), "Request 3 should be allowed");
 
-        // 4th request exceeds capacity of 3
-        assertFalse(limiter.allowRequest("client-1"), "Request 4 should be rejected");
+        // 4th request exceeds burst capacity of 3
+        assertFalse(limiter.allowRequest(policy, context), "Request 4 should be rejected");
     }
 
     @Test
     @DisplayName("Should isolate limits across different clients")
     void shouldIsolateLimitsBetweenDifferentClients() {
         TokenBucketRateLimiter limiter = new TokenBucketRateLimiter(2, 1);
+        Policy policy = new Policy(1, 1, 2);
+        RequestContext clientA = new RequestContext("client-A", Tier.FREE, "/api/test");
+        RequestContext clientB = new RequestContext("client-B", Tier.FREE, "/api/test");
 
         // Exhaust client-A
-        assertTrue(limiter.allowRequest("client-A"));
-        assertTrue(limiter.allowRequest("client-A"));
-        assertFalse(limiter.allowRequest("client-A"));
+        assertTrue(limiter.allowRequest(policy, clientA));
+        assertTrue(limiter.allowRequest(policy, clientA));
+        assertFalse(limiter.allowRequest(policy, clientA));
 
         // client-B should still have their own full bucket
-        assertTrue(limiter.allowRequest("client-B"));
-        assertTrue(limiter.allowRequest("client-B"));
-        assertFalse(limiter.allowRequest("client-B"));
+        assertTrue(limiter.allowRequest(policy, clientB));
+        assertTrue(limiter.allowRequest(policy, clientB));
+        assertFalse(limiter.allowRequest(policy, clientB));
     }
 
     @Test
     @DisplayName("Should refill tokens over time using integer remainder trick")
     void shouldRefillTokensOverTime() throws InterruptedException {
-        // Capacity: 2, Refill: 5 tokens/sec (1 token every 200ms)
         TokenBucketRateLimiter limiter = new TokenBucketRateLimiter(2, 5);
+        // limit: 5 tokens, timeWindowSeconds: 1, burstCapacity: 2 (1 token every 200ms)
+        Policy policy = new Policy(5, 1, 2);
+        RequestContext context = new RequestContext("client-1", Tier.FREE, "/api/test");
 
         // Exhaust bucket
-        assertTrue(limiter.allowRequest("client-1"));
-        assertTrue(limiter.allowRequest("client-1"));
-        assertFalse(limiter.allowRequest("client-1"));
+        assertTrue(limiter.allowRequest(policy, context));
+        assertTrue(limiter.allowRequest(policy, context));
+        assertFalse(limiter.allowRequest(policy, context));
 
         // Wait ~250ms (enough to generate at least 1 token)
         Thread.sleep(250);
 
-        assertTrue(limiter.allowRequest("client-1"), "Should be allowed after 1 token is refilled");
-        assertFalse(limiter.allowRequest("client-1"), "Should reject immediately after consuming the refilled token");
+        assertTrue(limiter.allowRequest(policy, context), "Should be allowed after 1 token is refilled");
+        assertFalse(limiter.allowRequest(policy, context), "Should reject immediately after consuming the refilled token");
     }
 
     @Test
     @DisplayName("Should not refill tokens beyond capacity even after long idle time")
     void shouldCapTokensAtCapacity() throws InterruptedException {
-        TokenBucket bucket = new TokenBucket(3, 10, System.currentTimeMillis() - 5000); // 5 sec ago
+        TokenBucket bucket = new TokenBucket(3, 10, 1, System.currentTimeMillis() - 5000); // 10 tokens/sec, 5 sec ago
 
         // Even though 50 tokens could have been generated, bucket must cap at 3
         assertEquals(3, bucket.getCapacity());
@@ -76,24 +89,29 @@ class TokenBucketRateLimiterTest {
     }
 
     @Test
-    @DisplayName("Should reject null or blank client ID safely without throwing exceptions")
-    void shouldRejectInvalidClientId() {
-        TokenBucketRateLimiter limiter = new TokenBucketRateLimiter(10, 5);
-
-        assertFalse(limiter.allowRequest(null));
-        assertFalse(limiter.allowRequest(""));
-        assertFalse(limiter.allowRequest("   "));
+    @DisplayName("Should reject invalid RequestContext arguments safely")
+    void shouldRejectInvalidRequestContext() {
+        assertThrows(IllegalArgumentException.class, () -> new RequestContext(null, Tier.FREE, "/api/test"));
+        assertThrows(IllegalArgumentException.class, () -> new RequestContext("", Tier.FREE, "/api/test"));
+        assertThrows(IllegalArgumentException.class, () -> new RequestContext("   ", Tier.FREE, "/api/test"));
+        assertThrows(NullPointerException.class, () -> new RequestContext("client-1", null, "/api/test"));
+        assertThrows(IllegalArgumentException.class, () -> new RequestContext("client-1", Tier.FREE, ""));
     }
 
     @Test
-    @DisplayName("Should work end-to-end via ApiRateLimiterFactory and ApiRateLimiterService")
+    @DisplayName("Should work end-to-end via ApiRateLimiterService and DefaultPolicyResolver")
     void shouldWorkViaServiceAndFactory() {
         ApiRateLimiter limiter = ApiRateLimiterFactory.createTokenBucketLimiter(2, 1);
-        ApiRateLimiterService service = new ApiRateLimiterService(limiter);
+        PolicyResolver resolver = new DefaultPolicyResolver();
+        ApiRateLimiterService service = new ApiRateLimiterService(limiter, resolver);
 
-        assertTrue(service.allowRequest("user-100"));
-        assertTrue(service.allowRequest("user-100"));
-        assertFalse(service.allowRequest("user-100"));
+        // FREE tier policy in DefaultPolicyResolver has burstCapacity: 10
+        RequestContext context = new RequestContext("user-100", Tier.FREE, "/api/test");
+
+        for (int i = 0; i < 10; i++) {
+            assertTrue(service.allowRequest(context), "Request " + (i + 1) + " should be allowed");
+        }
+        assertFalse(service.allowRequest(context), "11th request should be rejected");
     }
 
     @Test
@@ -102,6 +120,8 @@ class TokenBucketRateLimiterTest {
         int capacity = 50;
         int numThreads = 100;
         TokenBucketRateLimiter limiter = new TokenBucketRateLimiter(capacity, 1);
+        Policy policy = new Policy(1, 1, capacity);
+        RequestContext context = new RequestContext("concurrent-client", Tier.FREE, "/api/test");
 
         ExecutorService executor = Executors.newFixedThreadPool(16);
         CountDownLatch startLatch = new CountDownLatch(1);
@@ -114,7 +134,7 @@ class TokenBucketRateLimiterTest {
             executor.submit(() -> {
                 try {
                     startLatch.await(); // Ensure all threads burst simultaneously
-                    if (limiter.allowRequest("concurrent-client")) {
+                    if (limiter.allowRequest(policy, context)) {
                         allowedCount.incrementAndGet();
                     } else {
                         rejectedCount.incrementAndGet();

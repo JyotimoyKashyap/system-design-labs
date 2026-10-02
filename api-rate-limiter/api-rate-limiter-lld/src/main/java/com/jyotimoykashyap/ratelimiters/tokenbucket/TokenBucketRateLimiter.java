@@ -1,6 +1,8 @@
 package com.jyotimoykashyap.ratelimiters.tokenbucket;
 
-import com.jyotimoykashyap.ApiRateLimiter;
+import com.jyotimoykashyap.dto.RequestContext;
+import com.jyotimoykashyap.policy.Policy;
+import com.jyotimoykashyap.ratelimiters.ApiRateLimiter;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,13 +27,18 @@ public class TokenBucketRateLimiter implements ApiRateLimiter {
     }
 
     @Override
-    public boolean allowRequest(String clientId) {
-        if (clientId == null || clientId.isBlank()) {
+    public boolean allowRequest(Policy policy, RequestContext requestContext) {
+        if (requestContext.clientId() == null || requestContext.clientId().isBlank()) {
             return false;
         }
 
-        TokenBucket bucket = map.computeIfAbsent(clientId, k ->
-            new TokenBucket(capacity, refillTokensPerSecond, System.currentTimeMillis())
+        TokenBucket bucket = map.computeIfAbsent(requestContext.clientId(), k ->
+            new TokenBucket(
+                    policy.burstCapacity(),
+                    policy.limit(),
+                    policy.timeWindowSeconds(),
+                    System.currentTimeMillis()
+            )
         );
 
         return bucket.tryConsume(1);

@@ -248,18 +248,130 @@ High-throughput systems require strict concurrency guarantees without coarse-gra
 
 ---
 
-## 5. Evolutionary Roadmap (Scaling Beyond the MVP)
+---
 
-The MVP establishes the core execution engine. The following milestones outline the evolutionary path from an in-memory prototype to an enterprise-grade distributed system:
+## 5. Step 2: Policy & Request Context Layer (Tiers & Endpoint Routing)
+
+To support **PR-4 (Tier-Based Limits)** and **PR-5 (Endpoint-Specific Limits)**, we decouple **policy resolution** (business rules) from **rate enforcement** (algorithm execution).
+
+### 5.1 Architecture & Class Connections
+
+```mermaid
+classDiagram
+    direction TB
+
+    class RequestContext {
+        + clientId: String
+        + tier: Tier
+        + endpoint: String
+    }
+
+    class Tier {
+        <<enum>>
+        FREE
+        PREMIUM
+        ENTERPRISE
+    }
+
+    class Policy {
+        <<record>>
+        + limit: long
+        + timeWindow: long
+        + burstCapacity: long
+    }
+
+    class PolicyResolver {
+        <<interface>>
+        + getPolicy(request: RequestContext): Policy
+    }
+
+    class ApiRateLimiterService {
+        - apiRateLimiter: ApiRateLimiter
+        - policyResolver: PolicyResolver
+        + allowRequest(request: RequestContext): Boolean
+    }
+
+    class ApiRateLimiter {
+        <<interface>>
+        + allowRequest(key: String, policy: Policy): Boolean
+    }
+
+    class ApiRateLimiterFactory {
+        + createTokenBucketLimiter(): ApiRateLimiter
+        + createSlidingWindowLogLimiter(): ApiRateLimiter
+        + createLeakyBucketLimiter(): ApiRateLimiter
+    }
+
+    RequestContext --> Tier : has-a
+    PolicyResolver ..> RequestContext : inspects
+    PolicyResolver ..> Policy : resolves & returns
+    ApiRateLimiterService --> PolicyResolver : has-a (resolves rule)
+    ApiRateLimiterService --> ApiRateLimiter : has-a (enforces rule)
+    ApiRateLimiterFactory ..> ApiRateLimiter : «creates»
+    ApiRateLimiter ..> Policy : evaluates with
+```
+
+### 5.2 How the Components Connect
+
+1. **`RequestContext` $\longrightarrow$ `Tier` (Association):**
+   * Encapsulates caller identity (`clientId`), subscription plan (`tier`), and target path (`endpoint`).
+   * Created at the gateway/filter level before rate limiting is evaluated.
+
+2. **`ApiRateLimiterService` $\longrightarrow$ `PolicyResolver` (Association):**
+   * The service holds a reference to a `PolicyResolver`.
+   * When `allowRequest(requestContext)` is invoked, the service asks the resolver: *"What is the quota for this user tier and endpoint?"*
+
+3. **`PolicyResolver` $-\;-\;\longrightarrow$ `Policy` (Dependency):**
+   * Inspects `RequestContext` and returns an immutable `Policy` containing `(limit, timeWindow, burstCapacity)`.
+   * Encapsulates precedence rules (e.g., endpoint-specific rules taking priority over global tier rules).
+
+4. **`ApiRateLimiterService` $\longrightarrow$ `ApiRateLimiter` (Association):**
+   * The service holds the algorithm engine (injected at startup).
+   * It builds a composite rate-limit key (e.g. `clientId + ":" + endpoint`) and delegates enforcement:
+     ```java
+     Policy policy = policyResolver.getPolicy(requestContext);
+     String key = requestContext.clientId() + ":" + requestContext.endpoint();
+     return apiRateLimiter.allowRequest(key, policy);
+     ```
+
+5. **`ApiRateLimiterFactory` $-\;-\;\longrightarrow$ `ApiRateLimiter` (Creational Dependency):**
+   * Encapsulates algorithm instantiation (`createTokenBucketLimiter()`), shielding `ApiRateLimiterService` from concrete constructor details.
+
+---
+
+### 5.3 Request Execution Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as API Gateway / Controller
+    participant Service as ApiRateLimiterService
+    participant Resolver as PolicyResolver
+    participant Limiter as ApiRateLimiter (e.g., TokenBucket)
+
+    Client->>Service: allowRequest(RequestContext)
+    Service->>Resolver: getPolicy(RequestContext)
+    Resolver-->>Service: return Policy(limit, timeWindow, burstCapacity)
+    Note over Service: Construct key = clientId + ":" + endpoint
+    Service->>Limiter: allowRequest(key, Policy)
+    Limiter-->>Service: return true (Allowed) or false (429)
+    Service-->>Client: return boolean decision
+```
+
+---
+
+## 6. Evolutionary Roadmap (Scaling Beyond)
+
+The following milestones outline the evolutionary path from the single-process engine to an enterprise-grade distributed system:
 
 ```
 Step 1: MVP (Token Bucket + In-Memory Map)
     │
     ▼
-Step 2: Multiple Algorithm Engines (Leaky Bucket, Sliding Window Log, Sliding Window Counter)
+Step 2: Policy & Request Context Layer (User Tiers & Endpoint Routing)
     │
     ▼
-Step 3: Configuration & Policy Layer (User Tiers, Per-Endpoint Rules, Dynamic Reloading)
+Step 3: Alternative Algorithm Engines (Leaky Bucket, Sliding Window Log, Sliding Window Counter)
     │
     ▼
 Step 4: Memory Hygiene & Cleanup (Eviction of Stale/Idle Buckets via TTL & Weak References)
@@ -268,7 +380,6 @@ Step 4: Memory Hygiene & Cleanup (Eviction of Stale/Idle Buckets via TTL & Weak 
 Step 5: Distributed Multi-Node Enforcement (Redis Cluster, Consistent Hash Ring, Atomic Lua Scripts)
 ```
 
-1. **Milestone 2 (Alternative Algorithms):** Implement `LeakyBucketRateLimiter` (FIFO queue for smooth egress) and `SlidingWindowLogRateLimiter` (rolling timestamp log).
-2. **Milestone 3 (Policy & Admin Rules):** Decouple configuration from algorithms via `RateLimitRule` and `RuleProvider` (e.g. Free vs Pro tiers, endpoint-specific rules).
-3. **Milestone 4 (Memory Hygiene):** Add automated eviction for idle client buckets to prevent heap exhaustion over months of continuous uptime.
-4. **Milestone 5 (Distributed Architecture):** Migrate bucket counters to a distributed cache (Redis) using atomic Lua scripts or consistent hashing across multi-node API gateways.
+1. **Milestone 3 (Alternative Algorithms):** Implement `LeakyBucketRateLimiter` (FIFO queue for smooth egress) and `SlidingWindowLogRateLimiter` (rolling timestamp log).
+2. **Milestone 4 (Memory Hygiene):** Add automated eviction for idle client buckets to prevent heap exhaustion over months of continuous uptime.
+3. **Milestone 5 (Distributed Architecture):** Migrate bucket counters to a distributed cache (Redis) using atomic Lua scripts or consistent hashing across multi-node API gateways.
