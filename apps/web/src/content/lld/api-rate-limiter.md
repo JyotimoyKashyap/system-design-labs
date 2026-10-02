@@ -576,3 +576,31 @@ Step 5: Distributed Multi-Node Enforcement (Redis Cluster, Consistent Hash Ring,
 
 1. **Milestone 4 (Alternative Algorithms):** Implement `LeakyBucketRateLimiter` (FIFO queue for smooth egress) and `SlidingWindowLogRateLimiter` (rolling timestamp log).
 2. **Milestone 5 (Distributed Architecture):** Migrate bucket counters to a distributed cache (Redis) using atomic Lua scripts or consistent hashing across multi-node API gateways.
+
+---
+
+## 8. Visual Architecture & Design Diagrams (Excalidraw)
+
+### 8.1 High-Level Design Architecture
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/JyotimoyKashyap/system-design-labs/main/api-rate-limiter/api-rate-limiter-lld/assets/high-level-design-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/JyotimoyKashyap/system-design-labs/main/api-rate-limiter/api-rate-limiter-lld/assets/high-level-design-light.svg">
+  <img alt="API Rate Limiter High-Level Design Architecture" src="https://raw.githubusercontent.com/JyotimoyKashyap/system-design-labs/main/api-rate-limiter/api-rate-limiter-lld/assets/high-level-design-light.svg" width="100%">
+</picture>
+
+### 8.2 Core Low-Level Design (Decision Tree & MVP Engine)
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/JyotimoyKashyap/system-design-labs/main/api-rate-limiter/api-rate-limiter-lld/assets/core-lld-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/JyotimoyKashyap/system-design-labs/main/api-rate-limiter/api-rate-limiter-lld/assets/core-lld-light.svg">
+  <img alt="API Rate Limiter Core Low-Level Design" src="https://raw.githubusercontent.com/JyotimoyKashyap/system-design-labs/main/api-rate-limiter/api-rate-limiter-lld/assets/core-lld-light.svg" width="100%">
+</picture>
+
+### 8.3 Full Low-Level Design (User Tiers, Policy Resolution & Rules)
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/JyotimoyKashyap/system-design-labs/main/api-rate-limiter/api-rate-limiter-lld/assets/full-lld-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/JyotimoyKashyap/system-design-labs/main/api-rate-limiter/api-rate-limiter-lld/assets/full-lld-light.svg">
+  <img alt="API Rate Limiter Full Low-Level Design" src="https://raw.githubusercontent.com/JyotimoyKashyap/system-design-labs/main/api-rate-limiter/api-rate-limiter-lld/assets/full-lld-light.svg" width="100%">
+</picture>
