@@ -200,14 +200,34 @@ classDiagram
     }
 
     class Ticket {
-        <<record>>
-        +UUID id
-        +Vehicle vehicle
-        +ParkingSpot parkingSpot
-        +LocalDateTime entryTime
-        +LocalDateTime exitTime
-        +Fare fare
+        -UUID id
+        -Vehicle vehicle
+        -ParkingSpot parkingSpot
+        -LocalDateTime entryTime
+        -LocalDateTime exitTime
+        -Fare fare
+        +getId() UUID
+        +getVehicle() Vehicle
+        +getParkingSpot() ParkingSpot
+        +getEntryTime() LocalDateTime
+        +getExitTime() LocalDateTime
+        +setExitTime(LocalDateTime) void
+        +getFare() Fare
+        +setFare(Fare) void
         +getDurationHours() double
+    }
+
+    class ParkingDataRepository {
+        -Map~VehicleSize, Deque~ParkingSpot~~ availableSpotsBySize
+        -Map~Vehicle, Ticket~ activeTicketsByVehicle
+        -Map~UUID, Ticket~ activeTicketsById
+        +registerSpot(ParkingSpot, VehicleSize) void
+        +findAndClaimSpot(Vehicle) Optional~ParkingSpot~
+        +recordTicket(Ticket) void
+        +getTicketByVehicle(Vehicle) Optional~Ticket~
+        +getActiveTicket(UUID) Optional~Ticket~
+        +releaseSpot(Ticket) void
+        +getAvailableCount(VehicleSize) int
     }
 
     Vehicle --> VehicleSize : has
@@ -218,6 +238,8 @@ classDiagram
     Ticket --> Vehicle : references
     Ticket --> ParkingSpot : references
     Ticket --> Fare : holds
+    ParkingDataRepository --> Ticket : tracks active
+    ParkingDataRepository --> ParkingSpot : indexes pools
 ```
 
 ---
@@ -576,37 +598,98 @@ public class Fare {
 
 ---
 
-### 4.4 The `Ticket` Record
+### 4.4 The `Ticket` Entity — Why a Class Rather Than a Record
 
-While `Fare` is mutable during the calculation phase, the `Ticket` represents an official, immutable audit record of a vehicle's stay. Using a Java 21 `record` guarantees that once a ticket is issued or closed, its timestamps and relationships cannot be tampered with.
+While value objects with no lifecycle (like spatial coordinates) benefit from Java records, a parking `Ticket` is a **stateful domain entity** with a clear operational lifecycle:
+1. **At Vehicle Entry:** The ticket is created with its identity (`id: UUID`), the arriving `vehicle`, the assigned `parkingSpot`, and `entryTime`. At this moment, `exitTime` and `fare` are unassigned (`null`).
+2. **At Vehicle Exit:** When the driver presents the ticket or the exit camera scans the car, the exact same ticket entity is retrieved and updated with `exitTime` and the settled `fare`.
+
+#### The Problem with Making `Ticket` an Immutable Record:
+If `Ticket` is an immutable record, closing a ticket forces creating a clone (`new Ticket(old.id, old.vehicle, ..., exitTime, fare)`) with a duplicate copy of the UUID, vehicle, spot, and entry time. In an enterprise system where the ticket object represents a single physical session held in memory or mapped to a persistence entity, mutating the existing object in-place preserves **object identity** and avoids unnecessary allocations.
 
 ```java
-package com.jyotimoykashyap.model;
+package com.jyotimoykashyap.models;
+
+import com.jyotimoykashyap.models.parkingspot.ParkingSpot;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
-public record Ticket(
-    UUID id,
-    Vehicle vehicle,
-    ParkingSpot parkingSpot,
-    LocalDateTime entryTime,
-    LocalDateTime exitTime,
-    Fare fare
-) {
-    public static Ticket issue(Vehicle vehicle, ParkingSpot parkingSpot, LocalDateTime entryTime) {
-        return new Ticket(UUID.randomUUID(), vehicle, parkingSpot, entryTime, null, null);
+public class Ticket {
+    private final UUID id;
+    private final Vehicle vehicle;
+    private final ParkingSpot parkingSpot;
+    private final LocalDateTime entryTime;
+    private LocalDateTime exitTime;
+    private Fare fare;
+
+    public Ticket(Vehicle vehicle, ParkingSpot parkingSpot, LocalDateTime entryTime) {
+        this(UUID.randomUUID(), vehicle, parkingSpot, entryTime, null, null);
     }
 
-    public Ticket close(LocalDateTime exitTime, Fare computedFare) {
-        return new Ticket(this.id, this.vehicle, this.parkingSpot, this.entryTime, exitTime, computedFare);
+    public Ticket(UUID id, Vehicle vehicle, ParkingSpot parkingSpot, LocalDateTime entryTime, LocalDateTime exitTime, Fare fare) {
+        this.id = Objects.requireNonNull(id, "Ticket ID cannot be null");
+        this.vehicle = Objects.requireNonNull(vehicle, "Vehicle cannot be null");
+        this.parkingSpot = Objects.requireNonNull(parkingSpot, "Parking spot cannot be null");
+        this.entryTime = Objects.requireNonNull(entryTime, "Entry time cannot be null");
+        this.exitTime = exitTime;
+        this.fare = fare;
+    }
+
+    public static Ticket issue(Vehicle vehicle, ParkingSpot parkingSpot, LocalDateTime entryTime) {
+        return new Ticket(vehicle, parkingSpot, entryTime);
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public Vehicle getVehicle() {
+        return vehicle;
+    }
+
+    public ParkingSpot getParkingSpot() {
+        return parkingSpot;
+    }
+
+    public LocalDateTime getEntryTime() {
+        return entryTime;
+    }
+
+    public LocalDateTime getExitTime() {
+        return exitTime;
+    }
+
+    public void setExitTime(LocalDateTime exitTime) {
+        this.exitTime = exitTime;
+    }
+
+    public Fare getFare() {
+        return fare;
+    }
+
+    public void setFare(Fare fare) {
+        this.fare = fare;
     }
 
     public double getDurationHours() {
         if (exitTime == null) return 0.0;
         long minutes = Math.max(1, Duration.between(entryTime, exitTime).toMinutes());
         return Math.ceil(minutes / 60.0); // Ceil to next full hour
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Ticket ticket)) return false;
+        return id.equals(ticket.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return id.hashCode();
     }
 }
 ```
@@ -629,9 +712,9 @@ Now that domain models are defined, how do we track spot availability across mul
            ▼
 [ ParkingDataRepository ]
      ├── In-Memory Indexes (ConcurrentHashMap)
-     ├── Available spots by VehicleSize
-     ├── Active spot allocations (by LicensePlate)
-     └── Active ticket ledger (by Ticket UUID)
+     ├── Available spots by VehicleSize (ConcurrentLinkedDeque)
+     ├── Active tickets by Vehicle (Map<Vehicle, Ticket>) [Fast ANPR lookup & anti-duplicate entry]
+     └── Active tickets by UUID (Map<UUID, Ticket>) [Kiosk barcode scan]
 ```
 
 ---
@@ -650,13 +733,17 @@ A common mistake in beginner LLD submissions is placing all `List<ParkingSpot>`,
 
 The repository maintains thread-safe lookup structures:
 * `availableSpotsBySize`: A mapping from each `VehicleSize` to a `Deque<ParkingSpot>` containing free spots ordered by proximity (lower floors first).
-* `activeAllocations`: A map from vehicle license plate to its currently occupied `ParkingSpot`.
-* `activeTickets`: A map from `UUID` ticket ID to the active `Ticket` record.
+* `activeTicketsByVehicle`: A map from `Vehicle` to its active `Ticket`. This enables $O(1)$ lookup when cameras scan license plates at exit gates and immediately prevents duplicate-entry anomalies (a car trying to enter while already parked).
+* `activeTicketsById`: A map from `UUID` ticket ID to the active `Ticket` for kiosk ticket scanning.
+
+> **Why `Map<Vehicle, Ticket>` eliminates redundant spot tracking:**  
+> Because `Ticket` already encapsulates `ticket.getParkingSpot()`, storing `Map<Vehicle, Ticket>` completely replaces the need for a separate `Map<Vehicle, ParkingSpot>`. One cohesive lookup gives both the active session and the occupied spot.
 
 ```java
 package com.jyotimoykashyap.repository;
 
-import com.jyotimoykashyap.model.*;
+import com.jyotimoykashyap.models.*;
+import com.jyotimoykashyap.models.parkingspot.ParkingSpot;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -666,11 +753,11 @@ public class ParkingDataRepository {
     // Fast lookup for available spots categorized by compatible vehicle size
     private final Map<VehicleSize, Deque<ParkingSpot>> availableSpotsBySize = new ConcurrentHashMap<>();
     
-    // Active vehicle allocations: LicensePlate -> ParkingSpot
-    private final Map<String, ParkingSpot> activeAllocations = new ConcurrentHashMap<>();
+    // Active issued tickets indexed by Vehicle: Vehicle -> Ticket (for ANPR & duplicate-entry checks)
+    private final Map<Vehicle, Ticket> activeTicketsByVehicle = new ConcurrentHashMap<>();
     
-    // Active issued tickets: TicketId -> Ticket
-    private final Map<UUID, Ticket> activeTickets = new ConcurrentHashMap<>();
+    // Active issued tickets indexed by Ticket UUID: TicketId -> Ticket (for kiosk scanning)
+    private final Map<UUID, Ticket> activeTicketsById = new ConcurrentHashMap<>();
 
     public ParkingDataRepository() {
         for (VehicleSize size : VehicleSize.values()) {
@@ -689,8 +776,13 @@ public class ParkingDataRepository {
 
     /**
      * Finds and claims the nearest available spot for the given vehicle size atomically.
+     * Rejects vehicles that are already parked inside the facility.
      */
     public synchronized Optional<ParkingSpot> findAndClaimSpot(Vehicle vehicle) {
+        if (activeTicketsByVehicle.containsKey(vehicle)) {
+            throw new IllegalStateException("Vehicle " + vehicle.getLicensePlate() + " is already parked inside!");
+        }
+
         Deque<ParkingSpot> queue = availableSpotsBySize.get(vehicle.getVehicleSize());
         if (queue == null || queue.isEmpty()) {
             return Optional.empty();
@@ -699,30 +791,34 @@ public class ParkingDataRepository {
         ParkingSpot spot = queue.pollFirst(); // Retrieve nearest spot (FIFO on lowest floors)
         if (spot != null) {
             spot.occupy(vehicle);
-            activeAllocations.put(vehicle.getLicensePlate().toLowerCase(), spot);
             return Optional.of(spot);
         }
         return Optional.empty();
     }
 
     public synchronized void recordTicket(Ticket ticket) {
-        activeTickets.put(ticket.id(), ticket);
+        activeTicketsByVehicle.put(ticket.getVehicle(), ticket);
+        activeTicketsById.put(ticket.getId(), ticket);
     }
 
     public Optional<Ticket> getActiveTicket(UUID ticketId) {
-        return Optional.ofNullable(activeTickets.get(ticketId));
+        return Optional.ofNullable(activeTicketsById.get(ticketId));
+    }
+
+    public Optional<Ticket> getTicketByVehicle(Vehicle vehicle) {
+        return Optional.ofNullable(activeTicketsByVehicle.get(vehicle));
     }
 
     /**
      * Releases an occupied spot back into the available pool upon exit.
      */
     public synchronized void releaseSpot(Ticket ticket) {
-        ParkingSpot spot = ticket.parkingSpot();
-        Vehicle vehicle = ticket.vehicle();
+        ParkingSpot spot = ticket.getParkingSpot();
+        Vehicle vehicle = ticket.getVehicle();
 
         spot.vacate();
-        activeAllocations.remove(vehicle.getLicensePlate().toLowerCase());
-        activeTickets.remove(ticket.id());
+        activeTicketsByVehicle.remove(vehicle);
+        activeTicketsById.remove(ticket.getId());
 
         // Return spot to the available queue for its vehicle category
         Deque<ParkingSpot> queue = availableSpotsBySize.get(vehicle.getVehicleSize());
@@ -971,7 +1067,7 @@ public class ParkingLot {
     }
 
     /**
-     * Exit Gate Workflow: Computes fare, releases spot, and closes ticket.
+     * Exit Gate Workflow: Computes fare, releases spot, and closes ticket via ticket ID.
      */
     public synchronized Ticket vacateVehicle(UUID ticketId) {
         Objects.requireNonNull(ticketId, "Ticket ID cannot be null");
@@ -979,24 +1075,33 @@ public class ParkingLot {
         Ticket activeTicket = repository.getActiveTicket(ticketId)
             .orElseThrow(() -> new IllegalArgumentException("Invalid ticket ID: " + ticketId));
 
+        return settleAndReleaseTicket(activeTicket);
+    }
+
+    /**
+     * Exit Gate Workflow (ANPR Camera Scan): Releases vehicle directly by license plate / vehicle.
+     */
+    public synchronized Ticket vacateVehicle(Vehicle vehicle) {
+        Objects.requireNonNull(vehicle, "Vehicle cannot be null");
+
+        Ticket activeTicket = repository.getTicketByVehicle(vehicle)
+            .orElseThrow(() -> new IllegalArgumentException("No active ticket found for vehicle: " + vehicle.getLicensePlate()));
+
+        return settleAndReleaseTicket(activeTicket);
+    }
+
+    private Ticket settleAndReleaseTicket(Ticket ticket) {
         LocalDateTime exitTime = LocalDateTime.now();
-        Ticket ticketWithExit = new Ticket(
-            activeTicket.id(),
-            activeTicket.vehicle(),
-            activeTicket.parkingSpot(),
-            activeTicket.entryTime(),
-            exitTime,
-            null
-        );
+        ticket.setExitTime(exitTime);
 
         // Compute dynamic fare across configured strategy pipeline
-        Fare finalFare = fareCalculator.calculateFare(ticketWithExit);
-        Ticket closedTicket = ticketWithExit.close(exitTime, finalFare);
+        Fare finalFare = fareCalculator.calculateFare(ticket);
+        ticket.setFare(finalFare);
 
         // Deallocate spot and update repository
-        repository.releaseSpot(closedTicket);
+        repository.releaseSpot(ticket);
 
-        return closedTicket;
+        return ticket;
     }
 
     public String getName() {
@@ -1053,12 +1158,14 @@ sequenceDiagram
     participant Peak as PeakHoursStrategy
     participant Ev as EvChargingStrategy
     participant Repo as ParkingDataRepository
+    participant Ticket as Ticket Entity
 
-    Driver ->> Gate: Scans Ticket (UUID: 8f2a...)
-    Gate ->> PL: vacateVehicle(ticketId)
-    PL ->> Repo: getActiveTicket(ticketId)
+    Driver ->> Gate: Scans Ticket (UUID: 8f2a...) OR Camera Scans Plate
+    Gate ->> PL: vacateVehicle(ticketId / vehicle)
+    PL ->> Repo: getActiveTicket(ticketId) / getTicketByVehicle(vehicle)
     Repo -->> PL: activeTicket
-    PL ->> Calc: calculateFare(ticketWithExitTime)
+    PL ->> Ticket: setExitTime(now)
+    PL ->> Calc: calculateFare(activeTicket)
     
     Note over Calc: Instantiates fresh Fare fare = new Fare()
     Calc ->> Base: calculateFare(ticket, fare)
@@ -1071,9 +1178,10 @@ sequenceDiagram
     Note over Ev: StandardSpot -> No EV hardware fee added
 
     Calc -->> PL: Return populated Fare (Total: $225)
-    PL ->> Repo: releaseSpot(closedTicket)
+    PL ->> Ticket: setFare(fare)
+    PL ->> Repo: releaseSpot(activeTicket)
     Note over Repo: spot.vacate(), recycled to front of queue
-    PL -->> Gate: Closed Ticket with Itemized Receipt ($225)
+    PL -->> Gate: Settled Ticket with Itemized Receipt ($225)
     Gate -->> Driver: Presents Payment Terminal ($225) & Lifts Barrier
 ```
 
@@ -1085,10 +1193,12 @@ sequenceDiagram
 |---|---|---|---|---|
 | **1** | **Omission of `AbstractParkingSpot`** | Concrete classes directly implement `ParkingSpot` interface, receiving `baseFee` via constructor | Abstract parent class hierarchy (`AbstractParkingSpot`) | Eliminates rigid inheritance coupling; allows runtime configuration of base fees per spot or per floor. |
 | **2** | **`Fare` Object Design** | **Mutable Accumulator Class** passed through strategy pipeline | Immutable Record recreating copies at each step | Eliminates parameter unpacking/copying overhead; each strategy only mutates the field it owns. |
-| **3** | **Vehicle-Spot Mapping** | Decoupled `VehicleSize` enum mapped to polymorphic `ParkingSpot` implementations | 1:1 coupling where `VehicleType == SpotType` | Different vehicles share spot types (e.g. sedans and hatchbacks both fit in standard spots). Prevents explosion of redundant spot classes. |
-| **4** | **Pricing Model** | **Strategy Pattern Pipeline** (`FareCalculator` + `FareStrategy`) | Hardcoding pricing formulas inside `ParkingSpot.getCost()` | Adheres to Open-Closed Principle. New business policies (peak surge, corporate discount) can be added without modifying spot classes. |
-| **5** | **Data Isolation** | **Repository Pattern** (`ParkingDataRepository`) | Storing collections directly inside `ParkingLot` facade | Decouples in-memory indexing from business orchestration. Enables seamless migration to database persistence in the future. |
-| **6** | **Spot Selection Strategy** | Floor-ordered FIFO queues (`ConcurrentLinkedDeque`) | Random allocation or full-array search on each entry | Prioritizes lower floors first; minimizes driver search time while running in $O(1)$ retrieval complexity. |
+| **3** | **`Ticket` Representation** | **Stateful Domain Entity Class** with in-place lifecycle updates (`setExitTime`, `setFare`) | Immutable Record | Preserves object identity across the parking session; avoids creating duplicate clone objects on exit. |
+| **4** | **Active Session Indexing** | **`Map<Vehicle, Ticket>` in Repository** alongside `Map<UUID, Ticket>` | Separate `Map<Vehicle, ParkingSpot>` | Consolidates state (ticket already holds spot reference); enables $O(1)$ ANPR camera exits and prevents double-entry fraud. |
+| **5** | **Vehicle-Spot Mapping** | Decoupled `VehicleSize` enum mapped to polymorphic `ParkingSpot` implementations | 1:1 coupling where `VehicleType == SpotType` | Different vehicles share spot types (e.g. sedans and hatchbacks both fit in standard spots). Prevents explosion of redundant spot classes. |
+| **6** | **Pricing Model** | **Strategy Pattern Pipeline** (`FareCalculator` + `FareStrategy`) | Hardcoding pricing formulas inside `ParkingSpot.getCost()` | Adheres to Open-Closed Principle. New business policies (peak surge, corporate discount) can be added without modifying spot classes. |
+| **7** | **Data Isolation** | **Repository Pattern** (`ParkingDataRepository`) | Storing collections directly inside `ParkingLot` facade | Decouples in-memory indexing from business orchestration. Enables seamless migration to database persistence in the future. |
+| **8** | **Spot Selection Strategy** | Floor-ordered FIFO queues (`ConcurrentLinkedDeque`) | Random allocation or full-array search on each entry | Prioritizes lower floors first; minimizes driver search time while running in $O(1)$ retrieval complexity. |
 
 ---
 
@@ -1205,11 +1315,25 @@ class ParkingLotTest {
         Ticket ticket = parkingLot.assignVehicle(car);
 
         assertNotNull(ticket);
-        assertNotNull(ticket.id());
-        assertEquals("KA-01-MJ-5005", ticket.vehicle().getLicensePlate());
-        assertEquals(101, ticket.parkingSpot().getSpotNumber());
-        assertTrue(ticket.parkingSpot().isOccupied());
+        assertNotNull(ticket.getId());
+        assertEquals("KA-01-MJ-5005", ticket.getVehicle().getLicensePlate());
+        assertEquals(101, ticket.getParkingSpot().getSpotNumber());
+        assertTrue(ticket.getParkingSpot().isOccupied());
         assertEquals(1, parkingLot.getAvailableSpots(VehicleSize.SEDAN));
+    }
+
+    @Test
+    @DisplayName("Should reject vehicle if it attempts duplicate entry while already parked")
+    void testDuplicateVehicleEntryRejection() {
+        Vehicle car = new Vehicle("KA-01-MJ-5005", VehicleSize.SEDAN);
+        parkingLot.assignVehicle(car);
+
+        // Attempting to park the same vehicle again must be rejected
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            parkingLot.assignVehicle(new Vehicle("KA-01-MJ-5005", VehicleSize.SEDAN));
+        });
+
+        assertTrue(exception.getMessage().contains("already parked"));
     }
 
     @Test
@@ -1238,15 +1362,29 @@ class ParkingLotTest {
 
         assertEquals(0, parkingLot.getAvailableSpots(VehicleSize.TRUCK));
 
-        Ticket closedTicket = parkingLot.vacateVehicle(ticket.id());
+        Ticket closedTicket = parkingLot.vacateVehicle(ticket.getId());
 
-        assertNotNull(closedTicket.exitTime());
-        assertNotNull(closedTicket.fare());
-        assertTrue(closedTicket.fare().getTotalFare() > 0);
-        assertFalse(closedTicket.parkingSpot().isOccupied());
+        assertNotNull(closedTicket.getExitTime());
+        assertNotNull(closedTicket.getFare());
+        assertTrue(closedTicket.getFare().getTotalFare() > 0);
+        assertFalse(closedTicket.getParkingSpot().isOccupied());
         
         // Spot should be recycled back to available pool
         assertEquals(1, parkingLot.getAvailableSpots(VehicleSize.TRUCK));
+    }
+
+    @Test
+    @DisplayName("Should support automatic ANPR exit directly via vehicle object")
+    void testAnprExitByVehicle() {
+        Vehicle car = new Vehicle("DL-04-XYZ-9090", VehicleSize.SEDAN);
+        parkingLot.assignVehicle(car);
+
+        // Exit without ticket UUID (e.g. camera reads license plate)
+        Ticket settledTicket = parkingLot.vacateVehicle(car);
+
+        assertNotNull(settledTicket.getExitTime());
+        assertNotNull(settledTicket.getFare());
+        assertFalse(settledTicket.getParkingSpot().isOccupied());
     }
 }
 ```
