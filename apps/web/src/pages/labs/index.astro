@@ -62,12 +62,14 @@ const labs = await getCollection('labs');
             <a
               href={url(`/labs/${lab.data.id}`)}
               class={buttonVariants({ variant: 'primary' })}
+              aria-label={`Launch ${lab.data.title} simulation`}
             >
               Launch App
             </a>
             <a
               href={url(`/labs/${lab.data.id}/docs`)}
               class={buttonVariants({ variant: 'secondary' })}
+              aria-label={`Read ${lab.data.title} documentation`}
             >
               Read Docs
             </a>
