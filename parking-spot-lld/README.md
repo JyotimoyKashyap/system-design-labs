@@ -1414,3 +1414,14 @@ class ParkingLotTest {
 2. **Accumulator Pattern for Strategy Pricing:** Modeling `Fare` as a mutable context object passed to each `FareStrategy` lets each strategy mutate only its relevant slice (`baseFare`, `additionalFare`, `serviceFee`), eliminating object copying churn.
 3. **Separate Identity from Dimensions:** Decoupling `Vehicle` (license plate) from `VehicleSize` (spatial footprint) allows diverse vehicles to cleanly share parking spot tiers.
 4. **Repository Pattern for State Isolation:** Decoupling in-memory indexing (`ParkingDataRepository`) from business coordination (`ParkingLot`) makes testing trivial and opens a clear path to distributed persistence.
+
+---
+
+## 15. Visual Architecture & Design Diagrams (Excalidraw)
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./assets/lld-diagram-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="./assets/lld-diagram-light.svg">
+  <img alt="Parking Lot Low-Level Design Diagram" src="./assets/lld-diagram-light.svg" width="100%">
+</picture>
+
