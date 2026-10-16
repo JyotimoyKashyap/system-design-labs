@@ -3,8 +3,8 @@ FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# Upgrade npm to modern release to resolve Arborist monorepo bugs
-RUN npm install -g npm@latest
+# Upgrade npm to latest Node-20-compatible v10 release to resolve Arborist monorepo bugs
+RUN npm install -g npm@10
 
 # Copy all source files
 COPY . .
