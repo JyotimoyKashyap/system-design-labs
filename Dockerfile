@@ -3,11 +3,11 @@ FROM node:20-slim AS builder
 
 WORKDIR /app
 
+# Upgrade npm to modern release to resolve Arborist monorepo bugs
+RUN npm install -g npm@latest
+
 # Copy all source files
 COPY . .
-
-# Remove host package-lock to avoid platform-specific binary mismatches
-RUN rm -f package-lock.json
 
 # Install dependencies cleanly inside Linux container
 RUN npm install
