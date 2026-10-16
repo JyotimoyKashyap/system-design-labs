@@ -7,10 +7,11 @@ This repository was heavily assisted and pair-programmed by AI agents, specifica
 ## 🛠️ Specialized Skills for AI Agents
 When working in this repository, activate the specialized skills located in `.agents/skills/` (and `.gemini/config/skills/`):
 
-1. **[`system-design-visualizer`](./.agents/skills/system-design-visualizer/SKILL.md)**: Rules for creating and modifying interactive Paper Brutalist web visualizers with automatic discovery.
-2. **[`system-design-content-creator`](./.agents/skills/system-design-content-creator/SKILL.md)**: Guidelines for writing Notes, Low-Level Designs (LLD), and Labs with metadata and strict content isolation.
-3. **[`paper-brutalist-ui`](./.agents/skills/paper-brutalist-ui/SKILL.md)**: Design tokens, `@repo/ui` component variants, and anti-drift design rules.
-4. **[`monorepo-quality-guardian`](./.agents/skills/monorepo-quality-guardian/SKILL.md)**: Fast feedback testing (`npm test`), Docker verification, and pre-commit checks.
+1. **[`low-level-design-architect`](./.agents/skills/low-level-design-architect/SKILL.md)**: Master architectural guide and canonical blueprint for authoring production-grade Low-Level Design (LLD) specifications, Mermaid diagrams, and READMEs.
+2. **[`system-design-visualizer`](./.agents/skills/system-design-visualizer/SKILL.md)**: Rules for creating and modifying interactive Paper Brutalist web visualizers with automatic discovery.
+3. **[`system-design-content-creator`](./.agents/skills/system-design-content-creator/SKILL.md)**: Guidelines for writing Notes, Low-Level Designs (LLD), and Labs with metadata and strict content isolation.
+4. **[`paper-brutalist-ui`](./.agents/skills/paper-brutalist-ui/SKILL.md)**: Design tokens, `@repo/ui` component variants, and anti-drift design rules.
+5. **[`monorepo-quality-guardian`](./.agents/skills/monorepo-quality-guardian/SKILL.md)**: Fast feedback testing (`npm test`), Docker verification, and pre-commit checks.
 
 ---
 
