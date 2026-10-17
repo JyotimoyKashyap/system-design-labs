@@ -27,6 +27,8 @@ const IGNORED_TOP_LEVEL_DIRS = new Set([
   ".gradle",
   "public-pages",
   "docs",
+  "knowledge",
+  "notes",
 ]);
 
 /**
@@ -210,6 +212,29 @@ test("Content Linter: All LLD content files adhere strictly to Astro schema", ()
       meta.difficulty || "Medium",
       /^(?:Medium|Hard)$/,
       `LLD ${file} difficulty must be either 'Medium' or 'Hard'`
+    );
+  }
+});
+
+test("Content Linter: All learning content files adhere strictly to Astro schema", () => {
+  const learningDir = path.join(webSrcDir, "content/learning");
+  assert.ok(fs.existsSync(learningDir), "apps/web/src/content/learning must exist");
+
+  const learningFiles = fs.readdirSync(learningDir).filter((f) => f.endsWith(".md") || f.endsWith(".mdx"));
+  assert.ok(learningFiles.length >= 3, "Learning collection must contain at least 3 learning entries");
+
+  for (const file of learningFiles) {
+    const filePath = path.join(learningDir, file);
+    const content = fs.readFileSync(filePath, "utf8");
+    const meta = extractMetadata(content);
+
+    assert.ok(meta.title, `Learning ${file} must have a 'title' field`);
+    assert.ok(meta.description, `Learning ${file} must have a 'description' field`);
+    assert.ok(meta.publishedAt, `Learning ${file} must have a 'publishedAt' date`);
+    assert.match(
+      meta.category || "Concept",
+      /^(?:Concept|Algorithm|Clipping|System|General)$/,
+      `Learning ${file} category must be 'Concept', 'Algorithm', 'Clipping', 'System', or 'General'`
     );
   }
 });

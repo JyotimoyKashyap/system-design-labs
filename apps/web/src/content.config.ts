@@ -43,4 +43,19 @@ const labs = defineCollection({
   }),
 });
 
-export const collections = { notes, lld, labs };
+const learning = defineCollection({
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/learning' }),
+  schema: z.object({
+    title: z.string(),
+    description: z.string(),
+    publishedAt: z.string(),
+    category: z.enum(['Concept', 'Algorithm', 'Clipping', 'System', 'General']).default('Concept'),
+    tags: z.array(z.string()).default([]),
+    readTimeMinutes: z.number().optional(),
+    sourceUrl: z.string().optional(),
+    author: z.string().optional(),
+    featured: z.boolean().default(false),
+  }),
+});
+
+export const collections = { notes, lld, labs, learning };

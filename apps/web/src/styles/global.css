@@ -144,6 +144,61 @@ html.dark .brutalist-shadow-xl {
   color: #292524;
 }
 
+/* Hyperlinks in Markdown Body: Paper Brutalist Underline & Link Badging */
+.markdown-body a {
+  color: #2563eb;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  text-decoration-color: #2563eb;
+  transition: color 0.15s ease, background-color 0.15s ease, text-decoration-color 0.15s ease;
+}
+
+.markdown-body a:hover {
+  color: #1d4ed8;
+  background-color: #eff6ff;
+  text-decoration-color: #1d4ed8;
+}
+
+html.dark .markdown-body a {
+  color: #60a5fa;
+  text-decoration-color: #60a5fa;
+}
+
+html.dark .markdown-body a:hover {
+  color: #93c5fd;
+  background-color: rgba(30, 58, 138, 0.35);
+  text-decoration-color: #93c5fd;
+}
+
+/* External Link Indicator: clean monospace ↗ icon */
+.markdown-body a[href^="http"]::after {
+  content: " ↗";
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8em;
+  font-weight: 800;
+  display: inline-block;
+  margin-left: 2px;
+  text-decoration: none;
+}
+
+/* Code tags inside links */
+.markdown-body a code,
+.markdown-body a :not(pre) > code {
+  color: #2563eb !important;
+  border-color: #93c5fd !important;
+  text-decoration: underline !important;
+  text-decoration-color: #2563eb !important;
+}
+
+html.dark .markdown-body a code,
+html.dark .markdown-body a :not(pre) > code {
+  color: #60a5fa !important;
+  border-color: #1e40af !important;
+  text-decoration-color: #60a5fa !important;
+}
+
 /* Markdown Images & Badges (prevent Tailwind Preflight from forcing display: block) */
 .markdown-body img {
   display: inline-block;

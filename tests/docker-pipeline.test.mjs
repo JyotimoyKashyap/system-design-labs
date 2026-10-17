@@ -27,7 +27,8 @@ test("Docker Pipeline: Nginx configuration supports clean URLs and dual-stack IP
   const content = fs.readFileSync(nginxConfPath, "utf8");
   assert.match(content, /listen 80;/i, "Nginx must listen on IPv4 port 80");
   assert.match(content, /listen \[::\]:80;/i, "Nginx must listen on IPv6 [::]:80");
-  assert.match(content, /try_files\s+\$uri\s+\$uri\/\s+\$uri\.html\s+\/index\.html\s+=404;/i, "Nginx must support clean Astro URL routing");
+  assert.match(content, /try_files\s+\$uri(?:\s+\$uri\/index\.html)?\s+\$uri\/\s+\$uri\.html\s+\/index\.html\s+=404;/i, "Nginx must support clean Astro URL routing");
+  assert.match(content, /absolute_redirect off;/i, "Nginx must disable absolute redirects to preserve mapped ports and proxy paths");
   assert.match(content, /gzip on;/i, "Nginx must enable gzip compression");
 });
 

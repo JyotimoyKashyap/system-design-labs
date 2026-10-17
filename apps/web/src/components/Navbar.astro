@@ -11,7 +11,7 @@ const { currentPath = Astro.url.pathname } = Astro.props;
 
 const navLinks = [
   { name: 'Portfolio', href: url('/') },
-  { name: 'Notes', href: url('/notes') },
+  { name: 'Learning', href: url('/learning') },
   { name: 'LLD', href: url('/lld') },
   { name: 'Labs', href: url('/labs') },
 ];
@@ -75,22 +75,22 @@ const isActive = (href: string) => {
       </nav>
 
       <!-- Mobile Navigation Toggle -->
-      <div class="flex items-center gap-2 md:hidden">
+      <div class="flex items-center gap-1.5 sm:gap-2 md:hidden">
+        <a
+          href={url('/learning')}
+          class={buttonVariants({ variant: 'default', size: 'sm', className: 'px-2 py-1 text-[11px]' })}
+        >
+          Learning
+        </a>
         <a
           href={url('/labs')}
-          class="px-2.5 py-1 font-mono text-[11px] font-bold uppercase bg-stone-900 text-white border-2 border-stone-900 dark:bg-stone-100 dark:text-stone-900 dark:border-stone-100"
+          class={buttonVariants({ variant: 'dark', size: 'sm', className: 'px-2 py-1 text-[11px]' })}
         >
           Labs
         </a>
         <a
-          href={url('/notes')}
-          class="px-2.5 py-1 font-mono text-[11px] font-bold uppercase bg-white text-stone-900 border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] dark:bg-stone-800 dark:text-stone-100 dark:border-stone-700 dark:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-        >
-          Notes
-        </a>
-        <a
           href={url('/lld')}
-          class="px-2.5 py-1 font-mono text-[11px] font-bold uppercase bg-white text-stone-900 border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] dark:bg-stone-800 dark:text-stone-100 dark:border-stone-700 dark:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+          class={buttonVariants({ variant: 'default', size: 'sm', className: 'px-2 py-1 text-[11px]' })}
         >
           LLD
         </a>

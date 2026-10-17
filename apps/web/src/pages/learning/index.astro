@@ -1,0 +1,205 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+import { buttonVariants, cardVariants } from '@repo/ui';
+import { url } from '../../utils/url';
+
+const learningEntries = (await getCollection('learning')).sort(
+  (a, b) => new Date(b.data.publishedAt).getTime() - new Date(a.data.publishedAt).getTime()
+);
+
+const categories = ['All', 'Concept', 'Algorithm', 'Clipping', 'System'];
+
+const getCategoryColor = (category: string) => {
+  switch (category) {
+    case 'Concept':
+      return 'bg-emerald-600 text-white';
+    case 'Algorithm':
+      return 'bg-purple-600 text-white';
+    case 'Clipping':
+      return 'bg-amber-600 text-white';
+    case 'System':
+      return 'bg-blue-600 text-white';
+    default:
+      return 'bg-stone-700 text-white';
+  }
+};
+
+const getSourceDomain = (sourceUrl?: string) => {
+  if (!sourceUrl) return null;
+  try {
+    const parsed = new URL(sourceUrl);
+    return parsed.hostname.replace(/^www\./, '');
+  } catch {
+    return null;
+  }
+};
+
+const activeBtnClass = buttonVariants({ variant: 'dark', size: 'sm', className: 'filter-btn active' });
+const inactiveBtnClass = buttonVariants({ variant: 'default', size: 'sm', className: 'filter-btn' });
+---
+
+<BaseLayout
+  title="Learning Hub • JyotimoyKashyap"
+  description="Core engineering concepts, algorithmic problem-solving patterns, and curated industry clippings from technical reading."
+>
+  <div class="w-full">
+    <!-- Header -->
+    <header class="pb-8 mb-10 border-b-3 border-stone-900 dark:border-stone-800">
+      <div class="flex items-center gap-2 mb-2 font-mono text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+        <span>KNOWLEDGE &amp; CLIPPINGS</span>
+        <span>•</span>
+        <span>{learningEntries.length} {learningEntries.length === 1 ? 'ITEM' : 'ITEMS'}</span>
+      </div>
+      <h1 class="font-silkscreen not-italic text-3xl sm:text-4xl text-stone-900 dark:text-stone-100 mb-3">
+        Learning Hub
+      </h1>
+      <p class="text-stone-600 dark:text-stone-400 text-lg font-sans leading-relaxed max-w-3xl">
+        Curated engineering primitives, algorithms, and deep industry readings synchronized directly from Obsidian vault notes and web clippings.
+      </p>
+
+      <!-- Category Filter Pills using Paper Brutalist buttonVariants -->
+      <div class="flex flex-wrap items-center gap-2 mt-6" id="filter-container">
+        {categories.map((cat) => (
+          <button
+            type="button"
+            data-filter={cat.toLowerCase()}
+            class={cat === 'All' ? activeBtnClass : inactiveBtnClass}
+          >
+            {cat === 'All' ? 'ALL' : cat + 'S'}
+          </button>
+        ))}
+      </div>
+    </header>
+
+    <!-- Learning Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="learning-grid">
+      {learningEntries.map((item) => {
+        const domain = getSourceDomain(item.data.sourceUrl);
+        return (
+          <article
+            data-category={item.data.category.toLowerCase()}
+            class={cardVariants({
+              variant: 'interactive',
+              className: 'p-6 sm:p-7 flex flex-col justify-between learning-card',
+            })}
+          >
+            <div>
+              <!-- Top Badges & Meta -->
+              <div class="flex items-center justify-between gap-2 mb-4">
+                <span
+                  class:list={[
+                    'px-2.5 py-1 font-mono text-xs font-black uppercase tracking-wider border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] dark:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]',
+                    getCategoryColor(item.data.category),
+                  ]}
+                >
+                  {item.data.category}
+                </span>
+
+                {item.data.readTimeMinutes && (
+                  <span class="font-mono text-xs font-bold text-stone-700 dark:text-stone-300 bg-stone-100 dark:bg-stone-800 px-2 py-0.5 border border-stone-300 dark:border-stone-700">
+                    {item.data.readTimeMinutes} min read
+                  </span>
+                )}
+              </div>
+
+              <!-- Card Title -->
+              <h2 class="font-sans font-black text-2xl text-stone-900 dark:text-stone-100 mb-3 leading-snug tracking-tight not-italic">
+                <a
+                  href={url(`/learning/${item.id}`)}
+                  class="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors no-underline text-stone-900 dark:text-stone-100"
+                >
+                  {item.data.title}
+                </a>
+              </h2>
+
+              <p class="text-stone-700 dark:text-stone-300 text-sm leading-relaxed mb-5 font-sans">
+                {item.data.description}
+              </p>
+
+              <!-- Optional Author / Source Pill for Clippings -->
+              {(item.data.author || domain) && (
+                <div class="mb-5 p-2.5 bg-stone-50 dark:bg-stone-800/60 border border-stone-300 dark:border-stone-700 font-mono text-xs text-stone-600 dark:text-stone-400 flex items-center justify-between gap-2">
+                  {item.data.author && (
+                    <span class="truncate">
+                      By <strong class="text-stone-900 dark:text-stone-200">{item.data.author}</strong>
+                    </span>
+                  )}
+                  {domain && (
+                    <span class="font-bold text-stone-500 dark:text-stone-400 shrink-0">
+                      {domain}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              <!-- Tags -->
+              <div class="flex flex-wrap gap-1.5 mb-6">
+                {item.data.tags.map((tag) => (
+                  <span class="font-mono text-[11px] text-stone-700 dark:text-stone-300 bg-stone-50 dark:bg-stone-800 px-2 py-0.5 border border-stone-300 dark:border-stone-700">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <!-- Bottom Actions with Signature Boxy Brutalist Button -->
+            <div class="pt-4 border-t-2 border-stone-100 dark:border-stone-800 flex items-center justify-between gap-3">
+              <a
+                href={url(`/learning/${item.id}`)}
+                class={buttonVariants({ variant: 'secondary', size: 'sm' })}
+              >
+                Read {item.data.category} &rarr;
+              </a>
+
+              <span class="font-mono text-xs text-stone-500 dark:text-stone-400 font-bold">
+                {item.data.publishedAt}
+              </span>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  </div>
+
+  <!-- Client-side Category Filtering Script -->
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', () => {
+      const filterButtons = document.querySelectorAll('.filter-btn');
+      const cards = document.querySelectorAll('.learning-card');
+
+      const activeTokens = [
+        'bg-stone-900', 'text-white', 'hover:bg-stone-800',
+        'dark:bg-stone-100', 'dark:text-stone-900', 'dark:hover:bg-white', 'active'
+      ];
+      const defaultTokens = [
+        'bg-white', 'text-stone-900', 'hover:bg-stone-50',
+        'dark:bg-stone-800', 'dark:text-stone-100', 'dark:hover:bg-stone-700'
+      ];
+
+      filterButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const filter = btn.getAttribute('data-filter');
+
+          // Update active button classes while preserving kinetic hover/active elevation
+          filterButtons.forEach((b) => {
+            b.classList.remove(...activeTokens);
+            b.classList.add(...defaultTokens);
+          });
+          btn.classList.remove(...defaultTokens);
+          btn.classList.add(...activeTokens);
+
+          // Filter cards
+          cards.forEach((card) => {
+            const cardCat = card.getAttribute('data-category');
+            if (filter === 'all' || cardCat === filter) {
+              card.style.display = 'flex';
+            } else {
+              card.style.display = 'none';
+            }
+          });
+        });
+      });
+    });
+  </script>
+</BaseLayout>
