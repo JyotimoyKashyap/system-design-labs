@@ -21,7 +21,7 @@ From GeeksforGeeks
 >  
 >  For example, if element A is in the position of element B, and element B is in the position of element C, and so on, until it comes back to A, it forms a cycle. And to sort the elements in the cycle, we need cycleSize - 1 swaps, as each swap places one element in its correct position, and the last element will automatically be in its correct place.
 
-![Pasted image 20261017092926.png](/assets/knowledge/Pasted image 20261017092926.png)
+![Pasted image 20261017092926.png](/assets/knowledge/Pasted%20image%2020261017092926.png)
 
 Here, 2 swaps 4, 4 swaps 1 and 1 swaps 2. So there are 3 cycles but then if 2 swaps 4 and 4 swaps 1 then 3rd swap is bound to happen, because otherwise 2's place will be empty.
 Hence using this intuition we can derive 

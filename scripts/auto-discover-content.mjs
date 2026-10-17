@@ -910,12 +910,15 @@ function discoverKnowledgeVault({ processedLearning }) {
     // 1. Transform Obsidian Embedded Images: ![[Image.png]] FIRST
     transformedContent = transformedContent.replace(/!\[\[(.*?)\]\]/g, (match, imageName) => {
       const cleanImage = imageName.trim();
-      return `![${cleanImage}](/assets/knowledge/${cleanImage})`;
+      const encodedPath = encodeURI(`/assets/knowledge/${cleanImage}`);
+      return `![${cleanImage}](${encodedPath})`;
     });
 
     // 2. Transform relative assets path: ../assets/... or assets/... (skip already resolved /assets/)
     transformedContent = transformedContent.replace(/!\[(.*?)\]\((?!\/assets\/)\.?\/?(?:\.\.\/)?assets\/(.*?)\)/g, (match, alt, assetPath) => {
-      return `![${alt}](/assets/knowledge/${assetPath})`;
+      const cleanPath = assetPath.trim();
+      const encodedPath = encodeURI(`/assets/knowledge/${cleanPath}`);
+      return `![${alt}](${encodedPath})`;
     });
 
     // 3. Transform Wikilinks: [[Target|Alias]] and [[Target]] (negative lookbehind for !)
