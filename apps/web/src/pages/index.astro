@@ -6,15 +6,12 @@ import { getCollection } from 'astro:content';
 import { buttonVariants, cardVariants } from '@repo/ui';
 import { url } from '../utils/url';
 
-const notes = (await getCollection('notes')).sort(
-  (a, b) => new Date(b.data.publishedAt).getTime() - new Date(a.data.publishedAt).getTime()
-);
-
 const lldList = (await getCollection('lld')).sort(
   (a, b) => new Date(b.data.publishedAt).getTime() - new Date(a.data.publishedAt).getTime()
 );
 
 const labs = await getCollection('labs');
+const learningCount = (await getCollection('learning')).length;
 ---
 
 <BaseLayout>
@@ -155,13 +152,13 @@ const labs = await getCollection('labs');
       />
 
       <ExploreCard
-        href={url('/notes')}
-        tag="ARCHITECTURE"
-        count={`${notes.length} ${notes.length === 1 ? 'Note' : 'Notes'}`}
-        title="System Design Notes"
-        description="Architectural deep dives, notes, and exploratory writeups from building scalable backend systems."
-        actionText="Read notes"
-        tagBgColor="#2563eb"
+        href={url('/learning')}
+        tag="KNOWLEDGE"
+        count={`${learningCount} Notes`}
+        title="Learning Vault"
+        description="Core concepts, algorithms, clippings, and technical notes synced from my personal Obsidian knowledge vault."
+        actionText="Explore learning"
+        tagBgColor="#8b5cf6"
       />
 
       <ExploreCard
@@ -242,47 +239,19 @@ const labs = await getCollection('labs');
       </div>
     </div>
 
-    <!-- Right Column: Notes & LLD (5 of 12 cols) -->
+    <!-- Right Column: Low Level Design (5 of 12 cols) -->
     <div class="lg:col-span-5">
-      <div class="border-b-3 border-stone-900 dark:border-stone-800 pb-3 mb-8">
+      <div class="flex items-baseline justify-between border-b-3 border-stone-900 dark:border-stone-800 pb-3 mb-8">
         <h2 class="font-silkscreen not-italic text-2xl sm:text-3xl text-stone-900 dark:text-stone-100">
-          Notes &amp; LLD
+          Low Level Design
         </h2>
+        <a href={url('/lld')} class="font-mono text-xs font-bold text-pink-600 dark:text-pink-500 hover:underline uppercase tracking-wider">
+          All LLD ({lldList.length}) &rarr;
+        </a>
       </div>
 
       <div class="space-y-6">
-        {notes.slice(0, 1).map((note) => (
-          <div class={cardVariants({ variant: 'interactive', className: 'p-6 sm:p-7' })}>
-            <div>
-              <span class="inline-block px-3 py-1 font-mono text-[11px] font-black uppercase tracking-wider bg-blue-600 text-white border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] dark:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] mb-4">
-                {note.data.category}
-              </span>
-
-              <!-- Non-italic, bold sans-serif card title -->
-              <h3 class="font-sans font-black text-xl sm:text-2xl text-stone-900 dark:text-stone-100 mb-3 leading-snug tracking-tight not-italic">
-                {note.data.title}
-              </h3>
-
-              <p class="text-stone-700 dark:text-stone-300 text-sm leading-relaxed mb-6 font-sans">
-                {note.data.description}
-              </p>
-            </div>
-
-            <div class="pt-4 border-t-2 border-stone-100 dark:border-stone-800 flex items-center justify-between">
-              <a
-                href={url(`/notes/${note.id}`)}
-                class={buttonVariants({ variant: 'secondary' })}
-              >
-                Read Note
-              </a>
-              <span class="font-mono text-xs text-stone-500 dark:text-stone-400 font-bold">
-                {note.data.publishedAt}
-              </span>
-            </div>
-          </div>
-        ))}
-
-        {lldList.slice(0, 2).map((item) => (
+        {lldList.slice(0, 3).map((item) => (
           <div class={cardVariants({ variant: 'interactive', className: 'p-6 sm:p-7' })}>
             <div>
               <span class="inline-block px-3 py-1 font-mono text-[11px] font-black uppercase tracking-wider bg-[#ec4899] text-white border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(28,25,23,1)] dark:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] mb-4">

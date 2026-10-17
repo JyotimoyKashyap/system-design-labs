@@ -214,6 +214,7 @@ test("Codebase Linter: Standard pages consume buttonVariants instead of ad-hoc c
     path.join(webSrcDir, "pages/labs/index.astro"),
     path.join(webSrcDir, "pages/lld/index.astro"),
     path.join(webSrcDir, "pages/notes/index.astro"),
+    path.join(webSrcDir, "pages/learning/index.astro"),
   ];
 
   for (const pagePath of pagesToCheck) {
@@ -227,6 +228,79 @@ test("Codebase Linter: Standard pages consume buttonVariants instead of ad-hoc c
       `Page ${path.basename(pagePath)} must import and use cardVariants from @repo/ui`
     );
   }
+});
+
+test("Anti-Drift Linter: Prohibition of ad-hoc button styling and kinetic elevation drift", () => {
+  // Check all page and component files
+  const filesToCheck = [
+    ...getFilesRecursively(path.join(webSrcDir, "pages")),
+    ...getFilesRecursively(path.join(webSrcDir, "components")),
+  ].filter((f) => f.endsWith(".astro") || f.endsWith(".tsx") || f.endsWith(".jsx"));
+
+  const violations = [];
+
+  for (const file of filesToCheck) {
+    const relPath = path.relative(rootDir, file);
+    const content = fs.readFileSync(file, "utf8");
+
+    // 1. Check all <button> elements across the codebase
+    const buttonTagRegex = /<button\b([^>]*?)>/gs;
+    let match;
+    while ((match = buttonTagRegex.exec(content)) !== null) {
+      const tagAttributes = match[1];
+
+      // Exclude functional non-styled controls (e.g. id="theme-toggle")
+      if (tagAttributes.includes('id="theme-toggle"')) continue;
+      // Exclude interactive canvas visualizer sub-buttons with inline handlers
+      if (file.includes("Visualizer.tsx")) continue;
+
+      // Check if buttonVariants is used in class, className, or assigned variable
+      const usesButtonVariants =
+        tagAttributes.includes("buttonVariants") ||
+        tagAttributes.includes("activeBtnClass") ||
+        tagAttributes.includes("inactiveBtnClass") ||
+        tagAttributes.includes("btnVariants");
+
+      if (!usesButtonVariants) {
+        // If it specifies ad-hoc classes (e.g. px-, py-, shadow-, border-)
+        if (/class(?:Name)?:?list?=\s*["'{]/i.test(tagAttributes)) {
+          violations.push(
+            `${relPath}: <button> element uses ad-hoc styling instead of buttonVariants from @repo/ui: ${match[0].slice(0, 90)}...`
+          );
+        }
+      }
+    }
+
+    // 2. Check for kinetic elevation drift: ad-hoc shadows on button-like elements without hover elevation
+    const adHocShadowRegex = /class(?:Name)?:?list?=\s*["'`][^"'`]*\bshadow-\[\d+px_\d+px[^"'`]*["'`]/g;
+    let shadowMatch;
+    while ((shadowMatch = adHocShadowRegex.exec(content)) !== null) {
+      const matchedString = shadowMatch[0];
+      const isButtonLike = /\bpx-[1-9]\b/.test(matchedString) && /\bpy-[1-9]\b/.test(matchedString);
+      const hasElevation = /hover:-translate-[xy]/.test(matchedString) || matchedString.includes("buttonVariants");
+      if (isButtonLike && !hasElevation) {
+        violations.push(
+          `${relPath}: Interactive button-like control defines static shadow without kinetic hover elevation: ${matchedString}`
+        );
+      }
+    }
+
+    // 3. Catalog pages must use cardVariants for content cards
+    if (file.endsWith("index.astro")) {
+      const hasArticles = content.includes("<article");
+      if (hasArticles && !content.includes("cardVariants")) {
+        violations.push(
+          `${relPath}: Catalog page renders <article> cards without consuming cardVariants from @repo/ui`
+        );
+      }
+    }
+  }
+
+  assert.equal(
+    violations.length,
+    0,
+    `Anti-Drift Design System Violations detected:\n\n${violations.map((v) => `  ✖ ${v}`).join("\n")}\n\nAll buttons and interactive controls must strictly reuse buttonVariants from @repo/ui to preserve kinetic elevation and design tokens.`
+  );
 });
 
 test("Codebase Linter: Living Design Showcase page exists and embeds DesignShowcase", () => {
@@ -342,10 +416,12 @@ test("Auto-Discovery: Discovered content adheres to strict collection schemas", 
   const labsDir = path.join(webSrcDir, "content/labs");
   const notesDir = path.join(webSrcDir, "content/notes");
   const lldDir = path.join(webSrcDir, "content/lld");
+  const learningDir = path.join(webSrcDir, "content/learning");
 
   assert.ok(fs.existsSync(labsDir) && fs.readdirSync(labsDir).length >= 6, "Labs collection must contain foundational labs");
   assert.ok(fs.existsSync(notesDir) && fs.readdirSync(notesDir).length >= 1, "Notes collection must contain notes");
   assert.ok(fs.existsSync(lldDir) && fs.readdirSync(lldDir).length >= 2, "LLD collection must contain LLD entries");
+  assert.ok(fs.existsSync(learningDir) && fs.readdirSync(learningDir).length >= 1, "Learning collection must contain learning entries");
 
   // Verify all labs frontmatter
   for (const file of fs.readdirSync(labsDir)) {
@@ -374,6 +450,15 @@ test("Auto-Discovery: Discovered content adheres to strict collection schemas", 
     assert.match(content, /title:\s*"[^"]+"/m, `LLD ${file} must specify title`);
     assert.match(content, /difficulty:\s*"(?:Medium|Hard)"/m, `LLD ${file} must specify valid difficulty`);
   }
+
+  // Verify all learning frontmatter
+  for (const file of fs.readdirSync(learningDir)) {
+    if (!file.endsWith(".md") && !file.endsWith(".mdx")) continue;
+    const content = fs.readFileSync(path.join(learningDir, file), "utf8");
+    assert.match(content, /^---\r?\n/m, `Learning ${file} must have frontmatter`);
+    assert.match(content, /title:\s*"[^"]+"/m, `Learning ${file} must specify title`);
+    assert.match(content, /publishedAt:\s*"[^"]+"/m, `Learning ${file} must specify publishedAt`);
+  }
 });
 
 test("Content Isolation: Dedicated sections preserve location independence without forced cross-linking", () => {
@@ -383,5 +468,26 @@ test("Content Isolation: Dedicated sections preserve location independence witho
   // ContentLayout should NOT have hardcoded cross-link injection between notes and labs
   assert.ok(!layoutContent.includes("Accompanying Visualizer"), "ContentLayout must not force cross-links into notes");
   assert.ok(!layoutContent.includes("Related LLD Design"), "ContentLayout must not force cross-links into notes");
+});
+
+test("Codebase Linter: Markdown prose hyperlink styling adheres to Paper Brutalist blue underline and indicator", () => {
+  const globalCss = path.join(webSrcDir, "styles/global.css");
+  const content = fs.readFileSync(globalCss, "utf8");
+
+  assert.match(
+    content,
+    /\.markdown-body\s+a\s*\{[^}]*color:\s*#2563eb/s,
+    "global.css must style prose links with #2563eb"
+  );
+  assert.match(
+    content,
+    /\.markdown-body\s+a\s*\{[^}]*text-decoration:\s*underline/s,
+    "global.css must style prose links with underline"
+  );
+  assert.match(
+    content,
+    /\.markdown-body\s+a\[href\^="http"\]::after\s*\{[^}]*content:\s*" ↗"/s,
+    "global.css must style external prose links with ↗ indicator"
+  );
 });
 

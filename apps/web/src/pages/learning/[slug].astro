@@ -1,0 +1,53 @@
+---
+import { getCollection, render } from 'astro:content';
+import ContentLayout from '../../layouts/ContentLayout.astro';
+
+export async function getStaticPaths() {
+  const learningEntries = await getCollection('learning');
+  return learningEntries.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+---
+
+<ContentLayout
+  title={entry.data.title}
+  description={entry.data.description}
+  publishedAt={entry.data.publishedAt}
+  category={entry.data.category}
+  tags={entry.data.tags}
+  readTimeMinutes={entry.data.readTimeMinutes}
+  backLink="/learning"
+  backLabel="Back to All Learning"
+>
+  {entry.data.sourceUrl && (
+    <aside class="mb-8 p-4 bg-amber-50 dark:bg-amber-950/40 border-2 border-stone-900 dark:border-stone-700 shadow-[3px_3px_0px_0px_rgba(28,25,23,1)] dark:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <span class="font-mono text-xs font-black uppercase tracking-wider bg-amber-600 text-white px-2 py-0.5 border border-stone-900">
+            Source Clipping
+          </span>
+          {entry.data.author && (
+            <span class="font-sans text-xs text-stone-700 dark:text-stone-300">
+              Curated from <strong class="text-stone-900 dark:text-stone-100">{entry.data.author}</strong>
+            </span>
+          )}
+        </div>
+        <a
+          href={entry.data.sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="font-mono text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+        >
+          <span>View Original Source ↗</span>
+        </a>
+      </div>
+    </aside>
+  )}
+
+  <Content />
+</ContentLayout>

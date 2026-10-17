@@ -31,6 +31,18 @@ test("Content Isolation: LLD pages strictly link only to LLD hierarchy", () => {
   assert.ok(!content.includes("/notes/"), "LLD page must not inject forced note links");
 });
 
+test("Content Isolation: Learning pages strictly link only to learning hierarchy", () => {
+  const learningSlugPage = path.join(webSrcDir, "pages/learning/[slug].astro");
+  assert.ok(fs.existsSync(learningSlugPage), "learning/[slug].astro must exist");
+
+  const content = fs.readFileSync(learningSlugPage, "utf8");
+  assert.match(content, /backLink="\/learning"/i, "Learning page backLink must point to /learning");
+  assert.match(content, /backLabel="Back to All Learning"/i, "Learning page backLabel must be 'Back to All Learning'");
+  assert.ok(!content.includes("/labs/"), "Learning page must not inject forced lab links");
+  assert.ok(!content.includes("/notes/"), "Learning page must not inject forced note links");
+  assert.ok(!content.includes("/lld/"), "Learning page must not inject forced LLD links");
+});
+
 test("Content Isolation: ContentLayout shell does not contain hardcoded cross-content links", () => {
   const layoutPath = path.join(webSrcDir, "layouts/ContentLayout.astro");
   const content = fs.readFileSync(layoutPath, "utf8");

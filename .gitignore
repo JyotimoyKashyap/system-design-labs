@@ -3,14 +3,22 @@ build/
 bin/
 out/
 target/
+**/build/
+**/bin/
+**/out/
+**/target/
 
 # Gradle
 .gradle/
+**/.gradle/
+*.lock
+*.bin
 gradlew
 gradlew.bat
 
 # Node & Frameworks
 node_modules/
+**/node_modules/
 dist/
 .astro/
 npm-debug.log
@@ -20,6 +28,13 @@ npm-debug.log
 .vscode/
 *.iml
 .DS_Store
+**/.DS_Store
+
+# Obsidian Vault (keep settings, ignore local UI workspace state & cache)
+**/.obsidian/workspace.json
+**/.obsidian/workspace-mobile.json
+**/.obsidian/cache/
+**/.trash/
 
 # Auto-generated docs and assets
 deploy-hub/*/
