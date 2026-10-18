@@ -19,7 +19,18 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter'
+    // 1. Web & REST APIs:
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    // 2. Data Persistence (JPA / Hibernate):
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    // 3. Request Validation (@NotNull, @Positive, @NotBlank):
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    // 4. In-Memory Database for rapid local dev & testing:
+    runtimeOnly 'com.h2database:h2'
+    // 5. Lombok (Boilerplate reduction for getters/setters/constructors):
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    // 6. Testing (JUnit 5, AssertJ, Concurrency testing):
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
