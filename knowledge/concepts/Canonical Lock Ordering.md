@@ -8,75 +8,177 @@ type:
 created: 2026-10-17
 title: Canonical Lock Ordering
 ---
-## The Problem: Circular Wait Deadlock
-When a transaction or worker thread needs to acquire mutual exclusion over multiple distinct resources simultaneously (e.g., booking seats `[A1, A2]`, or transferring money between `Account A` and `Account B`), non-deterministic acquisition ordering introduces the risk of a **Coffman Circular Wait Deadlock**.
 
-If Thread 1 attempts to lock resource $R_1$ then $R_2$, while Thread 2 attempts to lock resource $R_2$ then $R_1$:
-* Thread 1 acquires $R_1$, blocks waiting for $R_2$.
-* Thread 2 acquires $R_2$, blocks waiting for $R_1$.
-* Both threads remain stalled indefinitely.
+# Canonical Lock Ordering 🔒
 
+## 1. What is Canonical Lock Ordering?
+
+**Canonical Lock Ordering** is a foundational concurrency pattern used to eliminate **deadlocks** when multiple threads or transactions must acquire locks on multiple shared resources simultaneously:
+
+> **The Canonical Ordering Invariant:**
+> Whenever a thread needs to acquire multiple locks, it must **always acquire them in a universally agreed, strictly sorted order** (e.g., natural ascending order via IDs or keys).
+
+---
+
+## 2. The Problem: The Circular Wait Deadlock
+
+### Real-World Contention Scenario: Alice & Bob
+Imagine **Alice** (User ID `101`) and **Bob** (User ID `202`) are splitting bills or transferring funds at the exact same millisecond:
+
+- **Thread 1 (Alice's action):** Alice pays $50 for Bob. It attempts to lock **Alice (`101`)**, then lock **Bob (`202`)**.
+- **Thread 2 (Bob's action):** Bob pays $20 for Alice. It attempts to lock **Bob (`202`)**, then lock **Alice (`101`)**.
+
+### The Catastrophic Timeline
+
+```text
+Thread 1 (Alice's request)               Thread 2 (Bob's request)
+--------------------------               ------------------------
+Acquires Lock(101) [Alice] ✅            Acquires Lock(202) [Bob] ✅
+         │                                        │
+Tries to acquire Lock(202) [Bob]         Tries to acquire Lock(101) [Alice]
+   ❌ BLOCKED! (Thread 2 has it)            ❌ BLOCKED! (Thread 1 has it)
+         │                                        │
+         ▼                                        ▼
+   Waiting for Thread 2...                  Waiting for Thread 1...
+   ═════════════════════════════════════════════════════════════════
+                      💀 DEADLOCK DETECTED!
+   Both threads are frozen forever. Thread pool exhausts,
+   database connections leak, and the system halts.
+   ═════════════════════════════════════════════════════════════════
 ```
-Thread 1 (holds R1) ── waiting for ──► Resource R2
-      ▲                                       │
-      │                                       ▼
-Resource R1 ◄── waiting for ── Thread 2 (holds R2)
+
+### Coffman Condition: Circular Wait
+This failure is caused by **Circular Wait** (one of the 4 Coffman conditions for deadlocks):
+
+```mermaid
+flowchart LR
+    T1["Thread 1"] -->|"Holds"| L1["Lock (101)"]
+    L1 -.->|"Waited on by"| T2["Thread 2"]
+    T2 -->|"Holds"| L2["Lock (202)"]
+    L2 -.->|"Waited on by"| T1
 ```
 
 ---
 
-## The Core Solution: Total Global Order
-**Canonical Lock Ordering** solves this by enforcing a strict, monotonic ordering constraint across all lock keys before any lock acquisition is attempted.
+## 3. The Solution: Total Global Order
 
-If every participant in the system is forced to acquire locks in the exact same sorted sequence ($R_a < R_b < R_c$), a circular dependency graph is mathematically impossible to form ($T_1 \to T_2 \to \dots \to T_1$).
+By enforcing **Canonical Lock Ordering**, all threads must sort resource identifiers before attempting acquisition:
+$$\min(\text{ID}_1, \text{ID}_2) \longrightarrow \max(\text{ID}_1, \text{ID}_2)$$
 
-### Mathematical Invariant
-For any requested batch of resource identifiers $S = \{k_1, k_2, \dots, k_n\}$:
-1. Sort keys into canonical order: $k_{(1)} < k_{(2)} < \dots < k_{(n)}$ using a deterministic comparator.
-2. Acquire locks sequentially from $k_{(1)}$ to $k_{(n)}$.
-3. Release locks upon completion in reverse or all at once.
+1. **Thread 1** sorts `[101, 202]` $\to$ Acquires Lock(101), then Lock(202).
+2. **Thread 2** sorts `[202, 101]` $\to$ **Also** attempts Lock(101) first, then Lock(202)!
+
+### The Harmonious Timeline
+
+```text
+Thread 1 (Alice's request)               Thread 2 (Bob's request)
+--------------------------               ------------------------
+Acquires Lock(101) ✅                    Tries to acquire Lock(101)...
+         │                                  ⏳ BLOCKED (Polite Queue)
+Acquires Lock(202) ✅                               │
+         │                                          │
+Updates ledger safely...                            │
+         │                                          │
+Releases Lock(202) 🔓                               │
+Releases Lock(101) 🔓                               ▼
+                                         Acquires Lock(101) ✅
+                                         Acquires Lock(202) ✅
+                                         Updates ledger safely...
+                                         Releases Lock(202) 🔓
+                                         Releases Lock(101) 🔓
+```
+
+**Result:** Zero deadlock. Both operations succeed deterministically.
 
 ---
 
-## Implementation Patterns
+## 4. Scaling to $N$ Resources (The DAG Guarantee)
 
-### 1. In-Memory JVM Locking (Composite Key Ordering)
-When locking discrete items in memory, define a composite key that implements `Comparable`:
+When an operation touches $N$ resources (e.g., an expense split among 5 users: `[4, 1, 5, 2, 3]`):
 
 ```java
-public record ResourceKey(int partitionId, int resourceId) implements Comparable<ResourceKey> {
+List<Long> canonicalOrder = userIds.stream()
+    .distinct()
+    .sorted() // -> [1, 2, 3, 4, 5]
+    .toList();
+```
+
+### Mathematical Proof (Directed Acyclic Graph)
+- If all locks are acquired strictly in increasing order ($k_{(1)} < k_{(2)} < \dots < k_{(n)}$), lock dependency edges can only point forward.
+- A graph with strictly forward-pointing edges is a **Directed Acyclic Graph (DAG)**.
+- Because a DAG contains **zero cycles**, a circular wait deadlock is **mathematically impossible**.
+
+---
+
+## 5. Implementation Patterns (Java 21)
+
+### 5.1 Naive vs Canonical Comparison
+
+#### ❌ Naive (Deadlock-Prone)
+```java
+public void transfer(Account from, Account to, BigDecimal amount) {
+    // 💥 Deadlock if another thread executes transfer(to, from, amount) simultaneously!
+    synchronized (from) {
+        synchronized (to) {
+            from.debit(amount);
+            to.credit(amount);
+        }
+    }
+}
+```
+
+#### ✅ Canonical Lock Ordering (Deadlock-Proof)
+```java
+public void transfer(Account from, Account to, BigDecimal amount) {
+    Account firstLock = from.getId().compareTo(to.getId()) < 0 ? from : to;
+    Account secondLock = from.getId().compareTo(to.getId()) < 0 ? to : from;
+
+    // 🔒 Uniform acquisition order eliminates circular wait
+    synchronized (firstLock) {
+        synchronized (secondLock) {
+            from.debit(amount);
+            to.credit(amount);
+        }
+    }
+}
+```
+
+### 5.2 Composite Keys with `Comparable`
+For complex domains (e.g. cinema ticketing with `showId` and `seatId`), implement `Comparable`:
+
+```java
+public record ShowSeatKey(Long showId, Long seatId) implements Comparable<ShowSeatKey> {
     @Override
-    public int compareTo(ResourceKey other) {
-        int cmp = Integer.compare(this.partitionId, other.partitionId);
-        return cmp != 0 ? cmp : Integer.compare(this.resourceId, other.resourceId);
+    public int compareTo(ShowSeatKey other) {
+        int cmp = this.showId.compareTo(other.showId);
+        return cmp != 0 ? cmp : this.seatId.compareTo(other.seatId);
     }
 }
 
-// In the service layer:
-List<ResourceKey> sortedKeys = keys.stream().sorted().toList();
-for (ResourceKey key : sortedKeys) {
+// Usage:
+List<ShowSeatKey> sortedKeys = keys.stream().sorted().toList();
+for (ShowSeatKey key : sortedKeys) {
     locks.get(key).lock();
 }
 ```
 
-### 2. Distributed Locking (Redis / Database)
-In distributed systems, canonical ordering is equally critical:
-* **Redis Multi-Key Transactions / Lua:** Sort Redis keys alphabetically or numerically before evaluating atomic lock acquisition scripts (`EVAL`).
-* **Database Row Locking:** When executing `SELECT ... FOR UPDATE` on multiple rows, always append `ORDER BY id ASC` to guarantee identical lock acquisition order across transactions.
+### 5.3 All-or-Nothing Acquisition (Fail-Fast)
+To prevent lock starvation when using timed locks:
+1. Attempt non-blocking `tryLock(timeout)`.
+2. If any lock in the sorted batch cannot be acquired, immediately release all already-acquired locks in reverse order and fail-fast or retry with jittered exponential backoff.
 
 ---
 
-## All-or-Nothing Acquisition (Fail-Fast)
-To prevent lock starvation or leaving resources partially locked when contention is detected:
-1. Attempt non-blocking lock acquisition (`tryLock()`).
-2. If any lock in the sorted batch cannot be acquired, immediately release all already-acquired locks and fail fast or retry with exponential backoff.
+## 6. Real-World Applications Across the Stack
+
+| Layer | Real-World Application | How Canonical Ordering is Applied |
+| :--- | :--- | :--- |
+| **Application (JVM)** | Splitwise / [[BookMyShow Cinema Ticketing Engine]] | Sort participant user IDs or seat keys `(showId, seatId)` before synchronizing. |
+| **Relational Database** | PostgreSQL / MySQL Row Locks | Always append `ORDER BY id ASC` to `SELECT ... FOR UPDATE` multi-row statements. |
+| **Distributed Cache** | Redis Redlock / Lua Scripts | Sort Redis keys alphabetically/numerically before acquiring multi-key distributed locks. |
+| **Financial Ledger** | Double-Entry Accounting | Always lock debit and credit accounts in ascending account-ID order. |
 
 ---
 
-## Real-World Applications & Systems
-* **[[BookMyShow Cinema Ticketing Engine]]:** Sorting seat keys `(showId, seatId)` before acquiring locks prevents deadlocks during high-concurrency ticket drops.
-* **Double-Entry Financial Ledgers:** Locking debit and credit accounts in ascending account-ID order prevents deadlocks during bidirectional transfers.
-* **Database Query Engines:** Enforcing lock ordering on join and batch update operations.
-
-## Related Concepts
+## 7. Related Concepts
 * [[Two-Phase Reservation Pattern]]
