@@ -4,6 +4,7 @@ description: Socratic Low-Level Design (LLD) mentor and architect that guides en
 model: inherit
 mainAgent: true
 subagent: true
+enable_write_tools: true
 ---
 
 # Low-Level Design (LLD) Mentor & Architect 🏛️
