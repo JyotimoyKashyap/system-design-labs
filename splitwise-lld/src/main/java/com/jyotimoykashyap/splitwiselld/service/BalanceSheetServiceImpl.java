@@ -59,11 +59,11 @@ public class BalanceSheetServiceImpl implements BalanceSheetService {
 
             if (firstUser.equals(paidByUser)) {
                 // payer is first: update (payer, friend, +amount) then (friend, payer, -amount)
-                updatePairwiseBalance(paidByUser, firstUser, amountOwed);
+                updatePairwiseBalance(paidByUser, friend, amountOwed);
                 updatePairwiseBalance(friend, paidByUser, amountOwed.negate());
             } else {
                 updatePairwiseBalance(friend, paidByUser, amountOwed.negate());
-                updatePairwiseBalance(paidByUser, firstUser, amountOwed);
+                updatePairwiseBalance(paidByUser, friend, amountOwed);
             }
         }
     }
