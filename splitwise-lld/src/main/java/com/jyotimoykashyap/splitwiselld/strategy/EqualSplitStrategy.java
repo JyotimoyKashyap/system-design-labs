@@ -2,12 +2,14 @@ package com.jyotimoykashyap.splitwiselld.strategy;
 
 import com.jyotimoykashyap.splitwiselld.models.Split;
 import com.jyotimoykashyap.splitwiselld.models.SplitType;
+import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
+@Component
 public class EqualSplitStrategy implements SplitStrategy {
     @Override
     public SplitType getSplitType() {
