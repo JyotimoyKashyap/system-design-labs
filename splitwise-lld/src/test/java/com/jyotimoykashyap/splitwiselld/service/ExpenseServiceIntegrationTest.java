@@ -1,10 +1,7 @@
 package com.jyotimoykashyap.splitwiselld.service;
 
 import com.jyotimoykashyap.splitwiselld.dto.CreateExpenseRequest;
-import com.jyotimoykashyap.splitwiselld.models.Expense;
-import com.jyotimoykashyap.splitwiselld.models.SplitType;
-import com.jyotimoykashyap.splitwiselld.models.User;
-import com.jyotimoykashyap.splitwiselld.models.UserBalanceSheet;
+import com.jyotimoykashyap.splitwiselld.models.*;
 import com.jyotimoykashyap.splitwiselld.repository.ExpenseRepository;
 import com.jyotimoykashyap.splitwiselld.repository.UserBalanceRepository;
 import com.jyotimoykashyap.splitwiselld.repository.UserRepository;
@@ -56,6 +53,9 @@ class ExpenseServiceIntegrationTest {
         alice = userRepository.save(User.builder().id("alice").name("Alice").email("alice@test.com").build());
         bob = userRepository.save(User.builder().id("bob").name("Bob").email("bob@test.com").build());
         charlie = userRepository.save(User.builder().id("charlie").name("Charlie").email("charlie@test.com").build());
+
+        userBalanceRepository.save(UserBalance.builder().user(alice).friend(bob).netBalance(BigDecimal.ZERO).build());
+        userBalanceRepository.save(UserBalance.builder().user(bob).friend(alice).netBalance(BigDecimal.ZERO).build());
     }
 
     @Test

@@ -69,7 +69,7 @@ public class BalanceSheetServiceImpl implements BalanceSheetService {
     }
 
     private void updatePairwiseBalance(User user, User friend, BigDecimal delta) {
-        UserBalance balance = balanceRepository.findByUserAndFriend(user, friend)
+        UserBalance balance = balanceRepository.findByUserAndFriendForUpdate(user, friend)
                 .orElseGet(() -> UserBalance.builder()
                         .user(user)
                         .friend(friend)
