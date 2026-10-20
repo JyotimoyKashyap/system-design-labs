@@ -179,6 +179,17 @@ function extractMetadata(rawContent) {
   return { metadata, content: content.trim() };
 }
 
+function getExistingPublishedAt(targetFilePath) {
+  try {
+    if (fs.existsSync(targetFilePath)) {
+      const content = fs.readFileSync(targetFilePath, 'utf8');
+      const m = content.match(/^publishedAt:\s*["']?([0-9]{4}-[0-9]{2}-[0-9]{2})/m);
+      if (m && m[1]) return m[1];
+    }
+  } catch {}
+  return null;
+}
+
 function extractHeading(content) {
   const m = content.match(/^#\s+(.+)$/m);
   return m ? m[1].replace(/^[^\w]+/, '').trim() : null;
@@ -627,8 +638,13 @@ ${docBody}
           extractParagraph(cleanContent) ||
           `Technical architectural notes on ${title}.`;
         const category = parsedMeta.category || 'Architecture';
+        const targetNotePath = path.join(CONTENT_NOTES_DIR, `${noteSlug}.md`);
+        const existingDate = getExistingPublishedAt(targetNotePath);
         const publishedAt =
           parsedMeta.publishedAt ||
+          parsedMeta.published ||
+          parsedMeta.date ||
+          existingDate ||
           new Date().toISOString().split('T')[0];
         const tags = Array.isArray(parsedMeta.tags)
           ? parsedMeta.tags
@@ -653,7 +669,6 @@ featured: ${Boolean(parsedMeta.featured)}
 
 ${rewriteRelativeImages(cleanContent, path.relative(ROOT_DIR, path.dirname(f)) || dirName)}
 `;
-        const targetNotePath = path.join(CONTENT_NOTES_DIR, `${noteSlug}.md`);
         const legacyMdx = path.join(CONTENT_NOTES_DIR, `${noteSlug}.mdx`);
         if (fs.existsSync(legacyMdx)) fs.rmSync(legacyMdx);
         fs.writeFileSync(targetNotePath, noteDoc, 'utf8');
@@ -856,6 +871,10 @@ function discoverKnowledgeVault({ processedLearning }) {
       extractParagraph(content) ||
       `Exploration of ${title} in systems engineering.`;
 
+    // Target doc path
+    const targetDocPath = path.join(CONTENT_LEARNING_DIR, `${slug}.md`);
+    const existingDate = getExistingPublishedAt(targetDocPath);
+
     // Published date helper to handle empty array/string fallbacks gracefully
     const getCleanDate = (...candidates) => {
       for (const c of candidates) {
@@ -867,7 +886,7 @@ function discoverKnowledgeVault({ processedLearning }) {
         const s = String(c).trim();
         if (s.length >= 4) return s.slice(0, 10);
       }
-      return new Date().toISOString().split('T')[0];
+      return existingDate || new Date().toISOString().split('T')[0];
     };
 
     const publishedAt = getCleanDate(
@@ -981,7 +1000,6 @@ function discoverKnowledgeVault({ processedLearning }) {
     frontmatterLines.push('');
     frontmatterLines.push(transformedContent);
 
-    const targetDocPath = path.join(CONTENT_LEARNING_DIR, `${slug}.md`);
     fs.writeFileSync(targetDocPath, frontmatterLines.join('\n'), 'utf8');
     console.log(`  ✓ Discovered Learning: [${category}] ${slug} -> ${path.relative(ROOT_DIR, targetDocPath)}`);
   }
