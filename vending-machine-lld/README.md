@@ -190,7 +190,7 @@ sequenceDiagram
     Customer->>VM: choosePaymentType(CARD)
     VM->>State: choosePaymentType(CARD)
 
-    Note over VM,State: Customer swipes card; Gateway confirms
+    Note over VM,State: Customer swipes card, Gateway confirms
     VM->>State: handlePaymentSuccess("TXN-CARD-99")
     State->>VM: setState(new DispensingState("TXN-CARD-99"))
     VM-->>Customer: State: DISPENSING
