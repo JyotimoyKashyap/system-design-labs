@@ -7,7 +7,7 @@ This repository was heavily assisted and pair-programmed by AI agents, specifica
 ## 🤖 Specialized AI Agents
 When pair-programming on complex architectural tasks, leverage the dedicated custom agents in `.agents/agents/`:
 
-1. **[`lld-mentor`](./.agents/agents/lld-mentor.md)**: Socratic Low-Level Design (LLD) mentor and architect that guides engineers through designing production-grade, concurrency-safe object-oriented systems with phase-driven milestones, empirical multithreaded test verification, and canonical architectural documentation.
+1. **[`lld-mentor`](./.agents/agents/lld-mentor.md)**: Socratic Low-Level Design (LLD) mentor and architect that guides engineers through designing, implementing, and documenting production-grade, concurrency-safe object-oriented systems with phase-driven milestones, empirical multithreaded test verification, and full file-authoring capabilities.
 
 ---
 
