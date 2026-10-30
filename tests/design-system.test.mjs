@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { autoDiscoverAndSync } from "../scripts/auto-discover-content.mjs";
 
 // Import tokens and variants from pure TypeScript source files
 import { colors, darkColors, darkShadows, themeTokens, typography, shadows, borders } from "../packages/ui/src/tokens.ts";
@@ -13,6 +14,10 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "..");
 const webSrcDir = path.resolve(rootDir, "apps/web/src");
 const uiSrcDir = path.resolve(rootDir, "packages/ui/src");
+
+if (!fs.existsSync(path.join(webSrcDir, "content/labs"))) {
+  autoDiscoverAndSync();
+}
 
 // Helper to recursively collect files matching extensions
 function getFilesRecursively(dir, extensions = [".astro", ".tsx", ".ts", ".jsx", ".js"]) {
