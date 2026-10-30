@@ -3,11 +3,16 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { autoDiscoverAndSync } from "../scripts/auto-discover-content.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "..");
 const webSrcDir = path.resolve(rootDir, "apps/web/src");
+
+if (!fs.existsSync(path.join(webSrcDir, "content/labs"))) {
+  autoDiscoverAndSync();
+}
 
 const IGNORED_TOP_LEVEL_DIRS = new Set([
   "apps",

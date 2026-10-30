@@ -11,6 +11,10 @@ const rootDir = path.resolve(__dirname, "..");
 const webSrcDir = path.resolve(rootDir, "apps/web/src");
 const labsDir = path.resolve(webSrcDir, "labs");
 
+if (!fs.existsSync(path.join(labsDir, "registry.ts"))) {
+  autoDiscoverAndSync();
+}
+
 // ============================================================================
 // 1. REGISTRY & VISUALIZER COMPONENT INTEGRITY
 // ============================================================================
