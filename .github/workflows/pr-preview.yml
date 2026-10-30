@@ -1,0 +1,181 @@
+name: PR Preview Deployment (Surge)
+
+on:
+  pull_request_target:
+    types: [labeled, synchronize, closed]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  auth-check:
+    name: Verify Maintainer Authorization
+    runs-on: ubuntu-latest
+    # Run only if 'preview' label is added, commits are pushed to a labeled PR, or PR is closed
+    if: |
+      (github.event.action == 'labeled' && github.event.label.name == 'preview') ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'preview')) ||
+      (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'preview'))
+    outputs:
+      authorized: ${{ steps.gate.outputs.authorized }}
+    steps:
+      - name: Authorization Gate
+        id: gate
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sender = context.payload.sender.login;
+            const owner = context.repo.owner;
+            const action = context.payload.action;
+            const prNumber = context.payload.pull_request.number;
+
+            // Direct check: repository owner is always authorized
+            let isAuthorized = (sender === owner);
+
+            // Fallback check: repo collaborator with admin or write permission
+            if (!isAuthorized) {
+              try {
+                const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  username: sender,
+                });
+                isAuthorized = (data.permission === 'admin' || data.permission === 'write');
+              } catch (err) {
+                isAuthorized = false;
+              }
+            }
+
+            // If an unauthorized user added the label, remove it and warn
+            if (!isAuthorized && action === 'labeled' && context.payload.label.name === 'preview') {
+              console.log(`Unauthorized user @${sender} attempted to add 'preview' label.`);
+
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  name: 'preview',
+                });
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  body: `⚠️ **Preview Deployment Unauthorized**\n\n@${sender}, only repository maintainers (@${owner}) are authorized to trigger preview deployments. The \`preview\` label has been removed.`,
+                });
+              } catch (e) {
+                console.error('Error removing label or commenting:', e);
+              }
+
+              core.setOutput('authorized', 'false');
+              core.setFailed(`User @${sender} is not authorized to trigger preview deployments.`);
+              return;
+            }
+
+            core.setOutput('authorized', isAuthorized ? 'true' : 'false');
+
+  deploy-preview:
+    name: Deploy Surge Preview
+    needs: auth-check
+    if: |
+      needs.auth-check.outputs.authorized == 'true' &&
+      github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Web Application
+        run: npm run build:web
+
+      - name: Prepare Preview Dist
+        run: |
+          # Strip production CNAME so Surge publishes to its dedicated PR domain
+          rm -f apps/web/dist/CNAME
+          # Provide 200.html routing fallback for Surge clean URLs
+          if [ -f apps/web/dist/404.html ]; then
+            cp apps/web/dist/404.html apps/web/dist/200.html
+          fi
+
+      - name: Deploy to Surge.sh
+        id: surge
+        env:
+          SURGE_LOGIN: ${{ secrets.SURGE_LOGIN }}
+          SURGE_TOKEN: ${{ secrets.SURGE_TOKEN }}
+        run: |
+          if [ -z "$SURGE_LOGIN" ] || [ -z "$SURGE_TOKEN" ]; then
+            echo "::error::SURGE_LOGIN or SURGE_TOKEN secret is missing! Please configure them in repository secrets."
+            exit 1
+          fi
+
+          DOMAIN="system-design-labs-pr-${{ github.event.pull_request.number }}.surge.sh"
+          echo "Deploying to https://$DOMAIN..."
+          npx surge apps/web/dist "https://$DOMAIN"
+          echo "preview_url=https://$DOMAIN" >> "$GITHUB_OUTPUT"
+
+      - name: Comment Preview URL on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const domain = `system-design-labs-pr-${prNumber}.surge.sh`;
+            const previewUrl = `https://${domain}`;
+            const commitSha = context.payload.pull_request.head.sha.substring(0, 7);
+
+            const commentTag = '<!-- surge-preview-deployment -->';
+            const body = `${commentTag}\n### 🚀 Surge Preview Deployment\n\n| Preview Site | Status | Commit |\n| :--- | :--- | :--- |\n| [${domain}](${previewUrl}) | Ready ⚡ | \`${commitSha}\` |\n\n> Deployed upon request from @${context.payload.sender.login}.\n> Cleaned up automatically when this PR is closed.`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const existingComment = comments.find(c => c.body && c.body.includes(commentTag));
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: body,
+              });
+            }
+
+  teardown-preview:
+    name: Teardown Surge Preview
+    needs: auth-check
+    if: |
+      needs.auth-check.outputs.authorized == 'true' &&
+      github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Teardown Surge Domain
+        env:
+          SURGE_LOGIN: ${{ secrets.SURGE_LOGIN }}
+          SURGE_TOKEN: ${{ secrets.SURGE_TOKEN }}
+        run: |
+          if [ -n "$SURGE_LOGIN" ] && [ -n "$SURGE_TOKEN" ]; then
+            DOMAIN="system-design-labs-pr-${{ github.event.pull_request.number }}.surge.sh"
+            echo "Tearing down https://$DOMAIN..."
+            npx surge teardown "$DOMAIN" || true
+          fi
