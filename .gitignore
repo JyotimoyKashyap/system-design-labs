@@ -41,4 +41,4 @@ deploy-hub/*/
 local-hub/
 apps/web/src/content/
 apps/web/src/labs/registry.ts
-apps/web/public/assets/knowledge/
+apps/web/public/assets/
