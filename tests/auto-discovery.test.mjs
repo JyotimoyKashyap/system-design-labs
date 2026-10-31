@@ -159,6 +159,7 @@ test("Auto-Discovery: New root directory dynamically registers visualizer, notes
     fs.rmSync(path.join(webSrcDir, `content/notes/${testDirName}.mdx`), { force: true });
     fs.rmSync(path.join(webSrcDir, `content/lld/${testDirName}.md`), { force: true });
     fs.rmSync(path.join(webSrcDir, `content/lld/${testDirName}.mdx`), { force: true });
+    fs.rmSync(path.join(rootDir, `apps/web/public/assets/${testDirName}`), { recursive: true, force: true });
 
     // Restore canonical registry
     autoDiscoverAndSync();

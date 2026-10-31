@@ -17,7 +17,24 @@ A modern smart vending machine allows customers to select items from physical sl
 
 ---
 
-## 2. Requirements Analysis
+## 2. High-Level Architecture & Failure Boundaries
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./assets/vending-machine-architecture-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="./assets/vending-machine-architecture-light.svg">
+  <img alt="Vending Machine High-Level Architecture and Failure Boundaries" src="./assets/vending-machine-architecture-light.svg" width="100%">
+</picture>
+
+The architecture establishes clear fault boundaries across three critical interfaces:
+1. **Customer Edge & Vending Machine**: User drives item selection, payment method choices, screen navigation, or cancellation.
+2. **Vending Machine & Payment Gateway**: Manages authorization, capture, refunds, and handles edge conditions such as network dropped acknowledgments or cancellations while QR payments are in-flight on mobile devices.
+3. **Application Server & Dead Letter Queue (DLQ)**:
+   - Central application server monitors restock events, hardware health faults, telemetry, and remote maintenance locks.
+   - The DLQ asynchronously buffers unacknowledged transactions, late payment captures, and failed hardware dispense events to guarantee eventual refund execution without blocking the physical machine.
+
+---
+
+## 3. Requirements Analysis
 
 ### Functional Requirements (FR)
 1. **Catalog & Selection**: Customers can view available items and select one or multiple items to initiate a vending session.
@@ -40,9 +57,15 @@ A modern smart vending machine allows customers to select items from physical sl
 
 ---
 
-## 3. Finite State Machine (FSM)
+## 4. Finite State Machine (FSM)
 
-The system is governed by a 5-state lifecycle:
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./assets/vending-machine-fsm-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="./assets/vending-machine-fsm-light.svg">
+  <img alt="Vending Machine Finite State Machine (FSM)" src="./assets/vending-machine-fsm-light.svg" width="100%">
+</picture>
+
+The system is governed by a streamlined 5-state lifecycle:
 
 ```mermaid
 stateDiagram-v2
@@ -76,7 +99,7 @@ stateDiagram-v2
 
 ---
 
-## 4. Class Diagram
+## 5. Class Diagram
 
 ```mermaid
 classDiagram
@@ -166,7 +189,7 @@ classDiagram
 
 ---
 
-## 5. Sequence Diagram: Payment Failure & Retry Flow
+## 6. Sequence Diagram: Payment Failure & Retry Flow
 
 ```mermaid
 sequenceDiagram
@@ -202,7 +225,7 @@ sequenceDiagram
 
 ---
 
-## 6. Empirical Verification & Test Suite
+## 7. Empirical Verification & Test Suite
 
 The test suite in [`VendingMachineTest.java`](file:///Users/jyotimoykashyap/Developer/personal-lab/vending-machine-lld/src/test/java/com/jyotimoykashyap/VendingMachineTest.java) covers:
 - **Happy Path**: Full cycle through item selection, payment confirmation, and product dispensing.

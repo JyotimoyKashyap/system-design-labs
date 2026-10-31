@@ -236,17 +236,34 @@ function detectDesignPatterns(content) {
   return found.length > 0 ? found.slice(0, 4) : ['Object-Oriented Design', 'High-Performance'];
 }
 
+function syncDirectoryAssets(sourceDir, targetSubdir) {
+  if (!sourceDir || !targetSubdir) return;
+  for (const folder of ['assets', 'animations']) {
+    const assetSource = path.join(sourceDir, folder);
+    if (fs.existsSync(assetSource)) {
+      const destDir = path.join(WEB_DIR, 'public/assets', targetSubdir);
+      try {
+        fs.mkdirSync(destDir, { recursive: true });
+        fs.cpSync(assetSource, destDir, { recursive: true });
+      } catch (err) {
+        console.error(`Failed to sync ${folder} from ${assetSource}:`, err);
+      }
+    }
+  }
+}
+
 function rewriteRelativeImages(text, dirPath) {
+  const cleanDirPath = (dirPath || '').replace(/^\/+|\/+$/g, '');
   return text
-    .replace(/!\[(.*?)\]\(\.?\/?(?:assets|animations)\/(.*?)\)/g, (match, alt, assetPath) => {
-      return `![${alt}](https://raw.githubusercontent.com/JyotimoyKashyap/system-design-labs/main/${dirPath}/assets/${assetPath})`;
+    .replace(/!\[(.*?)\]\((?!\/assets\/|https?:\/\/)\.?\/?(?:assets|animations)\/(.*?)\)/g, (match, alt, assetPath) => {
+      return `![${alt}](/assets/${cleanDirPath}/${assetPath})`;
     })
-    .replace(/(srcset=["'])\.?\/?(?:assets|animations)\/(.*?)(["'])/g, (match, prefix, assetPath, suffix) => {
-      return `${prefix}https://raw.githubusercontent.com/JyotimoyKashyap/system-design-labs/main/${dirPath}/assets/${assetPath}${suffix}`;
+    .replace(/(srcset=["'])(?!\/assets\/|https?:\/\/)\.?\/?(?:assets|animations)\/(.*?)(["'])/g, (match, prefix, assetPath, suffix) => {
+      return `${prefix}/assets/${cleanDirPath}/${assetPath}${suffix}`;
     })
-    .replace(/(<img\s+[^>]*?src=["'])\.?\/?(?:assets|animations)\/(.*?)(["'][^>]*>)/g, (match, prefix, assetPath, suffix) => {
-      if (assetPath.startsWith('http://') || assetPath.startsWith('https://')) return match;
-      return `${prefix}https://raw.githubusercontent.com/JyotimoyKashyap/system-design-labs/main/${dirPath}/assets/${assetPath}${suffix}`;
+    .replace(/(<img\s+[^>]*?src=["'])(?!\/assets\/|https?:\/\/)\.?\/?(?:assets|animations)\/(.*?)(["'][^>]*>)/g, (match, prefix, assetPath, suffix) => {
+      if (assetPath.startsWith('http://') || assetPath.startsWith('https://') || assetPath.startsWith('/assets/')) return match;
+      return `${prefix}/assets/${cleanDirPath}/${assetPath}${suffix}`;
     });
 }
 
@@ -425,7 +442,9 @@ export function autoDiscoverAndSync() {
     if (fs.existsSync(readmePath)) {
       const raw = fs.readFileSync(readmePath, 'utf8');
       const { content } = extractMetadata(raw);
-      markdownBody = content;
+      const relDir = path.relative(ROOT_DIR, path.dirname(readmePath));
+      syncDirectoryAssets(path.dirname(readmePath), relDir);
+      markdownBody = rewriteRelativeImages(content, relDir);
     } else {
       markdownBody = `# ${lab.title}\n\n${lab.description}`;
     }
@@ -511,6 +530,7 @@ function discoverContentInDir(
 ) {
   // Collect all files in this directory (up to 3 levels deep)
   const allFiles = findFilesRecursive(dirPath, 3);
+  syncDirectoryAssets(dirPath, dirName);
 
   const labSlug = dirName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
@@ -561,6 +581,9 @@ function discoverContentInDir(
       docBody = `# ${labTitle}\n\n${labDesc}\n\nInteractive simulation is ready for exploration.`;
     }
     const relLabDir = fs.existsSync(readmeFile) ? (path.relative(ROOT_DIR, path.dirname(readmeFile)) || dirName) : dirName;
+    if (fs.existsSync(readmeFile)) {
+      syncDirectoryAssets(path.dirname(readmeFile), relLabDir);
+    }
     docBody = rewriteRelativeImages(docBody, relLabDir);
 
     const labFrontmatter = `---
@@ -657,6 +680,9 @@ ${docBody}
             ? parsedMeta.readTimeMinutes
             : Math.max(1, Math.ceil(wordCount / 200));
 
+        const relNoteDir = path.relative(ROOT_DIR, path.dirname(f)) || dirName;
+        syncDirectoryAssets(path.dirname(f), relNoteDir);
+
         const noteDoc = `---
 title: "${title.replace(/"/g, '\\"')}"
 description: "${description.replace(/"/g, '\\"')}"
@@ -667,7 +693,7 @@ readTimeMinutes: ${readTimeMinutes}
 featured: ${Boolean(parsedMeta.featured)}
 ---
 
-${rewriteRelativeImages(cleanContent, path.relative(ROOT_DIR, path.dirname(f)) || dirName)}
+${rewriteRelativeImages(cleanContent, relNoteDir)}
 `;
         const legacyMdx = path.join(CONTENT_NOTES_DIR, `${noteSlug}.mdx`);
         if (fs.existsSync(legacyMdx)) fs.rmSync(legacyMdx);
@@ -733,6 +759,9 @@ ${rewriteRelativeImages(cleanContent, path.relative(ROOT_DIR, path.dirname(f)) |
           parsedMeta.githubRepo ||
           `https://github.com/JyotimoyKashyap/system-design-labs/tree/main/${dirName}`;
 
+        const relLldDir = path.relative(ROOT_DIR, path.dirname(f)) || dirName;
+        syncDirectoryAssets(path.dirname(f), relLldDir);
+
         const lldDoc = `---
 title: "${title.replace(/"/g, '\\"')}"
 description: "${description.replace(/"/g, '\\"')}"
@@ -743,7 +772,7 @@ githubRepo: "${githubRepo}"
 difficulty: "${difficulty}"
 ---
 
-${rewriteRelativeImages(cleanContent, path.relative(ROOT_DIR, path.dirname(f)) || dirName)}
+${rewriteRelativeImages(cleanContent, relLldDir)}
 `;
         const targetLldPath = path.join(CONTENT_LLD_DIR, `${lldSlug}.md`);
         const legacyMdx = path.join(CONTENT_LLD_DIR, `${lldSlug}.mdx`);
