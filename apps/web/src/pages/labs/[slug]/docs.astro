@@ -21,6 +21,7 @@ const { Content } = await render(lab);
   category={lab.data.category}
   tags={[lab.data.tag, 'Architecture', 'Interactive Simulation']}
   githubRepo={lab.data.githubRepo}
+  image={`/og/labs/${lab.data.id}.png`}
   backLink="/labs"
   backLabel="Back to Labs Directory"
   launchAppLink={`/labs/${lab.data.id}`}

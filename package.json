@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "npm --workspace=apps/web run dev",
     "dev:web": "npm --workspace=apps/web run dev",
+    "build:og": "python3 scripts/generate-all-og-images.py",
     "build": "npm --workspace=apps/web run build",
     "build:web": "npm --workspace=apps/web run build",
     "pretest": "node scripts/auto-discover-content.mjs",

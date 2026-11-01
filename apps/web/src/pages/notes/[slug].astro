@@ -21,6 +21,7 @@ const { Content } = await render(entry);
   category={entry.data.category}
   tags={entry.data.tags}
   readTimeMinutes={entry.data.readTimeMinutes}
+  image={`/og/notes/${entry.id}.png`}
   backLink="/notes"
   backLabel="Back to All Notes"
 >

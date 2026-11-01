@@ -7,6 +7,7 @@
     "dev": "ASTRO_TELEMETRY_DISABLED=1 astro dev",
     "start": "ASTRO_TELEMETRY_DISABLED=1 astro dev",
     "prebuild": "node ../../scripts/auto-discover-content.mjs",
+    "build:og": "python3 ../../scripts/generate-all-og-images.py",
     "build": "ASTRO_TELEMETRY_DISABLED=1 astro build",
     "preview": "ASTRO_TELEMETRY_DISABLED=1 astro preview",
     "check": "ASTRO_TELEMETRY_DISABLED=1 astro check"
