@@ -2,7 +2,9 @@
   "name": "system-design-labs",
   "private": true,
   "scripts": {
+    "dev": "npm --workspace=apps/web run dev",
     "dev:web": "npm --workspace=apps/web run dev",
+    "build": "npm --workspace=apps/web run build",
     "build:web": "npm --workspace=apps/web run build",
     "pretest": "node scripts/auto-discover-content.mjs",
     "test": "node --experimental-strip-types --test --test-reporter=spec tests/*.test.mjs",
