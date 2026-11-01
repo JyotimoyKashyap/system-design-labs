@@ -1,59 +1,176 @@
-# System Design Labs 🚀
+<div align="center">
 
-![Deploy Status](https://github.com/JyotimoyKashyap/system-design-labs/actions/workflows/deploy-pages.yml/badge.svg)
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-![Docker Containerized](https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker&logoColor=white)
+# System Design Labs ⚡
 
-Welcome to my System Design Mono-repo! This repository is a collection of various experimental projects, proof-of-concepts, and lab environments where I explore and implement core system design concepts.
+**An interactive engineering laboratory and open-source workbench for distributed systems, concurrency primitives, and production-grade Low-Level Design (LLD).**
 
-🌟 **Interactive Web Visualizers:** Check out the live deployments of these algorithms here: **[https://jyotimoykashyap.github.io/system-design-labs/](https://jyotimoykashyap.github.io/system-design-labs/)**
+[![Deploy Pages](https://github.com/JyotimoyKashyap/system-design-labs/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/JyotimoyKashyap/system-design-labs/actions/workflows/deploy-pages.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-black.svg?style=flat-square)](LICENSE)
+[![Docker Containerized](https://img.shields.io/badge/Docker-Containerized-2496ED.svg?style=flat-square&logo=docker&logoColor=white)](docker-compose.yml)
+[![Built with Astro 5](https://img.shields.io/badge/Astro-5.0-BC52EE.svg?style=flat-square&logo=astro&logoColor=white)](https://astro.build)
+[![UI: Paper Brutalist](https://img.shields.io/badge/UI-Paper_Brutalist-f97316.svg?style=flat-square)](packages/ui)
+[![Tests: node:test](https://img.shields.io/badge/Tests-Passing_(<200ms)-10b981.svg?style=flat-square)](tests)
 
-## 🚀 Running the Hub Locally
+[Explore Interactive Hub](https://jyotimoykashyap.github.io/system-design-labs/) • [Contributing Guide](CONTRIBUTING.md) • [Design System](packages/ui) • [AI Pair Programming](AGENTS.md)
 
-The entire Deployment Hub and all React frontend visualizers are fully containerized! You can run the entire frontend ecosystem and generated documentation locally with a single command without worrying about `npm` dependencies:
+---
+
+</div>
+
+## 🌐 The Live Interactive Hub
+
+Experience distributed consensus, consistent hash rings, and rate limiting directly in your browser without spinning up external infrastructure:
+
+👉 **[https://jyotimoykashyap.github.io/system-design-labs/](https://jyotimoykashyap.github.io/system-design-labs/)**
+
+| Simulation | Core Concept Demonstrated | Highlights |
+| :--- | :--- | :--- |
+| **Raft Consensus** | Distributed State Machine Replication | Leader election, heartbeat timeouts, split votes, and simulated network partitions. |
+| **Distributed Token Bucket** | API Gateway Traffic Throttling | Sliding window token refill across distributed Redis nodes under high-concurrency bursts. |
+| **Consistent Hashing** | Dynamic Hash Space Partitioning | Ring topology, virtual node balancing, and minimized key redistribution during node churn. |
+| **Probabilistic Bloom Filter** | High-Performance Set Membership | Multiple hash distributions, bit arrays, and empirical false-positive rate curves. |
+| **Master-Slave DB Scaling** | Read/Write Splitting | Write delegation to master nodes with horizontally scalable read replica pools. |
+| **Competing Consumers** | Asynchronous Work Queues | Multi-replica worker pools balancing round-robin task loads via RabbitMQ. |
+
+---
+
+## 🏛️ Monorepo Blueprint
+
+This repository is organized as an automated, multi-tenant monorepo. All projects, notes, and visualizers are automatically cataloged by our zero-command discovery pipeline:
+
+```
+personal-lab/
+├── apps/
+│   └── web/                     # Unified Astro 5 + React 19 documentation & simulation platform
+├── packages/
+│   ├── ui/                      # @repo/ui: Canonical Paper Brutalist design system tokens & components
+│   └── shared/                  # Shared data structures and utility libraries
+├── <concept>-web/               # Interactive frontend simulations (Raft, Consistent Hashing, etc.)
+├── <concept>-lld/               # Clean architecture Low-Level Design solutions in Java & TypeScript
+├── <infrastructure-lab>/        # Distributed backend sandboxes (Kafka KRaft, RabbitMQ, Redis, DB Scaling)
+├── knowledge/                   # Deep dives: Incident post-mortems, algorithm notes & system blueprints
+└── tests/                       # Instant anti-drift, schema, and metadata verification test suite
+```
+
+### The 4 Core Pillars
+
+1. 🔬 **Interactive Labs & Visualizers**: Client-side distributed systems sandboxes with step-by-step state ticks, latency simulation, and chaos injection.
+2. 📐 **Low-Level Design (LLD)**: Production-grade object-oriented implementations (Cache Striping, Splitwise, Vending Machine, Parking Lot, Booking Engine) with thread-safe concurrency guarantees.
+3. 📝 **Architecture & Knowledge Base**: Incident post-mortems, whitepaper breakdowns, and real-world distributed systems clippings.
+4. 🎨 **Paper Brutalist Design System**: Centralized design tokens and micro-interactions in [`@repo/ui`](./packages/ui) enforcing sharp contrast, zero rounded corners, and crisp typography.
+
+---
+
+## ⚡ Quickstart
+
+### Option 1: Docker Container (Zero Local Dependencies)
+
+Run the entire frontend hub and interactive simulations inside a hermetic, production-grade container:
 
 ```bash
+# Build and run the local container
 docker compose up --build -d
 ```
 
-Once the container is built and running, navigate to **[http://localhost:3000](http://localhost:3000)** to access the interactive labs!
+Open **[http://localhost:3000](http://localhost:3000)** to browse all labs and documentation.
 
-## 📂 Projects Overview
+---
 
-### 1. [Raft Consensus Visualizer](./leader-election-web)
-A beautifully animated, fully client-side visualization of the Raft Leader Election algorithm built with React, TypeScript, and Framer Motion. It simulates true event-loop multithreading, network latency, and chaos engineering directly in the browser!
+### Option 2: Local Development Workspace
 
-### 2. [Bloom Filter Lab](./bloom-filter-design)
-Interactive implementation and visualization of probabilistic data structures used for high-performance set membership testing.
+```bash
+# 1. Clone the repository
+git clone https://github.com/JyotimoyKashyap/system-design-labs.git
+cd system-design-labs
 
-### 3. [RabbitMQ Lab](./rabbitmq-lab)
-A demonstration of the **Competing Consumers Pattern** using RabbitMQ. It includes a Spring Boot Producer emitting messages and multiple Spring Boot Consumer replicas processing them in a load-balanced, round-robin fashion using Docker Compose.
+# 2. Install workspace dependencies
+npm install
 
-### 4. [DB Scaling Lab](./db-scaling)
-A database replication setup demonstrating **Master-Slave Architecture**. It is configured to handle read/write splitting where writes go to the master database and reads are handled by read replicas (slaves) to horizontally scale database throughput.
+# 3. Start local development server with instant HMR
+npm run dev
+```
 
-### 5. [Apache Kafka Playground](./apache-kafka)
-A complete local environment to explore message streams with Apache Kafka (KRaft mode). It includes a Spring Boot Producer and two distinct consumers (Spring Boot and Node.js) configured in different Consumer Groups to demonstrate a true Pub-Sub broadcast model.
+Navigate to **[http://localhost:4321](http://localhost:4321)**.
 
-### 6. [Redis Cache Lab](./redis-cache)
-A demonstration of the **Cache-Aside Pattern** using Redis and Spring Boot. This lab shows how to dramatically reduce database load and response times by caching frequently accessed records (posts) in an in-memory Redis store with an LRU eviction policy.
+---
 
-### 7. [Consistent Hashing Visualizer](./consistent-hashing)
-Interactive demonstration of hash space partitioning. Watch how adding or removing nodes elegantly minimizes data redistribution across the ring topology, enabling massive horizontal scalability!
+### Option 3: Instant Test Suite (<200ms)
 
-### 8. [API Rate Limiter Visualizer](./api-rate-limiter)
-An interactive simulation of a Distributed Token Bucket algorithm. Watch how an API Gateway throttles requests across a Redis cluster using sliding windows!
+Verify metadata, auto-discovery integrity, design system token compliance, and anti-drift rules:
 
-### 9. [Extensible In-Memory Cache](./cache-lld)
-An architectural deep-dive and framework for building high-performance, concurrent LRU/LFU caches using Event Sourcing and Lock Striping.
+```bash
+npm test
+```
 
-### 10. [Task Management System](./task-management-system)
-A Low-Level Design (LLD) implementation of an in-memory Task Management System featuring a custom LRU cache eviction layer, repository pattern, and decoupled data access objects.
+---
 
-## 🛠 Prerequisites
-All backend labs and frontend visualizers in this repository rely on containerization to simulate distributed systems locally without the hassle of local dependencies. Make sure you have the following installed:
-- [Docker](https://www.docker.com/)
-- [Docker Compose](https://docs.docker.com/compose/)
+## 🚀 Zero-Command Auto-Discovery
+
+You never need to edit routing files or Astro component registries when adding content:
+
+1. **Drop a folder** at the root of the monorepo (e.g. `rate-limiter/`).
+2. Add a `*visualizer*.tsx` component &rarr; automatically mounted at `/labs/<slug>`.
+3. Add `lld.md` or `design.md` &rarr; automatically published at `/lld/<slug>`.
+4. Add `notes.md` or `architecture.md` &rarr; automatically published at `/notes/<slug>`.
+5. Add `README.md` with a `<!-- hub-metadata -->` block &rarr; published as interactive documentation.
+6. The `npm test` and `npm run dev` hooks auto-sync everything instantly!
+
+---
+
+## 🤝 Contributing
+
+Contributions are warmly welcome! Whether you are implementing a new Low-Level Design problem, adding an interactive distributed systems visualizer, or writing architectural deep-dives:
+
+1. Read our comprehensive **[Contributing Guide (CONTRIBUTING.md)](CONTRIBUTING.md)**.
+2. Review the Paper Brutalist UI standards in **[DESIGN.md](DESIGN.md)**.
+3. Ensure every new project folder contains a `README.md` with a metadata block:
+
+```markdown
+<!-- hub-metadata
+type: lab | visualizer | lld | note
+title: Your Project Title
+description: Concise one or two sentence summary of the architecture.
+tag: Distributed Systems
+tagColor: #f97316
+category: Distributed Systems
+-->
+```
+
+4. Run `npm test` before submitting your PR to ensure all quality gates pass!
+
+---
+
+## 🤖 Built-in AI Agents & Skills
+
+This repository is **agent-native** — engineered to be explored, developed, and maintained by both human developers and modern AI coding assistants (such as Google DeepMind's **Antigravity**, Claude Code, or Cursor). 
+
+We ship dedicated agent personas and domain skills in [`.agents/`](.agents/) that you can leverage while contributing:
+
+### 🤖 Specialized AI Agents ([`.agents/agents/`](.agents/agents/))
+| Agent | Role & Capabilities |
+| :--- | :--- |
+| **[`lld-mentor`](.agents/agents/lld-mentor.md)** | Socratic Low-Level Design architect that guides engineers through designing, implementing, and documenting production-grade, concurrency-safe object-oriented systems with phase-driven milestones and empirical multithreaded test verification. |
+
+### 🛠️ Specialized Skills ([`.agents/skills/`](.agents/skills/))
+| Skill | Purpose |
+| :--- | :--- |
+| **[`low-level-design-architect`](.agents/skills/low-level-design-architect/SKILL.md)** | Canonical blueprint for authoring production-grade LLD specifications, Mermaid diagrams, clean architecture, and READMEs. |
+| **[`system-design-visualizer`](.agents/skills/system-design-visualizer/SKILL.md)** | Rules and best practices for creating and modifying interactive web visualizers with automatic discovery. |
+| **[`paper-brutalist-ui`](.agents/skills/paper-brutalist-ui/SKILL.md)** | Design tokens, `@repo/ui` component variants, kinetic micro-interactions, and anti-drift design rules. |
+| **[`system-design-content-creator`](.agents/skills/system-design-content-creator/SKILL.md)** | Guidelines for writing Notes, LLD specs, and Labs with metadata and strict content isolation. |
+| **[`monorepo-quality-guardian`](.agents/skills/monorepo-quality-guardian/SKILL.md)** | Fast feedback testing (`npm test`), Docker container verification, and pre-commit checks. |
+
+> [!TIP]
+> Read **[`AGENTS.md`](AGENTS.md)** for detailed instructions on agent personas, prompt templates, and the automated guardrails enforced by our test suite.
+
+---
 
 ## 📜 License
-This repository is open-sourced software licensed under the [MIT license](LICENSE). Feel free to use, explore, and modify the code!
+
+This project is open-source software licensed under the **[MIT License](LICENSE)**. Feel free to use, modify, and build upon this code.
+
+---
+
+<div align="center">
+  <sub>Engineered with precision by <a href="https://github.com/JyotimoyKashyap">Jyotimoy Kashyap</a></sub>
+</div>
