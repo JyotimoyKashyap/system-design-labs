@@ -1,8 +1,8 @@
-name: PR Preview Deployment (Surge)
+name: PR Preview Deploy
 
 on:
   pull_request:
-    types: [labeled, synchronize, closed]
+    types: [labeled, synchronize]
 
 permissions:
   contents: read
@@ -13,11 +13,10 @@ jobs:
   auth-check:
     name: Verify Maintainer Authorization
     runs-on: ubuntu-latest
-    # Run only if 'preview' label is added, commits are pushed to a labeled PR, or PR is closed
+    # Run only if 'preview' label is added, or commits are pushed to a labeled PR
     if: |
       (github.event.action == 'labeled' && github.event.label.name == 'preview') ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'preview')) ||
-      (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'preview'))
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'preview'))
     outputs:
       authorized: ${{ steps.gate.outputs.authorized }}
     steps:
@@ -80,9 +79,7 @@ jobs:
   deploy-preview:
     name: Deploy Surge Preview
     needs: auth-check
-    if: |
-      needs.auth-check.outputs.authorized == 'true' &&
-      github.event.action != 'closed'
+    if: needs.auth-check.outputs.authorized == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR Code
@@ -160,22 +157,3 @@ jobs:
                 body: body,
               });
             }
-
-  teardown-preview:
-    name: Teardown Surge Preview
-    needs: auth-check
-    if: |
-      needs.auth-check.outputs.authorized == 'true' &&
-      github.event.action == 'closed'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Teardown Surge Domain
-        env:
-          SURGE_LOGIN: ${{ secrets.SURGE_LOGIN }}
-          SURGE_TOKEN: ${{ secrets.SURGE_TOKEN }}
-        run: |
-          if [ -n "$SURGE_LOGIN" ] && [ -n "$SURGE_TOKEN" ]; then
-            DOMAIN="system-design-labs-pr-${{ github.event.pull_request.number }}.surge.sh"
-            echo "Tearing down https://$DOMAIN..."
-            npx surge teardown "$DOMAIN" || true
-          fi

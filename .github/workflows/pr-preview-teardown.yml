@@ -1,0 +1,25 @@
+name: PR Preview Teardown
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+
+jobs:
+  teardown-preview:
+    name: Teardown Surge Preview
+    if: contains(github.event.pull_request.labels.*.name, 'preview')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Teardown Surge Domain
+        env:
+          SURGE_LOGIN: ${{ secrets.SURGE_LOGIN }}
+          SURGE_TOKEN: ${{ secrets.SURGE_TOKEN }}
+        run: |
+          if [ -n "$SURGE_LOGIN" ] && [ -n "$SURGE_TOKEN" ]; then
+            DOMAIN="system-design-labs-pr-${{ github.event.pull_request.number }}.surge.sh"
+            echo "Tearing down https://$DOMAIN..."
+            npx surge teardown "$DOMAIN" || true
+          fi
