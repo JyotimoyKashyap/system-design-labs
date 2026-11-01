@@ -19,7 +19,9 @@ const {
   fullscreen = false,
 } = Astro.props;
 
-const canonicalURL = new URL(Astro.url.pathname, Astro.site || 'https://jyotimoykashyap.github.io');
+const siteURL = Astro.site ? Astro.site.toString() : 'https://jyotimoykashyap.me';
+const canonicalURL = new URL(Astro.url.pathname, siteURL);
+const ogImageURL = new URL(image, siteURL).toString();
 ---
 
 <!doctype html>
@@ -43,19 +45,29 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site || 'https://jyotimoy
     <meta name="title" content={title} />
     <meta name="description" content={description} />
 
-    <!-- Open Graph / Facebook -->
+    <!-- Open Graph / Facebook / WhatsApp / LinkedIn / Discord -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:site_name" content="Jyotimoy Kashyap" />
+    <meta property="og:url" content={canonicalURL.toString()} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:image" content={new URL(image, canonicalURL)} />
+    <meta property="og:image" content={ogImageURL} />
+    <meta property="og:image:secure_url" content={ogImageURL} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={title} />
+    <meta property="og:locale" content="en_US" />
 
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content={canonicalURL} />
-    <meta property="twitter:title" content={title} />
-    <meta property="twitter:description" content={description} />
-    <meta property="twitter:image" content={new URL(image, canonicalURL)} />
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@jyotimoykashyap" />
+    <meta name="twitter:creator" content="@jyotimoykashyap" />
+    <meta name="twitter:url" content={canonicalURL.toString()} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageURL} />
+    <meta name="twitter:image:alt" content={title} />
 
     <!-- Umami Analytics -->
     <script defer src="https://cloud.umami.is/script.js" data-website-id="b899ac21-eb80-40aa-b083-ccc95a14d980" data-performance="true"></script>

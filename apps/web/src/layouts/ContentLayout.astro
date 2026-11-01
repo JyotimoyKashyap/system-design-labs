@@ -15,6 +15,7 @@ interface Props {
   githubRepo?: string;
   launchAppLink?: string;
   launchAppLabel?: string;
+  image?: string;
 }
 
 const {
@@ -29,10 +30,11 @@ const {
   githubRepo,
   launchAppLink,
   launchAppLabel,
+  image,
 } = Astro.props;
 ---
 
-<BaseLayout title={`${title} • Jyotimoy Kashyap`} description={description}>
+<BaseLayout title={`${title} • Jyotimoy Kashyap`} description={description} image={image}>
   <div class="w-full">
     <!-- Top Nav Action Bar -->
     <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
