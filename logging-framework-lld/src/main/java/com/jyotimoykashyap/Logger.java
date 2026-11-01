@@ -10,13 +10,15 @@ import java.util.Objects;
 public class Logger {
     private LogLevel minLogLevel;
     private List<LogAppender> outputs;
+    private final String name;
     // needs to be volatile to prevent CPU instruction reordering
     // from publishing a partially constructed object to other threads
     private static volatile Logger instance;
 
-    private Logger (LogLevel minLogLevel, List<LogAppender> outputs) {
+    private Logger (LogLevel minLogLevel, List<LogAppender> outputs, String name) {
         this.minLogLevel = Objects.requireNonNull(minLogLevel, "MinLogLevel cannot be null");
         this.outputs = Objects.requireNonNull(outputs, "Output stream cannot be null");
+        this.name = (name != null && !name.isBlank()) ? name : "ROOT";
     }
 
     public void debug(String msg) {
@@ -47,8 +49,16 @@ public class Logger {
         log(msg, t, LogLevel.FATAL);
     }
 
+    public void setLogLevel(LogLevel level) {
+        this.minLogLevel = Objects.requireNonNull(level);
+    }
+
     public void close() {
         outputs.forEach(LogAppender::close);
+    }
+
+    public String getName() {
+        return this.name;
     }
 
     private void log(String msg, LogLevel level) {
@@ -58,8 +68,8 @@ public class Logger {
     private void log(String msg, Throwable t, LogLevel level) {
         if (level.getSeverity() >= minLogLevel.getSeverity()) {
             LogMessage message = (t == null)
-                    ? new LogMessage(msg, level)
-                    : new LogMessage(msg, t, level);
+                    ? new LogMessage(msg, level, this.name)
+                    : new LogMessage(msg, t, level, this.name);
 
             outputs.forEach(o -> o.appendLog(message));
         }
@@ -84,6 +94,7 @@ public class Logger {
     public static class Builder {
         private LogLevel minLogLevel = LogLevel.INFO;
         private final List<LogAppender> outputs = new ArrayList<>(List.of(new AsyncAppender(new ConsoleAppender())));
+        private String name = "ROOT";
 
         public Builder setLogLevel(LogLevel level) {
             this.minLogLevel = Objects.requireNonNull(level);
@@ -95,6 +106,11 @@ public class Logger {
             return this;
         }
 
+        public Builder setName(String name) {
+            this.name = Objects.requireNonNull(name, "name cannot be null");
+            return this;
+        }
+
         public Builder setOutputs(List<LogAppender> outputs) {
             this.outputs.clear();
             this.outputs.addAll(Objects.requireNonNull(outputs, "Outputs cannot be null"));
@@ -102,7 +118,7 @@ public class Logger {
         }
 
         public Logger build() {
-            return new Logger(minLogLevel, List.copyOf(outputs));
+            return new Logger(minLogLevel, List.copyOf(outputs), name);
         }
     }
 }

@@ -154,4 +154,23 @@ public class LoggerConcurrencyTest {
 
         logger.close();
     }
+
+    /**
+     * Test 4: LoggerFactory Flyweight Pattern & Dynamic Per-Logger Level Tuning.
+     */
+    @Test
+    @DisplayName("LoggerFactory should return identical Flyweight instance and allow surgical level tuning")
+    void testLoggerFactoryFlyweightAndSurgicalLevel() {
+        Logger logA1 = LoggerFactory.getLogger("OrderService");
+        Logger logA2 = LoggerFactory.getLogger("OrderService");
+        Logger logB = LoggerFactory.getLogger("PaymentService");
+
+        // Assert Flyweight identity (exact same reference)
+        assertSame(logA1, logA2, "Multiple getLogger calls for same name must return the exact same instance");
+        assertNotSame(logA1, logB, "Different names must return distinct logger instances");
+
+        // Test surgical level tuning
+        LoggerFactory.setLoggerLevel("PaymentService", LogLevel.DEBUG);
+        assertEquals("PaymentService", logB.getName());
+    }
 }

@@ -7,13 +7,14 @@ public record LogMessage(
         String message,
         Throwable throwable,
         LogLevel level,
-        String threadName
+        String threadName,
+        String loggerName
 ) {
-    public LogMessage(String message, LogLevel level) {
-        this(Instant.now(), message, null, level, Thread.currentThread().getName());
+    public LogMessage(String message, LogLevel level, String loggerName) {
+        this(Instant.now(), message, null, level, Thread.currentThread().getName(), loggerName);
     }
 
-    public LogMessage(String message, Throwable throwable, LogLevel level) {
-        this(Instant.now(), message, throwable, level, Thread.currentThread().getName());
+    public LogMessage(String message, Throwable throwable, LogLevel level, String loggerName) {
+        this(Instant.now(), message, throwable, level, Thread.currentThread().getName(), loggerName);
     }
 }

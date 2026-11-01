@@ -12,6 +12,7 @@ public class SimpleTextFormatter implements LogFormatter {
         sb.append("[").append(msg.timestamp()).append("] ")
                 .append("[").append(msg.level()).append("] ")
                 .append("[").append(msg.threadName()).append("] - ")
+                .append("[").append(msg.loggerName()).append("] - ")
                 .append(msg.message());
         // Bonus: If an exception was logged, append its stack trace!
         if (msg.throwable() != null) {
