@@ -20,6 +20,7 @@
     "sync": "node scripts/auto-discover-content.mjs",
     "sync:labs": "node scripts/auto-discover-content.mjs",
     "build:docs": "node scripts/auto-discover-content.mjs && node scripts/build-docs.mjs",
+    "update-resume": "node scripts/update-resume.mjs",
     "docker:build": "docker build -t system-design-labs:latest .",
     "docker:run": "docker run -p 3000:80 system-design-labs:latest"
   },
