@@ -14,6 +14,7 @@ export default defineConfig({
   redirects: {
     '/blogs': '/notes',
     '/blogs/scale-architecture-0-1': '/notes/scale-architecture-0-1',
+    '/resume': '/resume.pdf',
   },
   markdown: {
     remarkPlugins: [remarkMath],
